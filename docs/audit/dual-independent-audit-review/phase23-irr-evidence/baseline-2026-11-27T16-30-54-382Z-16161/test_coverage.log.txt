@@ -1,0 +1,580 @@
+
+> solarpv-studio@1.0.3 test:coverage
+> c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts
+
+{"status":"PASS","cases":58,"auditTables":748,"auditStations":7,"stationRoadOverlapM2":0,"pitchCases":[{"requested":3,"effective":4.6,"gcr":0.999,"tables":1144},{"requested":4,"effective":4.6,"gcr":0.999,"tables":1144},{"requested":4.6,"effective":4.6,"gcr":0.999,"tables":1144}],"scope":"Analytical rectangle constraints, DXF readback and geometric route connectivity; not civil/turning-radius or field validation"}
+{"status":"PASS","trackerCases":1260,"maxShadeError":2.6645352591003757e-15,"rearCases":128,"layouts":27,"fuelTankLiters":2,"annualShadingFraction":0.05651224353318144}
+PASS structural claims: 8 foundation paths retain non-certification independently of diagnostic FoS; report has explicit certification boundary. Not numerical or standards validation.
+{
+  "status": "PASS",
+  "solarRows": 887,
+  "maxZenithErrorDeg": 0.005863801425533666,
+  "maxAzimuthErrorDeg": 0.022482629825390177,
+  "stringInfeasible": {
+    "minModules": 1,
+    "maxModules": 0,
+    "status": "infeasible",
+    "hasWarning": true,
+    "warnings": [
+      "Vmp temperature coefficient is approximated from Pmp/Voc; not guaranteed conservative for hot or cold MPPT limits. Verify manufacturer Vmp data; this is screening, not conformity assessment.",
+      "Minimum required modules exceeds maximum allowed string voltage."
+    ],
+    "effectiveCellTempMaxC": 25
+  },
+  "quickFinancialParity": true,
+  "automaticStorageKwh": 4.8
+}
+Reference Kimber: boundary/missing-data contracts and 20 pvlib 0.13.1 fixtures PASS (not field validation).
+Reference snow: boundary/missing contracts, 12 pinned pvlib fixtures, and hourly/sub-hourly snow/soiling comparisons PASS (not field validation).
+Explicit energy offset / UTC normalization / fallback PASS (process TZ=default).
+Reference timestamp subprocess PASS: UTC
+Reference timestamp subprocess PASS: America/New_York
+Reference timestamp subprocess PASS: Asia/Tehran
+Reference integration PASS: 33 independent fixtures; replacement/sign/no-double-count, annual/missing/site/geometry fallback, canonical yield and serialization (not field validation).
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#330fd1d268bc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#330fd1d268bc
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#39f160937538 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#39f160937538
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#662449347fa2 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#662449347fa2
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#7ab524546462 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#7ab524546462
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#a3b536e1aff7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#a3b536e1aff7
+PASS 10 priority registry witnesses: independently generated outputs and exact-node mutation sensitivity. Not full physics-gate or standards certification.
+================================================================================
+ SolarPV Studio v3.0 - Automated Core Suite Verification
+NOTICE: PASS means internal test/target comparison only; stored citations/manifests do not establish independent validation or standards compliance.
+================================================================================
+
+--- [1/4] Latin Hypercube Sampling (LHS) vs Crude Monte Carlo (CMC) Benchmark ---
+Distribution Tested: Gumbel Type I Extreme Gust (mu=28 m/s, beta=4.5 m/s)
+Execution Time: LHS (N=100) = 0.21 ms | CMC (N=10,000) = 3.13 ms | Speedup = 14.9x
+
++----------+--------------+--------------+-------------------+--------------------+--------+
+| Metric   | CMC (10,000) | LHS (100)    | Rel. Error (%)    | Tolerance (eps)    | Status |
++----------+--------------+--------------+-------------------+--------------------+--------+
+| MEAN     |      30.6010 |      30.5840 |             0.05% | 1.0%               | [PASS] |
+| P50      |      29.6240 |      29.6590 |             0.12% | 1.5%               | [PASS] |
+| STDDEV   |       5.8090 |       5.7090 |             1.74% | 3.0%               | [PASS] |
+| P10      |      24.1870 |      24.2950 |             0.45% | 3.5%               | [PASS] |
+| P90      |      38.2080 |      38.3360 |             0.33% | 3.5%               | [PASS] |
++----------+--------------+--------------+-------------------+--------------------+--------+
+
+--- [2/4] Stored Bifacial/Module Target Metadata (not a SAM execution record) ---
+Manifest-declared target version (unverified): NREL SAM 2023.12.17 Revision 1
+Checked-in target manifest: benchmarks/reference_files/sam_2023_12_17_bifacial_reference_case.sam
+SHA-256 Checksum:    36a5c27d1f0c469c1b33a9046012eb75c8d9ba5988d6f0c99eefad43cc98eab8
+
++----------------------------------------+------------------+---------------------+
+| Stored manifest target field            | Value            | Unit                |
++----------------------------------------+------------------+---------------------+
+| Latitude / Longitude                   | 35.6892, 51.3890 | Deg N, Deg E        |
+| Array Azimuth / Tilt                   | 180.0 / 25.0     | Deg (True South)    |
+| Ground Clearance (Height above ground) | 1.20             | meters              |
+| Row Pitch / Collector Width            | 6.00 / 2.278     | meters              |
+| Ground Cover Ratio (GCR)               | 0.38             | -                   |
+| Ground Surface Albedo                  | 0.25             | dimensionless       |
+| Module Bifaciality Factor              | 0.80             | dimensionless       |
+| Torque Tube Diameter / Clearance       | 0.12 / 0.10      | meters              |
+| Direct Normal Irradiance (DNI)         | 720.00           | W/m2                |
+| Diffuse Horizontal Irradiance (DHI)    | 130.00           | W/m2                |
+| Rear Ground-Reflected Irradiance       | 110.50           | W/m2                |
+| Retired unverified gain target            | 10.40            | %                   |
++----------------------------------------+------------------+---------------------+
+
+Manifest-claimed module: Jinko Solar Tiger Neo JKM550N-72HL4-BDV (N-Type TOPCon Bifacial)
+Manifest-claimed CEC ID (not independently sourced here): Jinko_Solar_Co___Ltd_JKM550N_72HL4_BDV
+
++----------------------------------------+------------------+---------------------+
+| Sandia 5-Parameter TOPCon Variable     | Exact Value      | Engineering Unit    |
++----------------------------------------+------------------+---------------------+
+| STC Nominal Power (Pmp)                | 550.26           | Watts               |
+| Open Circuit Voltage (Voc)             | 50.80            | Volts               |
+| Short Circuit Current (Isc)            | 13.99            | Amperes             |
+| Max Power Point Voltage (Vmp)          | 41.28            | Volts               |
+| Max Power Point Current (Imp)          | 13.33            | Amperes             |
+| Series Resistance (Rs)                 | 0.231            | Ohms                |
+| Shunt Resistance (Rsh)                 | 485.00           | Ohms                |
+| Diode Ideality Factor (n)              | 1.048            | dimensionless       |
+| Reverse Saturation Current (Io)        | 8.95e-11         | Amperes             |
+| Temperature Coefficient (gamma_Pmp)    | -0.30            | %/°C                |
+| Pmp at G=800 W/m2 and Tcell=45°C       | 410.20           | Watts               |
++----------------------------------------+------------------+---------------------+
+
+--- [3/10] Stored Benchmark Target Comparisons (tagged cross-validation vs implementation checks) ---
+
+3a. Cross-validation-tagged stored targets (3; independent execution not established)
+Cross-Validation Count: 3 | Implementation Verification Count: 3
+
++-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+
+| Standard ID       | Domain / Discipline                                             | Nominal  | Engine   | Err (%)  | Status | Source   |
++-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+
+| VAL-SOILING-08    | Internal Soiling Accumulation / Rain-Cleaning Regression (No... |     6.60 |     6.60 |    0.00% | [PASS] | -        |
+| VAL-SNOW-09       | Internal Snow Shedding Regression at 25° Tilt (Not Independent) |     0.85 |     0.85 |    0.01% | [PASS] | -        |
+| VAL-BIPVT-11      | Tripanagnostopoulos et al. / IEA SHC Task 60 BIPV/T Thermal ... |    45.20 |    45.10 |    0.22% | [PASS] | https... |
++-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+
+Cross-validation-tagged target comparisons: PASS (not independent validation)
+
+3b. Implementation Verification (3 metrics — code-internal / literature threshold reproduction)
+These reproduce code-internal relationships; they are NOT independent proof of accuracy.
+
++-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+
+| Standard ID       | Domain / Discipline                                             | Nominal  | Engine   | Err (%)  | Status | Source   |
++-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+
+| VAL-BIFACIAL-01   | Bifacial Rear-Gain Comparison (stored NREL/SAM-attributed ta... |    10.40 |     9.22 |   11.35% | [WARN] | https... |
+| VAL-SANDIA-02     | Sandia Single-Diode 5-Parameter Power (Tiger Neo TOPCon 550W... |   410.20 |   409.10 |    0.27% | [PASS] | https... |
+| VAL-IAM-10        | Martin & Ruiz ARC Implementation Verification (60° @ 65°C)      |     0.96 |     0.96 |    0.05% | [PASS] | https... |
++-------------------+-----------------------------------------------------------------+----------+----------+----------+--------+----------+
+
+--- [4/4] Copula Architecture, Archimedean Guard & Kurtosis Verification ---
+• Spearman Calibration: rho=0.5 -> linear r=0.517638 (Diff=0.00e+0) -> [PASS]
+• Archimedean Guard: Clayton copula invocation safely threw ARCHIMEDEAN_NOT_IMPLEMENTED_IN_V3_0 -> [PASS]
+• Gaussian latent sample kurtosis (diagnostic only): 2.915
+• Student-t retirement: new execution rejected; no Gaussian fallback -> [PASS]
+--- [5/7] Internal Synthetic Screening / Sensitivity Regressions ---
+• Internal Trend Checks: Soiling=PASS | Snow=PASS | IAM=PASS
+• Internal sweeps: 9 soiling, 12 snow, and 24 IAM scenarios; these regressions do not establish an overfitting risk bound or independent validity
+
+1. Internal Assumed Soiling Screening Matrix (Synthetic Rainfall vs Deposition Rate):
++--------------------+------------------------+---------------------+---------------------+
+| Annual Rain (mm)   | Daily Deposition Rate  | Annual Avg Loss (%) | Max Monthly Loss(%) |
++--------------------+------------------------+---------------------+---------------------+
+| 50 mm              | 0.10 %/day             |                3.18 |                4.65 |
+| 50 mm              | 0.22 %/day             |                6.99 |               10.23 |
+| 50 mm              | 0.50 %/day             |               15.81 |               23.20 |
+| 150 mm             | 0.10 %/day             |                1.04 |                1.23 |
+| 150 mm             | 0.22 %/day             |                2.29 |                2.70 |
+| 150 mm             | 0.50 %/day             |                5.20 |                6.13 |
+| 400 mm             | 0.10 %/day             |                0.39 |                0.41 |
+| 400 mm             | 0.22 %/day             |                0.86 |                0.89 |
+| 400 mm             | 0.50 %/day             |                1.95 |                2.03 |
++--------------------+------------------------+---------------------+---------------------+
+
+2. Internal Snow Screening Sensitivity Matrix (Synthetic Weather):
+   NOTE: Values use generateSnowfallYear() synthetic weather; no independent site calibration is claimed.
+   Section 8 reports separate internally parameterized synthetic scenarios, not NREL/DWD reference measurements.
+   Both sections are internal regression views, not empirical calibration or independent validation.
++--------------------+------------------------+---------------------+---------------------+------------------+-----------------------+
+| Array Tilt (deg)   | Annual Snowfall (cm)   | Annual Loss (%)     | Structural (kN/m2)  | Damming Risk     | Peak Ground Snow (cm) |
++--------------------+------------------------+---------------------+---------------------+------------------+-----------------------+
+| 5 deg              | 50 cm                  |                1.18 |                0.08 | NONE             |                  2.70 |
+| 5 deg              | 150 cm                 |                2.76 |                0.12 | NONE             |                  6.40 |
+| 5 deg              | 300 cm                 |               15.07 |                0.16 | SEVERE           |                 60.60 |
+| 15 deg             | 50 cm                  |                1.14 |                0.08 | NONE             |                  2.70 |
+| 15 deg             | 150 cm                 |                2.67 |                0.12 | NONE             |                  6.40 |
+| 15 deg             | 300 cm                 |               13.12 |                0.15 | SEVERE           |                 60.60 |
+| 25 deg             | 50 cm                  |                1.12 |                0.07 | NONE             |                  2.70 |
+| 25 deg             | 150 cm                 |                2.63 |                0.11 | NONE             |                  6.40 |
+| 25 deg             | 300 cm                 |                6.32 |                0.15 | SEVERE           |                 60.60 |
+| 40 deg             | 50 cm                  |                1.10 |                0.06 | NONE             |                  2.70 |
+| 40 deg             | 150 cm                 |                2.59 |                0.09 | NONE             |                  6.40 |
+| 40 deg             | 300 cm                 |                4.70 |                0.13 | SEVERE           |                 60.60 |
++--------------------+------------------------+---------------------+---------------------+------------------+-----------------------+
+
+2b. Continuous Smooth Damming Fine Tilt Sweep (150cm Snow - Elimination of 9x Cliff Drop):
++--------------------+------------------------+---------------------+---------------------+------------------+
+| Array Tilt (deg)   | Annual Snowfall (cm)   | Damming Clearance   | Annual Loss (%)     | Damming Risk     |
++--------------------+------------------------+---------------------+---------------------+------------------+
+| 10 deg             | 150 cm                 | 0.231               |                2.71 | NONE             |
+| 15 deg             | 150 cm                 | 0.355               |                2.67 | NONE             |
+| 18 deg             | 150 cm                 | 0.529               |                2.66 | NONE             |
+| 20 deg             | 150 cm                 | 0.671               |                2.65 | NONE             |
+| 22 deg             | 150 cm                 | 0.796               |                2.64 | NONE             |
+| 25 deg             | 150 cm                 | 0.916               |                2.63 | NONE             |
++--------------------+------------------------+---------------------+---------------------+------------------+
+
+2c. Fine Low-Tilt Sweep (5° to 10° in 1° Increments - Physics of Ground Snow Damming Wedge):
++--------------------+------------------------+---------------------+---------------------+------------------+
+| Array Tilt (deg)   | Annual Snowfall (cm)   | Damming Clearance   | Annual Loss (%)     | Damming Risk     |
++--------------------+------------------------+---------------------+---------------------+------------------+
+| 5 deg              | 150 cm                 | 0.205               |                2.76 | NONE             |
+| 6 deg              | 150 cm                 | 0.208               |                2.75 | NONE             |
+| 7 deg              | 150 cm                 | 0.211               |                2.74 | NONE             |
+| 8 deg              | 150 cm                 | 0.215               |                2.73 | NONE             |
+| 9 deg              | 150 cm                 | 0.222               |                2.72 | NONE             |
+| 10 deg             | 150 cm                 | 0.231               |                2.71 | NONE             |
++--------------------+------------------------+---------------------+---------------------+------------------+
+
+2d. Fine Transition Sweep (10° to 15° in 1° Increments - PR-2a-6 Damming Regime Transition):
++--------------------+------------------------+---------------------+---------------------+------------------+
+| Array Tilt (deg)   | Annual Snowfall (cm)   | Damming Clearance   | Annual Loss (%)     | Damming Risk     |
++--------------------+------------------------+---------------------+---------------------+------------------+
+| 10 deg             | 150 cm                 | 0.231               |                2.71 | NONE             |
+| 11 deg             | 150 cm                 | 0.243               |                2.70 | NONE             |
+| 12 deg             | 150 cm                 | 0.261               |                2.69 | NONE             |
+| 13 deg             | 150 cm                 | 0.284               |                2.69 | NONE             |
+| 14 deg             | 150 cm                 | 0.315               |                2.68 | NONE             |
+| 15 deg             | 150 cm                 | 0.355               |                2.67 | NONE             |
++--------------------+------------------------+---------------------+---------------------+------------------+
+3. Optical IAM Angular & Temperature Coupling Matrix (Incidence Angle vs Cell Temp):
++--------------------+------------------------+---------------------+---------------------+
+| Angle theta (deg)  | Cell Temp (deg C)      | IAM Coupled Factor  | Reflection Loss (%) |
++--------------------+------------------------+---------------------+---------------------+
+| 0 deg              | 25 C                   |              1.0000 |               0.00% |
+| 0 deg              | 65 C                   |              1.0000 |               0.00% |
+| 30 deg             | 25 C                   |              0.9975 |               0.25% |
+| 30 deg             | 65 C                   |              0.9969 |               0.31% |
+| 45 deg             | 25 C                   |              0.9899 |               1.01% |
+| 45 deg             | 65 C                   |              0.9887 |               1.13% |
+| 60 deg             | 25 C                   |              0.9579 |               4.21% |
+| 60 deg             | 65 C                   |              0.9561 |               4.39% |
+| 75 deg             | 25 C                   |              0.8032 |              19.68% |
+| 75 deg             | 65 C                   |              0.8009 |              19.91% |
+| 85 deg             | 25 C                   |              0.4208 |              57.92% |
+| 85 deg             | 65 C                   |              0.4184 |              58.16% |
++--------------------+------------------------+---------------------+---------------------+
+
+--- [6/7] Core Unit Tests (PRNG, Cross-Val, Soiling, Snow, IAM & Waterfall) ---
+[shadingLifecycle] projectCapacityKwp was omitted from APPLY action. Falling back to capacityKwp (demo block size); this may cause capacity drift staleness if project capacity differs.
+Unit Tests Run: 226 | Passed: 226 | Failed: 0
+  • [PRNG        ] Seed Repeatability                             -> [PASS] | PRNG identical seeds match deterministically; different seeds diverge.
+  • [PRNG        ] Seed Reset Method                              -> [PASS] | prng.seed(9999) correctly reset state deterministically.
+  • [PRNG        ] Uniform Range Sampling Both Branches           -> [PASS] | prng.nextRange(-15, 45) in range; guard triggers on out-of-range (50) and passes in-range (20).
+  • [PRNG        ] Range Guard Both Outcomes                      -> [PASS] | Range guard flags out-of-range draws and passes in-range draws.
+  • [PRNG        ] Standard Gaussian Box-Muller Distribution      -> [PASS] | Empirical N(0, 1) over 10k samples: Mean=0.0132 (expected 0.00), Var=1.0074 (expected 1.00)
+  • [PRNG        ] Gumbel Extreme Wind Tail (P99 Inversion)       -> [PASS] | P99 Extreme Gust: Observed=4.6810, Analytical=4.6001, Relative Error=1.76%
+  • [PRNG        ] Weibull Operational Wind Speed Median          -> [PASS] | Weibull Median: Observed=7.0849 m/s, Analytical=7.0767 m/s, Relative Error=0.12%
+  • [PRNG        ] Latin Hypercube 4D Sample Dimensions           -> [PASS] | LHS generated 100x4 matrix successfully.
+  • [Validation  ] Nominal report preserves retired-reference warning -> [PASS] | Unreproduced bifacial target remains visible WARN, not a green validation claim
+  • [Validation  ] Cross-Validation WARN Branch Coverage          -> [PASS] | Custom value 417.58W triggered WARN status as expected (relErr=1.8% vs tol=1.5%)
+  • [Validation  ] Cross-Validation FAIL Branch Coverage          -> [PASS] | Custom value 450.0W triggered FAIL status and escalated overallStatus to FAIL (testsFailed=1)
+  • [Registry    ] Calculation Trace Generation & Fallback        -> [PASS] | Trace TRACE-mwz7agmv-e348c9d1-17d2-472a-accd-4b80de45ef79 created with registered models and omitted unregistered IDs safely.
+  • [Registry    ] Model SemVer Compliance                        -> [PASS] | All registered models adhere to SemVer; validator flags non-conforming versions.
+  • [Registry    ] SemVer Loop Both Branches                      -> [PASS] | Semver-style registry loop flags non-conforming version without early break.
+  • [Migration   ] Empty Payload Safe Recovery                    -> [PASS] | Empty input recovered safely with 23 warning(s) instead of throwing an unhandled exception.
+  • [SoilingScreening] Discrete Rainfall Bins                         -> [PASS] | Internal assumed 5-bin cleaning regression: trace=0%, 2mm=25%, 3.5mm=65%, 8mm=95%, 15mm=100%
+  • [SoilingScreening] Simplified Linear Washing                      -> [PASS] | Simplified model: <1mm=0%, 2.5mm partial=40%, >=5mm threshold=100%
+  • [SoilingScreening] Dust Storm Multiplier                          -> [PASS] | Dust storm vulnerability 2.5x produced 5% vs normal 2%
+  • [SoilingScreening] Saturation Ceiling Clamp                       -> [PASS] | Soiling accumulation safely clamped to saturation ceiling of 28.0% (theoretical unclamped: 62.5%)
+  • [SoilingScreening] Scheduled Wash Reset                           -> [PASS] | Scheduled wash cycle on day 15 reset soiling loss to 0.0% with manualCleanPerformed flag
+  • [SnowScreening] Temperature Slide Threshold                    -> [PASS] | Sub-freezing (-3C) yielded 0.0 shedding; warm (+1.5C) at 25 deg tilt yielded 0.8501 (target: 0.85)
+  • [SnowScreening] Flat Array Sublimation vs Tilt Slide           -> [PASS] | Low tilt (1 deg) limited to thermal sublimation (0.225) vs gravity sliding at 25 deg (0.8501)
+  • [SnowScreening] Avalanche Damming Restriction                  -> [PASS] | Damming boundary: 10cm ground snow shed 0.8501; 50cm snow dammed lower rack to 0.3526
+  • [SnowScreening] Structural Snow Load                           -> [PASS] | Structural load calculated as 0.212 kN/m2 under 25cm snowfall at 30 deg tilt
+  • [SnowScreening] Severe Damming Categorization                  -> [PASS] | Extended ground snow damming correctly classified as SEVERE risk
+  • [WaterfallLoss] Compound Multiplier Integrity                  -> [PASS] | Both internal soiling (-5%) and snow (-8%) stages present and compounded sequentially into net export
+  • [WaterfallLoss] Invariant 14-Stage Architecture (Zero Snow No-Op) -> [PASS] | Waterfall maintains constant 14-stage structure across all climates, executing snow as 0.0% no-op when the snow-loss input is zero
+  • [Sensitivity ] Internal Soiling Sensitivity Regression        -> [PASS] | Internal assumed soiling sweep across 9 synthetic regimes: higher rain reduces loss, higher deposition increases loss; not independent validation
+  • [Sensitivity ] Internal Snow Sensitivity Regression           -> [PASS] | Internal snow screening sweep across 12 synthetic tilt-snowfall regimes: steeper tilt reduces loss, deeper snowfall increases loss; not independent validation
+  • [Sensitivity ] IAM Optical Monotonicity                       -> [PASS] | IAM angular transmittance strictly decreases with incident angle; thermo-optic dn/dT increases reflection at high cell temperatures
+  • [Sensitivity ] Fine Tilt Inversion Branch                     -> [PASS] | Inverted tilt pair correctly detects inversion.
+  • [Sensitivity ] Fine Tilt Non-Inversion Branch                 -> [PASS] | Non-inverted tilt pair correctly reports no inversion.
+  • [Sensitivity ] Continuous Smooth Damming Fine Tilt Sweep      -> [PASS] | Smooth continuous damming verified across fine tilt sweep: 10°(2.71%) -> 15°(2.67%) -> 18°(2.66%) -> 20°(2.65%) -> 22°(2.64%) -> 25°(2.63%)
+  • [Sensitivity ] Fine Tilt Monotonic Guard (Inversion Detected) -> [PASS] | Monotonicity guard flips to false when fine-tilt snow loss inverts.
+  • [OpticalIAM  ] Normal Incidence Baseline                      -> [PASS] | Martin & Ruiz ARC glass yields exactly 1.0000 transmittance at perpendicular incidence (0 deg)
+  • [OpticalIAM  ] Martin & Ruiz Oblique Angle (60 deg)           -> [PASS] | Martin & Ruiz ARC glass at 60 deg incidence yields IAM = 0.957912 (4.21% optical reflection loss)
+  • [OpticalIAM  ] Thermo-Optic dn/dT Temperature Coupling        -> [PASS] | Elevated desert cell temp (75C vs 25C) reduced optical transmittance by 0.238% at 60 deg incidence
+  • [OpticalIAM  ] Physical Fresnel & ASHRAE Models               -> [PASS] | Physical Fresnel (0.947646) and ASHRAE b0 (0.95) evaluated consistently within expected physical bounds
+  • [OpticalIAM  ] Brandemuehl Diffuse Equivalent Angles          -> [PASS] | At 25 deg array tilt: sky diffuse theta = 57.17 deg, ground reflected theta = 77.21 deg
+  • [OpticalIAM  ] Beam AOI geometry {"z":59.1,"tilt":0,"sunAz":180,"surfaceAz":180,"expected":59.1} -> [PASS] | AOI=59.1 deg; expected=59.1 deg
+  • [OpticalIAM  ] Beam AOI geometry {"z":59.1,"tilt":30,"sunAz":180,"surfaceAz":180,"expected":29.1} -> [PASS] | AOI=29.1 deg; expected=29.1 deg
+  • [OpticalIAM  ] Beam AOI geometry {"z":20,"tilt":30,"sunAz":180,"surfaceAz":180,"expected":10} -> [PASS] | AOI=9.999999999999977 deg; expected=10 deg
+  • [OpticalIAM  ] Beam AOI geometry {"z":0,"tilt":0,"sunAz":0,"surfaceAz":0,"expected":0} -> [PASS] | AOI=0 deg; expected=0 deg
+  • [OpticalIAM  ] Beam AOI geometry {"z":90,"tilt":90,"sunAz":0,"surfaceAz":180,"expected":180} -> [PASS] | AOI=180 deg; expected=180 deg
+  • [OpticalIAM  ] Azimuth misalignment increases beam AOI        -> [PASS] | Aligned=29.1; misaligned=63.593309459362196
+  • [OpticalIAM  ] AOI cosine matches POA projection {"z":59.1,"tilt":0,"sunAz":180,"surfaceAz":180,"expected":59.1} -> [PASS] | cos(AOI)=0.5135412520581701; cosInc=0.5135412520581701
+  • [OpticalIAM  ] Beam AOI matches actual POA engine {"z":59.1,"tilt":0,"sunAz":180,"surfaceAz":180,"expected":59.1} -> [PASS] | POA=513.5412520581701; AOI beam projection=513.5412520581701
+  • [OpticalIAM  ] AOI cosine matches POA projection {"z":59.1,"tilt":30,"sunAz":180,"surfaceAz":180,"expected":29.1} -> [PASS] | cos(AOI)=0.8737722230354652; cosInc=0.8737722230354652
+  • [OpticalIAM  ] Beam AOI matches actual POA engine {"z":59.1,"tilt":30,"sunAz":180,"surfaceAz":180,"expected":29.1} -> [PASS] | POA=873.7722230354652; AOI beam projection=873.7722230354652
+  • [OpticalIAM  ] AOI cosine matches POA projection {"z":20,"tilt":30,"sunAz":180,"surfaceAz":180,"expected":10} -> [PASS] | cos(AOI)=0.9848077530122081; cosInc=0.9848077530122081
+  • [OpticalIAM  ] Beam AOI matches actual POA engine {"z":20,"tilt":30,"sunAz":180,"surfaceAz":180,"expected":10} -> [PASS] | POA=984.8077530122081; AOI beam projection=984.8077530122081
+  • [OpticalIAM  ] AOI cosine matches POA projection {"z":0,"tilt":0,"sunAz":0,"surfaceAz":0,"expected":0} -> [PASS] | cos(AOI)=1; cosInc=1
+  • [OpticalIAM  ] Beam AOI matches actual POA engine {"z":0,"tilt":0,"sunAz":0,"surfaceAz":0,"expected":0} -> [PASS] | POA=1000; AOI beam projection=1000
+  • [OpticalIAM  ] AOI cosine matches POA projection {"z":90,"tilt":90,"sunAz":0,"surfaceAz":180,"expected":180} -> [PASS] | cos(AOI)=-1; cosInc=-1
+  • [OpticalIAM  ] AOI cosine matches POA projection {"z":50,"tilt":30,"sunAz":110,"surfaceAz":200} -> [PASS] | cos(AOI)=0.5566703992264195; cosInc=0.5566703992264195
+  • [OpticalIAM  ] Beam AOI matches actual POA engine {"z":50,"tilt":30,"sunAz":110,"surfaceAz":200} -> [PASS] | POA=556.6703992264195; AOI beam projection=556.6703992264195
+  • [OpticalIAM  ] No beam transmission at AOI 90                 -> [PASS] | Beam IAM=0; effective IAM=0
+  • [OpticalIAM  ] No beam transmission at AOI 100                -> [PASS] | Beam IAM=0; effective IAM=0
+  • [OpticalIAM  ] No beam transmission at AOI 180                -> [PASS] | Beam IAM=0; effective IAM=0
+  • [OpticalIAM  ] Effective POA Weighted Transmittance           -> [PASS] | Effective POA IAM calculated as 0.9771 (effective loss: 2.29%) under combined beam/diffuse/ground irradiance
+  • [SnowRecalib ] Internal Synthetic Snow Suite Status           -> [PASS] | All 3 internal synthetic scenarios passed: Boulder (4.02%), Munich (2.55%), Toronto (3.67%)
+  • [SnowRecalib ] Boulder-labelled Internal Target (4.0% - 6.0%) -> [PASS] | Boulder 300cm snow at 40 deg tilt produced 4.02% annual snow loss (internal nominal target: 4.6%)
+  • [SnowRecalib ] Munich-labelled Internal Target (2.0% - 4.0%)  -> [PASS] | Munich 150cm snow at 30 deg tilt produced 2.55% annual snow loss (internal nominal target: 2.9%)
+  • [SnowRecalib ] Toronto-labelled Internal Target (3.0% - 5.0%) -> [PASS] | Toronto 200cm snow at 35 deg tilt produced 3.67% annual snow loss (internal nominal target: 3.8%)
+  • [SnowRecalib ] Internal Synthetic Ground Snowpack Regression  -> [PASS] | Synthetic peak ground snow depths: Boulder = 42.6cm, Munich = 15.6cm, Toronto = 21.9cm
+  • [SnowRecalib ] Three-Consecutive-Winter Inter-Annual Stability -> [PASS] | 3-consecutive-winter simulation passed across all hubs with CV <= 18% (internal synthetic regression only)
+  • [ExternalVal ] Internal Reference-Target Comparison Harness Status -> [PASS] | internal target comparisons passed; external field/SAM evidence remains explicitly unverified
+  • [ExternalVal ] Stored synthetic soiling target comparison is not field validation -> [PASS] | internal target 8.45% vs simulated 8.46% (discrepancy = 0.12%)
+  • [ExternalVal ] Stored multi-climate target comparison (not external SAM validation) -> [PASS] | Phoenix (soiling 4.14% vs SAM 4.2%), Munich (snow 2.55% vs SAM 2.6%), Singapore (soiling 1.08%)
+  • [ExternalVal ] External Validation Defensive Branch Execution -> [PASS] | Defensive branches safely caught tolerance breach (15.0% vs 8.46%) and forced cross-model discrepancy, setting status to FAIL
+  • [BIPVT       ] IEA Task 60 Thermal Efficiency Reference       -> [PASS] | Tripanagnostopoulos / IEA Task 60 reference: simulated 45.1% vs 45.2% nominal target
+  • [BIPVT       ] Eave-to-Ridge Vertical Thermal Gradient vs Bulk Air Heating -> [PASS] | Laminate vertical gradient Delta T_cell = 22.4°C (Eave: 29.4°C -> Ridge: 51.8°C); Bulk air stream heated by Delta T_air = 8.96°C
+  • [BIPVT       ] Gross vs Aperture Area Efficiency Normalization -> [PASS] | Aperture-to-gross ratio = 0.86; STC Gross Area target = 13.76% (IEA Task 60 target: 13.8%); Net delivered gross = 12.7%
+  • [BIPVT       ] Series String Mismatch Loss                    -> [PASS] | Temperature non-uniformity induced string mismatch loss = 1.55% (net delivered aperture efficiency: 14.77%)
+  • [BIPVT       ] Ventilated Cavity vs Unventilated Roof Comparison -> [PASS] | Unventilated roof cell temp reached 85.7°C; ventilated cavity lowered operating temp by 45.2°C
+  • [BIPVT       ] Natural Buoyancy Thermosiphon Airflow          -> [PASS] | Natural chimney thermosiphon established air velocity = 0.67 m/s and mass flow = 0.0642 kg/s
+  • [BIPVT       ] Dual-Sided Environmental Soiling               -> [PASS] | Front exterior glass soiling = 3.5%; rear duct cavity dust deposition = 0.32%
+  • [BIPVT       ] Non-BIPV Fallback Safeguard                    -> [PASS] | Non-BIPV system safely bypassed multiphysics duct simulation with zero computational overhead
+  • [Migration   ] Unhandled Exception Catch Branch               -> [PASS] | migrationTestVectors.ts catch block safely caught unhandled runtime exception and categorized as BLOCKED_INCONSISTENT
+  • [Coordinates ] Munich Geographic Resolution                   -> [PASS] | Munich coordinates (48.1351, 11.5820) resolved to Coordinates Site (48.14°N, 11.58°E) (Europe (CEN / Eurocode Zone)) without Iranian fallback.
+  • [Climate     ] Presentation PSH precision and analytical/default field provenance -> [PASS] | PSH display 0.00/5.30/5.24; fallback fields explicitly identify modeled temperatures/PSH and fixed unverified albedo.
+  • [AC RETIREMENT] Retired interface payload cannot influence current engineering inputs -> [PASS] | Legacy AC data are discarded with a warning, never used as equipment/feeder/MV inputs; actual load phase still governs clustering.
+  • [Help        ] Every main workflow page has bilingual input/method/limitation guidance with a code-source reference -> [PASS] | Checked 22 workflow pages for bilingual substantive help and registered source references.
+  • [Coordinates ] Negative Out-of-Bounds Validation Guard        -> [PASS] | Coordinates (999, 999) triggered explicit error: "Invalid geographic coordinates: latitude 999 (must be in range [-90, +90]) and longitude 999 (must be in range [-180, +180])." instead of silent fallback to Tehran.
+  • [Coordinates ] Global Geospatial Model Fallback               -> [PASS] | Arbitrary coordinates (52.52, 13.405) routed through Global Geospatial Model: Coordinates Site (52.52°N, 13.40°E) (Internal Regional Analytical Model (REGIONAL_ANALYTICAL_MODEL)).
+  • [BIPVT       ] Aperture-to-Gross Analytic Equality            -> [PASS] | Analytic consistency verified: netAperture (14.77%) * areaRatio (0.86) = netGross (12.7%); Aperture Area = 1.72 m2, Gross Area = 2 m2.
+  • [SnowScreening] Internal Snow Low-Tilt Regression (5-10 deg)   -> [PASS] | Low-tilt snow loss monotonically decreases from 2.76% (5°) to 2.71% (10°) within this internal screening sweep; not field-validated sliding physics.
+  • [DataGateway ] Circuit Breaker Tripping on Consecutive Failures -> [PASS] | Circuit breaker successfully transitioned to OPEN after 2 consecutive failures.
+  • [DataGateway ] Multi-Provider Traceability & Geotechnical Linking -> [PASS] | DataGateway generated trace IDs: TRC-GW-20261127-2090F990, TRC-SOIL-20261127-1DF78544; correctly mapped Eurocodes for Munich.
+  • [SnowScreening] Internal Snow Transition Regression (10-15 deg) -> [PASS] | Transition 10°-15° snow loss monotonically decreases from 2.71% (10°) to 2.67% (15°) within this internal screening sweep; not evidence of published-model validity.
+  • [FoundationEngine] Multi-Scenario 5-Climate Foundation Recommendations -> [PASS] | Legacy diagnostics at 5 synthetic project locations (safety UNASSESSED): Boulder (L=1.9m >= 1.90m frost requirement), Munich (L=1.8m), Phoenix (ground_screw), Singapore (ground_screw), Tehran (rammed_steel_pile).
+  • [FoundationEngine] P2-2 Shared Module Depth Equality (test_depth === ui_depth, 5 sites) -> [PASS] | Boulder L=1.9m (shared 1.9m), Phoenix L=1.3m (shared 1.3m), Munich L=1.8m (shared 1.8m), Singapore L=1.1m (shared 1.1m), Tehran L=1.6m (shared 1.6m)
+  • [FoundationEngine] P2-2 Foundation Type Consistency (test_type === ui_type, 5 sites) -> [PASS] | Boulder test=concrete_pier ui=concrete_pier, Phoenix test=ground_screw ui=ground_screw, Munich test=concrete_pier ui=concrete_pier, Singapore test=ground_screw ui=ground_screw, Tehran test=rammed_steel_pile ui=rammed_steel_pile
+  • [FoundationEngine] P2-2 Foundation Type Diversity (>= 3 distinct types across 5 sites) -> [PASS] | Distinct types: concrete_pier, ground_screw, rammed_steel_pile (Boulder=concrete_pier, Phoenix=ground_screw, Munich=concrete_pier, Singapore=ground_screw, Tehran=rammed_steel_pile)
+  • [SaltCorrosionEngine] P2-4 ISO 9223 Salt Corrosion Classification (Bushehr = C5) -> [PASS] | Bushehr (28.92, 50.83, 0 km) = C5 (expect C5); Tehran inland (60 km) = C1; bands: 5 km = C3, 0.5 km = C5, 100 km = C1; traceId = TRC-COR-MWZ7AH64
+  • [CrossTabPropagation] Tehran vs Munich vs Ahvaz End-to-End Parameter Propagation -> [PASS] | Cross-tab parameter propagation verified: Ahvaz thermal derate = 10.5% (0% in Tehran); Munich snow load = 1.177 kN/m² (> Tehran 0.490 kN/m²); Ahvaz LCOE increases from $0.0491/kWh to $0.0549/kWh with 10.5% extreme heat inverter derating.
+  • [RUNTIME-INTERNET-POLICY] default runtime policy enables automatic provider requests -> [PASS] | configuredOffline=false; enabled=true; expected=true
+  • [Monotonicity] Fine Tilt Sweep Inversion Branch               -> [PASS] | Loss increase between 11° and 12° correctly flagged as inversion
+  • [LHS Benchmark] compareStatus WARN Branch (tol < relErr <= 1.5×tol) -> [PASS] | relErr 1.2% > tol 1.0% but ≤ 1.5% → WARN
+  • [LHS Benchmark] compareStatus FAIL Branch (relErr > 1.5×tol)   -> [PASS] | relErr 2.0% > 1.5 × tol 1.5% → FAIL
+  • [LHS Benchmark] compareStatus PASS Branch (relErr <= tol)      -> [PASS] | relErr 0.5% <= tol 1.0% → PASS
+  • [PR-CONSISTENCY] [THERMAL-CONSISTENCY] unified thermal derate = 15.68% in all three consumers -> [PASS] | thermalDerate.ts=15.675% pvEngine=15.675% waterfall(raw)=15.675% waterfall(display)=-15.7% (cellTemp=77.25C)
+  • [PR-CONSISTENCY] [ANGLE-GEOMETRY] winter sun altitude per latitude (5 sites) -> [PASS] | Tehran: 30.86deg (exp 30.86deg) | Munich: 18.42deg (exp 18.42deg) | Berlin: 14.03deg (exp 14.03deg) | Phoenix: 33.10deg (exp 33.1deg) | Singapore: 65.20deg (exp 65.2deg)
+  • [PR-CONSISTENCY] [VMP-HOT] singleModuleVmpMinHot uses cellTemp + Pmp coeff = 34.81V -> [PASS] | actual=34.8094V expected=34.8094V cellTemp=77.25C
+  • [PR-CONSISTENCY] [PR-CONSISTENCY] waterfall netAnnualEnergy*1000 === financial annualEnergyYieldKwh -> [PASS] | waterfall=1735500 kWh financial=1735500 kWh relDiff=0.00e+0 LCOE=$0.0491/kWh
+  • [PR-CONSISTENCY] [LCOE-INTEGRITY] LCOE matches (capex+disc.costs)/disc.energy, no invented constants -> [PASS] | engine=4420 Toman/kWh recomputed=4420.0 Toman/kWh ($0.0491/kWh)
+  • [P0-REGRESSION] Tehran LCOE stable across 3 deterministic runs -> [PASS] | Run1=$0.0491 Run2=$0.0491 Run3=$0.0491
+  • [P0-REGRESSION] Thermal derate differs by climate (Phoenix hotter than Munich) -> [PASS] | Munich(30C)=10.88% Phoenix(48C)=16.27%
+  • [P0-REGRESSION] Winter sun altitude differs by latitude (Munich < Tehran) -> [PASS] | Tehran(35.69N)=30.86deg Munich(48.13N)=18.42deg
+  • [TRACKER-PVLIB] [TRACKER-PVLIB] 76 fixtures compared (60 base + 16 slope, 0 night), max rot err 0.0000deg, max POA err 0.000% -> [PASS] | pvlib 0.16.1 via scripts/generate-pvlib-fixtures.py
+  • [TRACKER-SLOPE] [TRACKER-SLOPE] 16 axis_tilt=+/-5deg fixtures, max err 0.0000deg -> [PASS] | pvlib axis_tilt slope-aware backtracking cross-check
+  • [TRACKER-PVLIB-ANNUAL] [TRACKER-PVLIB-ANNUAL] 5 sites compared, max error 0.000% -> [PASS] | Tehran: TS=2914.3 pvlib=2914.308 (0.000%) | Munich: TS=2501.4 pvlib=2501.418 (0.000%) | Berlin: TS=2338.7 pvlib=2338.738 (0.000%) | Phoenix: TS=2979.6 pvlib=2979.598 (0.000%) | Singapore: TS=3454.0 pvlib=3453.956 (0.000%)
+  • [TRACKER-PHYSICS] [TRACKER-PHYSICS] 6 sanity checks              -> [PASS] | highSun bt-free, lowSun backtracked (80.0->21.7), zenith=0 -> 0, night ok, GCR effect ok, no-backtrack=true-tracking ok
+  • [TRACKER-SLOPE] [TRACKER-SLOPE] 4 slope scenarios              -> [PASS] | morning 9am: flat=37.49 +5deg=34.30 -5deg=40.57; noon delta smaller than morning delta
+  • [TRACKER-WATERFALL] [TRACKER-WATERFALL] integration verified (both paths) -> [PASS] | fixed gain=16.8% tracker gain=24.4% yieldGain=9.1% nearShading=-0.000% btDiffers=true
+  • [TRACKER-DETERMINISM] [TRACKER-DETERMINISM] 3 runs identical         -> [PASS] | annualPoa=92.865878 kWh/m2 identical x3, noNaN=true
+  • [TRACKER-UI-CONSISTENCY] [TRACKER-UI-CONSISTENCY] Engine trackerDetails exposes expected gain and shading value -> [PASS] | engine trackerDetails gain=+24.4%; near_shading raw=-0.000% = -annualShadingLossPct
+  • [TRACKER-SHADING] [TRACKER-SHADING] pvlib 0.13.1 winter-9am fraction = 0 at GCR .33; noon fractions ~0 -> [PASS] | winterNoon(noBt)=0.000 (omega=0.00deg) | winter9am(noBt)=0.000 | summerNoon(noBt)=0.000 | summerNoon(bt)=0.000
+  • [REACT-DEPS-TRACKER] [REACT-DEPS-TRACKER] toggling tracker changes designed kWp (>5%) — dep not stale -> [PASS] | fixed=1100.6 kWp vs tracker=1201.8 kWp (diff=9.2%)
+  • [TRACKER-PERSISTENCE] [TRACKER-PERSISTENCE] round-trip preserves trackerConfig values -> [PASS] | status=RECOVERED_WITH_WARNINGS loaded={"gcr":0.35,"axisTiltDeg":5,"maxRotationDeg":55,"enableBacktracking":true,"albedo":0.22}
+  • [TRACKER-PERSISTENCE] [TRACKER-PERSISTENCE] legacy project without trackerConfig migrates safely (undefined->null) -> [PASS] | status=RECOVERED_WITH_WARNINGS trackerConfig=null
+  • [Migration-RoundTrip] P1.1.1 Canonical loads round-trip without field drift (MIGR-00) -> [PASS] | 2/2 loads preserved exactly; migration warnings remain confirmation-required
+  • [Migration-RoundTrip] P1.1.2 Legacy v2 loads (powerWatts->ratedWatts, dailyHours->dayHours) normalized -> [PASS] | {روشنایی و تجهیزات اد} W=25000 cat=lighting h=8/0 | {چیلر و سرمایش} W=45000 cat=hvac h=10/0
+  • [Migration-RoundTrip] P1.1.3 Schema rejects loads with missing canonical fields (no silent defaults) -> [PASS] | rejected as expected (ratedWatts missing)
+  • [Migration-RoundTrip] P1.1.4 LOAD_CATEGORY_VALUES sync with LoadCategory (11 values, rejects bogus) -> [PASS] | all 11 categories valid, bogus rejected
+  • [Migration-RoundTrip] P1.1.5 MIGR-02 still RECOVERED_WITH_WARNINGS + loads preserved (>=2) -> [PASS] | status=RECOVERED_WITH_WARNINGS loads=2 warnings=21
+  • [Migration-RoundTrip] P1.1.6 MIGR-03 (24h telecom BTS) normalizes to dayHours=24, nightHours=0 -> [PASS] | loads=1 {"id":"1","name":"رک‌های مخابراتی BTS","category":"other","ratedWatts":3500,"surgeMultiplier":1.1,"quantity":1,"dayHours":24,"nightHours":0,"isDc":false,"acPhase":"single","phaseAssignment":"auto"}
+  • [Migration-RoundTrip] P1.2.1 Canonical UserFinancialPricing round-trips without field drift -> [PASS] | all canonical pricing fields preserved exactly; unrelated project migration warnings remain confirmation-required (usdRate=65000, ppa=3000, substation=40000)
+  • [Migration-RoundTrip] P1.2.2 Legacy v2 pricing normalized (10 convertible) + 3 DEFAULT fallbacks -> [PASS] | inverterUsdPerKw=50 (0.05*1000) epcLaborUsdPerKw=60 (0.06*1000) tariffEsc=22
+  • [Migration-RoundTrip] P1.2.3 Schema rejects pricing with missing canonical field (no silent default) -> [PASS] | rejected as expected (inverterUsdPerKw missing)
+  • [Migration-RoundTrip] P1.2.4 Schema fields === DEFAULT_FINANCIAL_PRICING fields (21, exact match) -> [PASS] | all 21 field names match exactly
+  • [Migration-RoundTrip] P1.2.5 Pricing propagated intact: doubled module+inverter cost raises LCOE -> [PASS] | base LCOE=$0.0719/kWh high LCOE=$0.1031/kWh moduleUsdPerWp 0.18->0.36
+  • [Migration-RoundTrip] P1.2.6 Missing userPricing -> DEFAULT_FINANCIAL_PRICING (no zeros, no NaN) -> [PASS] | all defaults applied (usdRate=90000, module=0.14)
+  • [Financial-Hardening] [CORR-DIESEL-ZERO] Explicit includeDieselGenSet: false yields $0 diesel CAPEX and $0 fuel OPEX -> [PASS] | dieselUsd=0 fuelUsd=0 opexUsd=0
+  • [Migration-Hardening] [CORR-CHEMISTRY-MIGR] gel_deep_cycle battery chemistry preserved without forced lifepo4 fallback -> [PASS] | selectedChemistry=gel_deep_cycle status=RECOVERED_WITH_WARNINGS
+  • [Migration-Hardening] [CORR-GEOTECH-PERSIST] Geotechnical distance, drainage, and GWL persist across schema round-trip -> [PASS] | coastDist=0.5 drainage=poor_flood_prone gwl=1.2
+  • [Migration-Hardening] [CORR-LOAD-NEGATIVE-BLOCK] Non-positive load ratedWatts triggers BLOCKED_INCONSISTENT status -> [PASS] | status=BLOCKED_INCONSISTENT reasons=Invalid canonical field [loads.0.ratedWatts]: Too small: expected number to be >0; Physical contradiction: Load 'Bad Motor' has non-positive power (-500 W)
+  • [P0-HARDENING] BUG-3 zero-BESS 24h simulation: SoC=100, no NaN (powerplant mode) -> [PASS] | minSoC=100 maxSoC=100
+  • [P1-HARDENING] BUG-4 climaticData re-exports intact, dataGateway modules load (cycle broken) -> [PASS] | all runtime exports + type-only leaf module resolve
+  • [P2-HARDENING] MPPT max uses coldest-day Vmp (17 modules), not STC Vmp (19) -> [PASS] | maxModules=17 (expected 17; the pre-fix value of 19 would confirm the bug)
+  • [P2-FIN-GOLDEN-1] LCOE matches independent discounted-cost / discounted-energy recomputation -> [PASS] | engine=0.075360 independent=0.075360 relDiff=0.000%
+  • [P2-FIN-GOLDEN-2] NPV of [-1000, 300, 400, 500, 300] @ 10% ≈ 183.867 -> [PASS] | computed=183.867 expected=183.867 tolerance=0.05
+  • [P2-FIN-GOLDEN-3] IRR of [-1000, 300, 400, 500, 300] ≈ 0.18028 (verified via NPV bisection) -> [PASS] | computed=0.180282 expected≈0.18028 tolerance=1e-4
+  • [P2-CATALOG-UNIFIED] DEFAULT_MODULES / INVERTERS / BATTERIES derived from equipment catalog (IDs + count) -> [PASS] | modules=25/25 inverters=33/33 batteries=24/24 firstModuleId=mod-jinko-585
+  • [E1-ENG-1    ] Solar azimuth is east of south in the morning, west of south in the afternoon -> [PASS] | morning=93.85 (expect 90-180), afternoon=264.04 (expect 180-270), symmetry error=2.11 (expect < 3.0)
+  • [E1-ENG-2    ] Battery autonomy sizing uses full daily load (20 kWh/day x 2d -> ~49.5 kWh gross) -> [PASS] | helper: offgrid=20 (expect 20), ongrid6h=5 (expect 5), powerplant=0 (expect 0); sizeBatteryBank(20, 2, lifepo4) gross=52.8 kWh (expect 45-55)
+  • [E1-ENG-2A   ] Battery sizing flags chemistry maxSurgeCRate exceedance and accepts surge within the profile limit -> [PASS] | over=6.72C/2C assessed=true; within=1.12C compliant=true
+  • [E2-ENG-3    ] Inverter clipping loss is monotone and continuous in DC/AC ratio -> [PASS] | clip loss: 1.25=-0.2%, 1.30=-0.2%, 1.31=-0.3%, 1.35=-0.5%, 1.40=-0.8% (expect flat at -0.2 below 1.3, strictly more negative above)
+  • [E2-ENG-4    ] Hot-case Vmp uses Pmp temp coefficient when supplied (steeper coeff -> more min modules) -> [PASS] | withoutPmp.minModules=7 (expect 7), withPmp.minModules=8 (expect 8) - the pre-fix code returned 7 for both (ignored betaPmpPerC in hot case)
+  • [E3-ENG-5    ] Perez 8-bin model gives correct clear-sky diffuse POA (bin 8) -> [PASS] | clearSky POA = 1003.24 W/m² (expect 995-1010; pre-fix 3-bin "else" branch under-counted to ~990)
+  • [E3-ENG-7    ] Tracker gain uses latitude-derived fixed-tilt baseline (Singapore differs from hardcoded 30 deg by > 5%) -> [PASS] | Singapore (1.35 deg): reported=29.46%, ref=29.46%, old_30deg=41.75%, |new-old|=12.30% (expect >5% at Singapore)
+  • [E5-STRUCT-1 ] Legacy combined wind pressure uses declared 3 m default (independent Decimal characterization) -> [PASS] | qz=0.5769 kN/m2 (Decimal default-height reference 0.576857832), v=36.11 m/s
+  • [E5-STRUCT-3 ] Broms clay uses FHWA-NHI-16-009 iterative form Hu = 9*su*D*f -> [PASS] | Hu=10.1 kN, expected=10.1 kN (L=1.3 m, f=0.15 m)
+  • [E5-STRUCT-4 ] fosSlidingApplicable is true only for ballasted block foundation -> [PASS] | pile=false, ballast=true
+  • [E5.1-STRUCT-1] Wind overturning moment uses derived arm (W/2 + h*sin(beta)) -> [PASS] | M=198.6 kN.m (expect 180-230; old was 133)
+  • [E5.1-STRUCT-2] fosUplift reflects pile tension capacity (flags under-designed foundation) -> [PASS] | fosUplift=0.21, T_ult=6.9 kN/pile - correctly flags under-designed foundation
+  • [E5.1-STRUCT-3] Safety verdict is foundation-type-aware (ballasted->overturning, pile->uplift) -> [PASS] | ballast reason="Rooftop ballast block warning: Overturning FoS = 1.5, Slidin", pile reason="[UNASSESSED] Broms pile head restraint, failure regime, grou"
+  • [E6-STRUCT-1 ] Ke SI conversion: published exponent is per foot, not per metre -> [PASS] | Tehran ratio=0.8682 (independent Decimal reference 0.868201003), Boulder ratio=0.8250 (independent Decimal reference 0.824975513), sea ke=1
+  • [E6-STRUCT-2 ] Uplift-per-post parity between engines (within 10%) -> [PASS] | struct=32.79, found=32.72, ratio=0.998 (expect 0.90-1.10; pre-E6 was ~0.45)
+  • [E6-STRUCT-3 ] Compression-per-post parity (wind downforce included in both) -> [PASS] | struct=36.08, found=36.15, ratio=1.002 (expect 0.90-1.10; pre-E6 foundation omitted wind)
+  • [E7-STRUCT-1 ] Southern hemisphere min pitch physically valid (Sydney > 5 m, < 20 m), Tehran invariant -> [PASS] | Sydney=7.57m (expect 5-20; pre-E7 3.56), Tehran=7.83m (expect ~7.83, NH unchanged)
+  • [E7-STRUCT-2 ] Snow load formula unchanged by Ce*Ct*Is documentation (pf = pg*Cs*cos(beta)) -> [PASS] | actual=66.200 kN, expected=66.157 kN - Ce*Ct*Is=1.0 and Cs=1.0 documented (no numerical change)
+  • [E8-STRUCT-1 ] Pre-drilled rock-socket grouted pile cuts depth (L<=1.1m) with assumed bond pullout, but remains UNASSESSED without frost depth & borehole data -> [PASS] | depth=0.75m, T_assumed=530.1 kN, FoS_uplift=16.87, isFrostRespected=false, isSafe=false, groutVol=0.17m3
+  • [E8-STRUCT-2 ] Ground surface ballasted block provides zero penetration with verified sliding/overturning FoS -> [PASS] | depth=0.2m, fosSliding=4.02, fosOT=1.5, vol=14m3
+  • [E8-STRUCT-3 ] Refusal mitigation: pre-drilled grouted pile outscores direct ramming in rocky terrain -> [PASS] | groutedScore=92, rammedScore=35, surfaceScore=42
+  • [E8-STRUCT-4 ] Industrial shed roof clamp mount: 0.0m soil embedment, zero concrete, lightweight safe dead load -> [PASS] | depth=0m, concrete=0m3, deadLoad=25.2kg/m2, safe=true
+  • [E8-STRUCT-5 ] Rooftop flat concrete mounting: ballasted non-penetrating & chemically anchored sizing verified -> [PASS] | ballastDepth=0m, fosOT=1.5, fosSliding=5.68, anchorDepth=0.1m, anchorFosUplift=2.54
+  • [E8-STRUCT-6 ] Unified single-source embedment depth: structural tab == report modal == RFC3 check -> [PASS] | standardDepth=4.63m (struct==report==rfc3: true), customDepth=1.95m (==1.95: true)
+  • [E8-ENV-1    ] Environmental temperature, dust & equipment aging: ground mount (both) vs shed/roof (PV only) -> [PASS] | ground: invIndoors=false, invLife=8y, invDerate=10.5%; shed: invIndoors=true, invLife=18y, pvOffset=+14C, pvDeg=0.7%/y
+  • [E8-ELEC-1   ] Cable multi-constraint sizing: voltage drop, thermal ampacity with deratings & Joule power loss -> [PASS] | size=1x(150mm²) Cu/XLPE, Iz=289A (Ib=180A), kt=0.866, dV=1.32%, Ploss=1475W
+  • [E8-ELEC-1A  ] Single-phase AC uses max insulation conductor temperature for R sizing/drop and real-power loss percentage with the R/X/PF model -> [PASS] | size=1x(10mm²) Cu/XLPE, dV=2.99% (expected 2.99%), PF=0.7, loss=5.88% (expected 5.88%)
+  • [E8-ELEC-1B  ] Motor start voltage drop remains unassessed and cannot produce an overall cable pass without dynamic inputs/acceptance criteria -> [PASS] | motorStartAssessed=false, overallAssessed=false, compliant=false, startDeltaV=null
+  • [E8-ELEC-1C  ] Voltage-drop compliance uses unrounded under/on/over-limit values even when display rounding masks an exceedance -> [PASS] | display=1.23%, raw=1.234% > limit=1.23% is rejected; exact and below boundary pass
+  • [E8-ELEC-2   ] Substation derating and grounding internal screen checks; no IEEE 80 safety determination; IEC 62305 separation distance -> [PASS] | trafo=6.3MVA (eff=5.63MVA, tempDerate=-5%, altDerate=-2%), Isc=2.5kA, touchScreenPassed=true, sepDist=nullcm
+  • [E8-ASCE-1   ] ASCE 7-22 dynamic exposure categories (B < C < D) & rooftop snow reduction factor (0.70) -> [PASS] | Kz: B=0.719, C=1.001, D=1.18; Snow: ground=68.6kN, roof=48kN (ratio=0.70)
+  • [E8-PV-1     ] PV sizing enforces MPPT current limits, marks missing ratings unassessed, and blocks strings below MPPT minimum -> [PASS] | MpptCompliant=false, Impp=93.8A (limit=12A), undersized=1/5, missingRatingsAssessed=false, missingRatingsFeasible=false
+  • [E8-PV-MPPT-2] MPPT voltage upper bound and explicit per-channel string allocation are enforced -> [PASS] | VmpCold=741.2V/700V, balanced=2,1,1,1, uneven=3,2,0,0 (27A), PV strings=7, PV max=93.8A, compliant=false
+  • [E8-FIN-1    ] Financial IRR validates real root existence and schedules chemistry-specific battery replacements -> [PASS] | irrZero=null, irrNeg=null; AGM replacements=8 (at yrs 3,6,9,12,15,18,21,24), LFP replacements=2 (at yr 12,24)
+  • [E8-HARM-1   ] Harmonics engine conforms to IEEE 519-2022 with Isc/IL demand ratio and TDD distortion metric -> [PASS] | Isc/IL=35, full THD=3.09%, partial THD=3.09%, partial TDD=1.54%
+  • [E8-PUMP-1   ] Solar pumping hydraulic sizing eliminates artificial friction floor and sizes flow-dependent efficiency -> [PASS] | zeroPipeFriction=0m, normalPipeFriction=1.9m, pumpEff=58%
+  • [E9-CABLE-SC-1] Cable sizing enforces adiabatic short-circuit withstand without 0.5 discount and applies installationMethod kg -> [PASS] | SC size=240mm² (min=197.8mm²), tray kg=0.82, buried kg=0.7, 6mm² XLPE=0.308uF/km, 6mm² PVC=0.642uF/km
+  • [E9-SUB-IEC60909-1] Substation short-circuit uses complex impedance, dynamic kappa, Ith, verifies catalog schema consistency, and flags breaker ratings -> [PASS] | norm: Isc=2.5kA, kappa=1.706, Ith=2.6kA, Breaker=ABB VD4/P 24.06.16 (16kA, ok=true); failure branches: voltOk=voltage_class_unavailable, irOk=continuous_current_exceeded (2886.8A > 2500A), scOk=continuous_current_exceeded (4330.1A > 2500A); breaking_capacity_exceeded (68.2kA > 63kA); peak_making_exceeded (164.9kA > 160kA), thermOk=thermal_withstand_or_duty_margin_exceeded
+  • [E9-LPS-CLASS1-1] Lightning LPS threshold check and preliminary earthing screen do not assert IEEE 80 safety/compliance -> [PASS] | LPS Class=Class I (reqEff=99.5%), solidScreen=true, impedanceMesh=222V vs internalTarget=120V (touchScreen=false)
+  • [E9-FIN-IRR-LCOE-1] IRR correctly calculates valid negative returns ([-100, 50] -> -50%) and LCOE includes inverter replacement -> [PASS] | irrNeg=-50.0% (exp -50%), LCOE noInv=$0.0474 withInv=$0.0482, zeroYieldLcoeDefined=false
+  • [E9-PUMP-ZERO-1] Solar pumping hydraulic sizing handles zero water demand without NaN or division by zero -> [PASS] | flow=0m3/h, motorKw=0, pvKwp=0, cost=0
+  • [F1-R1       ] Provenance rows reflect the actual project city (Sydney), not hardcoded Tehran -> [PASS] | Sydney provenance: 12 rows, SydneyLat=true, TehranLat=false
+  • [F1-R2       ] Gateway returns raw ClimateResourceData distinct from parsed ClimateCity -> [PASS] | metadata.traceId=TRC-GW-20261127-04215B93, sourceProvider=REGIONAL_ANALYTICAL_MODEL, raw!=parsed=true
+  • [F1-R9       ] REAL_INTERNET status is readable boolean flag for API mode badge -> [PASS] | isRealInternetEnabled=true
+  • [F1-R10      ] ClimateCity confidence undefined falls back to analytical_estimate -> [PASS] | confidenceOrDefault=analytical_estimate
+  • [F1-R4       ] runCoreUnitTests returns {passed, failed, results[]} with per-test records -> [PASS] | passed=189, failed=0, results.length=189
+  • [F2-R6       ] PHYSICS_MODEL_REGISTRY versions bumped to reflect E1–E7 changes -> [PASS] | all versions match
+  • [F2-R7       ] Six metrics retain evidence classes and a visible retired bifacial warning (5 PASS, 1 WARN; not full model validation) -> [PASS] | testsRun=6, crossValidationCount=3, implementationVerificationCount=3
+  • [F2-R16      ] Tautological / hard-coded metrics (VAL-FPV-03, VAL-LCA-04, VAL-GEOTECH-05/06, VAL-GRID-07) removed -> [PASS] | all 5 tautological metrics removed
+  • [F3-R13      ] assessSaltCorrosion respects explicit distanceToSeaKm override and handles resolveDistance -> [PASS] | override=15km (user_entry), auto=106.9km, throwsWithoutDist=true
+  • [F3-R15      ] ClimateCity.dataRetrievalDate derives from climateResource metadata retrievalTimestamp -> [PASS] | cityRetrievalDate=2026-11-27, metadataDate=2026-11-27
+  • [E10-BAY-COUNTING] Substation bay counting follows N_total formula with non-negative integer sanitization -> [PASS] | standard total=11 (expected 11), sanitized total=4 (expected 4, warnings=3)
+  • [E10-IEC60909-VECTORS] Transformer sizes from P/PF explicitly and IEC 60909 applies voltage-dependent c factors -> [PASS] | P=10MW, PF=0.9 -> S_rated=16MVA; MV c_max=1.1, c_min=1; LV c_min=0.95
+  • [E10-FAULT-OUT-OF-RANGE] FaultCurrentOutOfRange screening warnings triggered at bounds and breaker fallback is fail-safe -> [PASS] | lowIsc=0.1kA (warn=true), highIsc=21.3kA (warn=true), extremeSufficient=false
+  • [MODE-ISOLATION-AC-REFERENCE] Powerplant target AC remains plant-only; customer inverter AC and upstream-analysis availability are mode-isolated -> [PASS] | plant=1000->2500, ongrid=12.5->12.5, offgrid=7.5->7.5, loadSizing=true, upstreamAvailable=true
+  • [E10-FIN-TARIFF-GENSET-RECONCILE] Financial model implements mode-aware tariffs, genset inputs, exact CAPEX reconcile, and typed Payback/IRR statuses -> [PASS] | genset(capex=18000, liters=4500, opex=2200), year0(cf0=-36852631580, b=36852631580)
+  • [E10-FIN-NETWORK-COST-MODE-ISOLATION] On-grid/off-grid ignore persisted MV/HV unit prices and report zero network CAPEX; powerplant network costs remain reconciled -> [PASS] | ongrid=0/0/0, offgrid=0/0/0, plant=60000/24000/55000
+  • [E10-FIN-DYNAMIC-LCOE-MODES] Dynamic OPEX escalation, on-grid self-consumption/export blend, off-grid diesel decoupling & scenario LCOE verified -> [PASS] | opex(low=0.0551, high=0.0588), ongridBlend(rev=280000000, exp=280000000), offgrid(dieselUsd=0, lcoeServed=0.9419, rev=109500000), excessClamped=true, powerplantExport=true, scenariosLcoe=[0.18752069238775956, 0.2661455862233439, 0.23788756999614452]
+  • [E10-UQ-PIPELINE] Financial UQ executes true LHS trials through canonical engine with reproducibility and status preservation -> [PASS] | samples=60, Gen P10=1679.79 P50=1800.16 P90=1916.93, NPV P50=$389496, top Tornado=Weighted Average Cost of Capital (Discount Rate) (57.3%)
+  • [E10-ROOF-SHADING-RECONCILE] Roof 3D geodetic ENU transform is millimeter-accurate and shading heatmap reconciles with waterfall engine -> [PASS] | geodetic roundtrip diff=0, setback min=13.07m, shading loss=25.28%, heatmapLoss=11621kWh vs total=11621kWh
+  • [E10-MV-CABLE-IMPEDANCE-DECOMPOSITION] MV cable impedance decomposes into R+jX with 20C max / 90C min temp calibration, exact KT factor, and inverter fault contribution -> [PASS] | Cable R20=0.22325Ω (exp 0.223Ω), R90=0.28467Ω (exp 0.285Ω), 2xPar=0.11163Ω, KT=1.0032 (exp 1.0032), InvIsc=0.332kA, BusbarIsc=6.117kA > FeederGridIsc=5.289kA
+  • [E10-3D-FACET-RAYTRACING-MODES] 3D planar facet extraction, ray-polygon intersection, and hourly 8760 vs 3-day simulation modes execute correctly with exact beam/mismatch split -> [PASS] | Cuboid facets=5, Cyl facets=9, occluded=true, free=true, 8760h steps=4303, 3day steps=1438, beamLoss=1.44%, diodeMismatch=6.49%, combined=7.93%
+  • [E10-UQ-ALBEDO-AND-BANKABILITY] Financial UQ samples ground albedo and soiling via LHS with bifacial sensitivity coupling, Pearson variance attribution, and bankability notices -> [PASS] | Albedo in tornado=true, Soiling in tornado=true, BiStdDev=376.73 >= MonoStdDev=374.63, Aleatory=13.2%, Epistemic=86.8%, NoticesFa=true
+  • [E11-WATERFALL-PARAM-MAPPING-AND-SHADING-ISOLATION] Waterfall loss model strictly maps 3D shading to near_shading without polluting IAM (-2.2%), snow (0.0%), or tracker physics -> [PASS] | nearShading=-5.98% (exp -5.98%), iam=-2.2% (exp -2.2%), snow=0% (exp 0.0%), trackerDetails=false
+  • [E12-BIFACIAL-MODULE-DETECTION-AND-CATALOG] isBifacialModule correctly identifies dual-glass/bifacial series and rejects monofacial, with catalog bifaciality factors populated -> [PASS] | bifacialDetected=true, monofacialCorrect=true, factorsPopulated=true
+  • [E13-SUBSTATION-INVERTER-FAULT-CONTRIBUTION] MV Substation architecture accounts for inverter fault contribution at both busbar and feeder terminal per IEC 60909-0 Clause 6.7 -> [PASS] | Isc_inv=0.318 kA (exp 0.3175), BusbarTotal=4.38 kA (Grid=4.062), FeederTotal=4.132 kA (Grid=3.814)
+  • [E14-BIFACIAL-REAR-GAIN-AND-WATERFALL] Bifacial rear gain proxy adheres to clamped physics [0, 15%] and integrates as positive stage in waterfall energy chain -> [PASS] | gain=3.42% (exp 3.42%), clamped=0.15, biStage=3.42%, biMwh=1593.1 > monoMwh=1540.4
+  • [E15-SHADING-LIFECYCLE-MANAGEMENT] 3D shading lifecycle reducer correctly manages apply, revert, provenance records, cross-project reset, project-vs-block capacity staleness, and legacy fallback pinning -> [PASS] | initOk=true, appliedLoss=7.25%, revertApplied=null, syncSame=true, syncDiff=true, nominalNotStale=true, driftStale=true, oldTrapAvoided=true, legacyFallbackPinned=true
+  • [E16-MV-SUBSTATION-BUSBAR-TOGGLE-AND-ASSUMPTIONS] MV Substation accurately toggles converter fault contribution at busbar, preserves feeder fault current, and exposes bilingual screening assumptions -> [PASS] | Isc_inv=0.332kA, BusbarWith=4.394kA, BusbarWithout=4.062kA, Feeder=4.394kA, assumptionsCount=6
+  • [E17-DATA-DRIVEN-BIFACIAL-MODULE-RESOLUTION] resolveBifacialParams faithfully detects bifacial vs monofacial modules without erroneous 0.80 fallback on monofacial items -> [PASS] | mod0(bi=true, bf=0.8), mono(bi=false, bf=0), customMono(bi=false, bf=0), biCount=17
+  • [E18-WATERFALL-ARGS-BUILDER-AND-REGRESSION] buildWaterfallArgs enforces 16-parameter arity contract, honors all declared aliases including nearShadingLossPct, and matches 2b56244 baseline within 0.1% -> [PASS] | arity=17, builtArgsLen=17, PR=69.2% (exp 69.2%), NetExport=1682.9 MWh (exp 1682.9 MWh), nearShadingAlias=true, allAliases=true
+  • [E19-REPORT-CONSISTENCY-AND-SHADING-DERATE] OfficialReportModal shading derate matches formula 1 - lossPct/100, PR strictly resolves to waterfall PR (69.2%), and annual energy (1682.9 MWh) & specific yield (1530 kWh/kWp) reconcile by construction -> [PASS] | defaultDerate=0.976 (exp 0.976), appliedDerate=0.9402 (exp 0.9402), waterfallPr=69.2% (exp 69.2%), primaryMwh=1682.9 (exp 1682.9), specificYield=1530 (exp 1530), impliedPoaPr=69.2%, stages=14
+  • [E20-3D-ROOFTOP-PROJECT-COUPLING-AND-RAYTRACING] Dynamic 3D rooftop/ground scene couples to active project array design (capacity, modules, pitch, tilt), triangulates geometry, runs ray-traced shading factor, and preserves project_array_design lifecycle source -> [PASS] | utilRows=8, utilCap=1100kWp (exp 1100), utilPitch=6m, roofRows=2, obsTris=32, tableTris=4, rayTracedLoss=12.76%, unshadedRatio=0.8724, source=project_array_design
+  • [E21-CLIMATE-WINDOW-DESIGN-DAYLIGHT] Calculates astronomical winter-solstice daylight hours (conservatism for battery) and enforces PSH distinction -> [PASS] | equator=12h, tehran=9.58h (night=14.42h), munich=8.14h, tehranPSH=5.172432 vs clockDay=9.58h
+  • [E22-LOAD-NORMALIZATION-AND-ENERGY-CONSERVATION] Clamping load daytime hours transfers excess to night hours and guarantees 100% total daily energy conservation -> [PASS] | initial=14000Wh, normalized=14000Wh, day=9.58h, night=4.42h, warning=بار "Chiller Unit": ساعات روز از سقف اقل...
+  • [E23-PERIOD-BASED-CONTINUOUS-SURGE-AND-DC-BREAKDOWN] Period-based continuous & surge analysis isolates DC loads from inverter sizing while preserving energy accounting -> [PASS] | acCont=3000W, acGov=2000W, dcCont=400W, dayPeak=6400W, totalWh=31568 (exp 31568)
+  • [E23A-PER-LOAD-PHASE-BALANCE-AND-ROUNDTRIP] Legacy loads default to single phase; three-phase loads share legs without duplicating energy; manual allocation and inverter mismatch are surfaced and project schema round-trips phase fields -> [PASS] | energy=12000Wh threePhase=3000W legs={"L1":2000,"L2":1000,"L3":1000} manual=2000,2000,2000 mismatch=phase_incompatible
+  • [E24-SIMULATION-24H-STRICT-LOAD-CONSERVATION-AND-SOC] 24h simulator conserves load energy, passes actual PV derating, caps explicit PCS power, labels missing PCS limits unassessed, and aligns battery DC/AC energy boundaries -> [PASS] | compensatedHourlySum=42.699999999999996 kWh vs target=42.7 kWh (withinIEEE754Bound=true), initialSoC=50%, finalSoC=20%, surplus=0 kWh, polarNight=true, nightOnlySweep=true
+  • [E25-BESS-NIGHT-COVERAGE-AND-OFFGRID-WARNING] Evaluates usable battery energy against longest winter-night requirement and issues Persian/English deficit warnings -> [PASS] | deficitCoverage=58.6%, fullCoverage=234.4%, onGridCoverage=156.6%
+  • [E26-EARTHING-DC-SIDE-BONDING-SCREEN] Preliminary bonding sizes and IMD/GFDI logic are exposed while DC grounding topology requires project/manufacturer review -> [PASS] | pvBonding=25mm², bessBonding=35mm², floatingIMD=true, funcGFDI=true, topologyGuidanceScoped=true
+  • [E27-ZERO-AUDIT-REMEDIATION-Z01-TO-Z06] Engine input validation, negative tariff clamping, scenario unavailable/null state, ephemeral sizing, and provenance preservation verified -> [PASS] | z01Demand=true, z01Module=true, z01Fin=true, z02Scenarios=true, z03Ephemeral=true, z06Prov=true
+  • [E28-CENTRAL-SIZING-HOURLY-THERMAL-AND-UNCERTAINTY] Live App sizing can route through the central facade; generic utility MPPT substitutions are explicitly unassessed; 8760 synthetic thermal samples conserve PSH and expose ±5°C sensitivity, not forecast confidence -> [PASS] | facadeEstimatedMPPT=true, currentAssessed=false, thermalHours=8760, thermalLoss=4.501%, +/-5C sensitivity=3.001..6.001%, weatherMeasured=false
+Core Unit Tests: PASSED
+
+--- [7/7] Migration Safety Suite (3-State Architecture) ---
+Vectors Tested: 6 | Valid: 0 | Recovered with Warnings: 4 | Blocked: 2
+  • [MIGR-00-CLEAN-V3] Pristine Native v3.0.0 Utility Powerplant Project -> State: [RECOVERED_WITH_WARNINGS] | Notes: 5 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mwz
+  • [MIGR-01-POWERPLANT-1MW] 1MW Utility Solar Powerplant with MV Turnkey & 20kV Bays -> State: [RECOVERED_WITH_WARNINGS] | Notes: 31 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mwz
+  • [MIGR-02-ONGRID-100KW] 100kW Commercial Rooftop with 6h Outage Storage -> State: [RECOVERED_WITH_WARNINGS] | Notes: 21 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mwz
+  • [MIGR-03-OFFGRID-20KW] 20kW Off-Grid Telecom Repeater with 3 Days Autonomy -> State: [RECOVERED_WITH_WARNINGS] | Notes: 19 warning(s). Populated missing legacy fields with user confirmation required. Trace: MIGR-mwz
+  • [MIGR-04-LEGACY-V1] Legacy Unversioned V1 File (Missing Geotech & Version Keys) -> State: [BLOCKED_INCONSISTENT   ] | Notes: BLOCKED to protect bankable integrity: Site input [city.provinceFa]: Invalid input: expected string, received undefined. Trace: MIGR-mwz
+  • [MIGR-05-CORRUPTED-INCONSISTENT] Malformed Physically Inconsistent Payload (Capacity = -50 kW) -> State: [BLOCKED_INCONSISTENT   ] | Notes: BLOCKED to protect bankable integrity: Physical contradiction: targetPowerplantCapacityKw is non-positive (-50 kW). Trace: MIGR-mwz
+--- [8/10] Internal Synthetic Snow Screening Regressions ---
+Internal Regression Status: [PASS] | Synthetic Scenarios Tested: 3
+
++--------------------+------------------------+----------+----------+----------+-------------------+--------------------+--------+
+| Scenario ID        | Synthetic Site Label   | Snow(cm) | Tilt(°)  | Internal Target(%) | Simulated Loss(%) | Peak Ground (cm) | Status |
++--------------------+------------------------+----------+----------+----------+-------------------+--------------------+--------+
+| HUB-SNOW-BOULDER   | Boulder, Colorado      |    300.0 |     40.0 | 4-6%     |             4.02% |               42.6 | [PASS] |
+| HUB-SNOW-MUNICH    | Munich, Bavaria        |    150.0 |     30.0 | 2-4%     |             2.55% |               15.6 | [PASS] |
+| HUB-SNOW-TORONTO   | Toronto, Ontario       |    200.0 |     35.0 | 3-5%     |             3.67% |               21.9 | [PASS] |
++--------------------+------------------------+----------+----------+----------+-------------------+--------------------+--------+
+
+8b. Three-Consecutive-Winter Snow Shedding Simulation (Inter-Annual Stability):
++--------------------+------------------------+----------+----------+----------+----------+----------+--------+
+| Hub ID             | Location Name          | W1 (Nom) | W2 (Sev) | W3 (Mild)| Mean (%) | CV (%)   | Status |
++--------------------+------------------------+----------+----------+----------+----------+----------+--------+
+| HUB-SNOW-BOULDER   | Boulder, Colorado      |    4.02% |    3.69% |    3.61% |    3.77% |     4.7% | [PASS] |
+| HUB-SNOW-MUNICH    | Munich, Bavaria        |    2.55% |    2.94% |    3.28% |    2.92% |    10.2% | [PASS] |
+| HUB-SNOW-TORONTO   | Toronto, Ontario       |    3.67% |    4.15% |    4.47% |    4.10% |     8.0% | [PASS] |
++--------------------+------------------------+----------+----------+----------+----------+----------+--------+
+
+--- [9/10] Internal Reference-Target Comparisons (not external validation) ---
+Internal target harness: [PASS] | Unverified field-like targets: 1 | Stored multi-climate targets: 3
+
+1. Synthetic internal soiling target comparison (not field measurements):
++-------------------------------+------------------------------------------+----------+----------+----------+--------+
+| Target ID                     | Target basis                             | Target   | Sim Loss | Diff (%) | Status |
++-------------------------------+------------------------------------------+----------+----------+----------+--------+
+| INTERNAL-SOILING-TARGET-01    | Internal synthetic soiling target (no... |    8.45% |    8.46% |    0.12% | [PASS] |
++--------------------+------------------------------------------+----------+----------+----------+--------+
+
+   Target INTERNAL-SOILING-TARGET-01: evidence=unverified | No verified field dataset or sensor records supplied
+
+2. Stored multi-climate target comparison (not an executable SAM comparison):
++--------------------+--------------------------+---------------+---------------+---------------+--------+
+| Target ID          | Location & Regime        | Ref Soil (%)  | Eng Soil (%)  | Eng Snow (%)  | Status |
++--------------------+--------------------------+---------------+---------------+---------------+--------+
+| SAM-HUB-PHOENIX    | Phoenix, Arizona (Sonoran Desert) |         4.20% |         4.14% |         0.00% | [PASS] |
+| SAM-HUB-MUNICH     | Munich, Bavaria (Central Europe) |         1.80% |         1.76% |         2.55% | [PASS] |
+| SAM-HUB-SINGAPORE  | Singapore (Changi Airport) |         1.10% |         1.08% |         0.00% | [PASS] |
++--------------------+--------------------------+---------------+---------------+---------------+--------+
+
+--- [10/10] BIPV/T Multiphysics Coupling & Thermal Non-Uniformity (IEA Task 60) ---
++----------------------------------------+------------------+---------------------+
+| BIPV/T Multiphysics Parameter          | Value            | Engineering Unit    |
++----------------------------------------+------------------+---------------------+
+| Reference Solar Irradiance (G_poa)     | 1000.00          | W/m2                |
+| Ambient Air Temperature (T_amb)        | 20.00            | °C                  |
+| Ventilated Cavity Mass Flow (m_dot)    | 0.05             | kg/s·m2             |
+| Bulk Air Stream Temp Rise (Delta-T)    |             8.96 | °C (inlet to outlet)|
+| Eave Cell Temperature (T_cell,eave)    |            29.40 | °C                  |
+| Ridge Cell Temperature (T_cell,ridge)  |            51.80 | °C                  |
+| Vertical Thermal Gradient (Delta-T)    |            22.40 | °C (eave-to-ridge)  |
+| Mean Operating Cell Temp (Ventilated)  |            40.60 | °C                  |
+| Unventilated Counterpart Cell Temp     |            85.70 | °C (insulated roof) |
+| Operating Cell Temperature Reduction   |            45.20 | °C                  |
+| Useful Thermal Efficiency (eta_th)     |            45.10 | % (IEA Target: 45.2)|
+| STC Gross Area Reference Target        |            13.76 | % (IEA Target: 13.8)|
+| Series String Electrical Mismatch Loss |             1.55 | %                   |
+| Net Delivered Aperture Efficiency      |            14.77 | %                   |
+| Net Delivered Gross Area Efficiency    |            12.70 | %                   |
+| Front Exterior Screening Assumption     |             3.50 | %                   |
+| Rear Cavity Duct Dust Deposition       |             0.32 | %                   |
++----------------------------------------+------------------+---------------------+
+
+[BIPVT-AREA] aperture=14.77% gross=12.70% ratio=0.860 expected_ratio=0.860 (geometry: 1.72/2 m²) PASS
+================================================================================
+ SUMMARY: EXECUTABLE REGRESSIONS & BIPV/T CHECKS PASS; STORED-TARGET REPORT WARN (RETIRED UNVERIFIED BIFACIAL TARGET)
+================================================================================
+-------------------------------|---------|----------|---------|---------|---------------------------
+File                           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s         
+-------------------------------|---------|----------|---------|---------|---------------------------
+All files                      |   90.84 |    67.05 |    72.8 |   90.84 |                           
+ core                          |   77.21 |    71.45 |   67.61 |   77.21 |                           
+  advancedInterfaces.ts        |     100 |      100 |     100 |     100 |                           
+  annualYieldEngine.ts         |   44.37 |    36.36 |   22.22 |   44.37 | ...57,198,257-453,473-498 
+  cableVoltageDrop.ts          |     100 |      100 |     100 |     100 |                           
+  electricalSizingContract.ts  |   75.79 |    42.85 |      50 |   75.79 | ...68,571,597-601,607-617 
+  hourlyThermalEngine.ts       |   99.21 |    47.05 |     100 |   99.21 | 103                       
+  legacyClippingScreen.ts      |     100 |      100 |     100 |     100 |                           
+  modelRegistry.ts             |     100 |      100 |     100 |     100 |                           
+  mpptAllocation.ts            |   96.22 |    91.66 |     100 |   96.22 | 27-28                     
+  mpptCurrentComparison.ts     |     100 |      100 |     100 |     100 |                           
+  physicalLossContract.ts      |   43.34 |      100 |   14.28 |   43.34 | ...80-185,191-195,201-263 
+  projectMigration.ts          |   91.68 |    77.27 |     100 |   91.68 | ...60-762,768-770,910-922 
+  referenceDiodeSolver.ts      |   28.91 |      100 |      20 |   28.91 | 8-20,27-33,40-63,69-83    
+  scalarTransposition.ts       |     100 |    85.71 |     100 |     100 | 19                        
+  signedThermalStage.ts        |     100 |       60 |     100 |     100 | 17-18                     
+  simpleLcoe.ts                |     100 |      100 |     100 |     100 |                           
+  solarGeometryContract.ts     |   81.28 |    59.25 |   77.77 |   81.28 | ...20-121,145-146,174-175 
+  structuralContract.ts        |   64.79 |    42.85 |   43.75 |   64.79 | ...,937-964,976-1008,1030 
+  thermalDerate.ts             |    62.5 |    41.66 |   66.66 |    62.5 | 54-57,80-120              
+  uncertaintyPropagation.ts    |   95.34 |    73.84 |    87.5 |   95.34 | ...06,506,509,604,608-611 
+  vmpTemperatureCoefficient.ts |   92.85 |    92.85 |     100 |   92.85 | 20-21                     
+  windElevationFactor.ts       |     100 |       80 |     100 |     100 | 8                         
+ core/benchmarks               |   98.81 |    62.92 |     100 |   98.81 |                           
+  crossValidation.ts           |     100 |       88 |     100 |     100 | 90,216,339                
+  externalValidation.ts        |   84.42 |    44.44 |     100 |   84.42 | ...22,325,376,379,384,387 
+  goldenDatasets.ts            |     100 |      100 |     100 |     100 |                           
+  lhsBenchmark.ts              |     100 |      100 |     100 |     100 |                           
+  migrationTestVectors.ts      |   97.63 |    81.81 |     100 |   97.63 | 338-346                   
+  sensitivityAnalysis.ts       |   96.01 |    88.13 |     100 |   96.01 | ...96-298,369-370,407-408 
+  trackerFixtures.ts           |     100 |      100 |     100 |     100 |                           
+  unitTestsCore.ts             |   99.83 |    59.29 |     100 |   99.83 | ...30,1978,2022,5751-5753 
+-------------------------------|---------|----------|---------|---------|---------------------------

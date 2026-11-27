@@ -1,0 +1,71 @@
+
+> solarpv-studio@1.0.3 test:periodic-irr
+> tsx scripts/test-periodic-irr.ts
+
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#00a3777b7872 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#00a3777b7872
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#054e87ddf650 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#054e87ddf650
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#06b488bff3c9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#06b488bff3c9
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#084def5a9fe1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#084def5a9fe1
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#13df65eee5de (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#13df65eee5de
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#1bb74ab4944f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#1bb74ab4944f
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#27ddcd5f6aad (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#27ddcd5f6aad
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3137568ff2e3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3137568ff2e3
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#31dab05bbf43 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#31dab05bbf43
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#38e61125f124 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#38e61125f124
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3c86e0eee434 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3c86e0eee434
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3fa784ecb9e4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3fa784ecb9e4
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#5273bc3461e1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#5273bc3461e1
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6b077a52a709 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6b077a52a709
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6cec279b06af (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6cec279b06af
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6faf7452ef4b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6faf7452ef4b
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#71a2ac75bc38 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#71a2ac75bc38
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#783fab0c271b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#783fab0c271b
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#8e3b6339ba05 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#8e3b6339ba05
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#a46a4574ad6d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#a46a4574ad6d
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#aa2abbbed1c5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#aa2abbbed1c5
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#bd08f1fbf0e6 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#bd08f1fbf0e6
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e964eea98ff0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e964eea98ff0
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e9823240b0dc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e9823240b0dc
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#ef9d6d03a7df (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#ef9d6d03a7df
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#f03d6cfcba8e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#f03d6cfcba8e
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fabf17a15639 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fabf17a15639
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fb17c73969c3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fb17c73969c3
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fc308309f3cd (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fc308309f3cd
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#3f76523c1b2e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#3f76523c1b2e
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#84228b48cc0c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#84228b48cc0c
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#95042c99d6d4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#95042c99d6d4
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#974f9baf6141 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#974f9baf6141
+PASS 164 Decimal root/status cases, 8 NPV cases, 33 reached/sensitive expressions; explicit root statuses, scaling/zero/legacy/bilingual/adoption boundaries

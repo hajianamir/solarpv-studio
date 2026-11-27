@@ -1,8 +1,28 @@
 # Phase3 status — started, not complete
 
+## U19 steady-duty energy continuation — task date2026-11-03
+
+Added strict opt-in `pump_steady_duty_energy_v1`, separating full-precision hydraulic, shaft, motor-electrical and drive-DC power/energy and aggregate daily DC deficit. Density/gravity/runtime/head/efficiencies/available DC energy are explicit, never inherited from PSH or legacy nameplates. A new off-by-default, empty, temporary UI comparison exposes these boundaries and rejects invalid/numerical domains. It does not persist project policy, choose equipment, prove chronology/water delivery or adopt energy/finance. Legacy numerical output remains unchanged; its UI is now explicitly heuristic/synthetic/unassessed.
+
+Evidence:864independent Decimal valid cases plus five numerical-failure witnesses,18reached/mutation-sensitive expressions,48actual-base legacy whole-result comparisons, bilingual SSR and production-browser real-input/deficit/zero/invalid/toggle/remount/financial-isolation assertions. See ADR-030, `PHASE-3-PUMP-DUTY-PLAN.md`, `PHASE-3-PUMP-DUTY-REVIEWS.md` and `phase3-pump-duty-verification.json` for runtime results, failures, source identities and limits. **U19 remains PARTIAL:** matched equipment curves/limits, chronological resource/water feasibility, source applicability and persistent versioned project policy remain open. **Phase2 INCOMPLETE; Phase3 PARTIAL; release BLOCKED.** Historical snapshots below are not current-source runtime attestations.
+
+## Conventional periodic IRR continuation — 2026-11-03 task date
+
+U16b/U16c: strict opt-in `conventional_periodic_irr_bounded_v1` now separates available unrounded annual IRR from invalid/no-sign-change/nonconventional/out-of-domain/numerical outcomes. Iranian UI explicitly assesses project/equity series from existing unrounded ledgers and shows localized reasons; the legacy financial API, NPV, ledgers and saved project settings remain unchanged. No multiple-root selection, XIRR, guaranteed convergence or financial adoption.
+
+Independent Decimal evidence:164 root/status cases (including96 project/equity ledger compositions), eight NPV cases and33 reached/mutation-sensitive expressions. See ADR-029, `PHASE-2-3-IRR-ASSESSMENT-PLAN.md`, `PHASE-2-3-IRR-REVIEWS.md` and `phase23-irr-verification.json` for current runtime evidence, failed attempts and stops. **U16b/U16c remain PARTIAL, Phase2 INCOMPLETE, Phase3 PARTIAL, release BLOCKED.** This snapshot supersedes only the statement that every UI IRR is legacy-rounded; legacy API and other economic policies remain open.
+
 Date: 2026-11-03. Branch base: a5b2c5f8eac89b3be3a9148f786653e0ee11815a.
 
 **Phase3 STARTED through an independent U05 experiment. Phase2 remains INCOMPLETE. Release remains BLOCKED.** Starting evidence work is not an assertion that earlier gates passed or all models are validated.
+
+## Current U20 continuation — explicit retirement and v2 archives
+
+The known-invalid Student-t path is now explicitly refused at the public sampler/financial engine and actual Worker; the runner blocks it before allocation and rejects unsupported reply families. Gaussian calculation is unchanged and is checked against actual-base deterministic hashes in all three modes. No automatic Gaussian fallback or corrected t model is introduced.
+
+New archives use strict `financial-uq-archive-v2` and `gaussian-only-retired-student-t-v2`. Valid v1 files preserve their original results/hashes but are read-only in this engine, even for Gaussian/source-matching snapshots. New policy/source checks gate v2 replay; neither old nor new archive can automatically adopt energy or mutate finance. Historical v1 generation, strict parser/worker tests and production-browser import/replay regressions cover the boundary. See ADR-027 and [remaining work execution](PHASE-2-3-REMAINING-EXECUTION.md).
+
+This closes retired-path containment, **not all U20**: calibrated scenarios/interval coverage and any corrected t replacement remain open. Phase2/3 and release remain incomplete/blocked. The sections below retain earlier execution-time states, including statements that the legacy t path was still executable before this continuation.
 
 ## Primary-source deep research continuation
 

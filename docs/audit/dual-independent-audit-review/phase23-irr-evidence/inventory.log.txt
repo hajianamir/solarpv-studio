@@ -1,0 +1,4 @@
+
+> solarpv-studio@1.0.3 verify:phase1-evidence
+> tsx scripts/phase1-evidence-inventory.ts --check
+

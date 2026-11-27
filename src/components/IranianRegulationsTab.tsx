@@ -1,3 +1,5 @@
+import {assessPeriodicIrr} from '../engine/core/periodicIrr';
+import {evaluateIranianBenefitIndicators} from '../engine/core/iranianBenefitIndicators';
 import {IranianScreenSettingsSchema,createDefaultIranianScreenSettings,type IranianScreenSettings} from '../contracts/iranianEconomicPolicy';
 import {ECONOMIC_DISCLOSURE, BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import React, { useState } from 'react';
@@ -47,6 +49,7 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
   );
 
   let modelResult: IranianFinancialModelResult;
+  let benefitIndicators: ReturnType<typeof evaluateIranianBenefitIndicators>;
   try {
   modelResult = runIranianRegulationFinancialModel(
     capacityKwp,
@@ -59,7 +62,20 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
     25,
     economicPolicy
   );
+  benefitIndicators=evaluateIranianBenefitIndicators({modelPolicy:'iranian_benefit_indicators_full_precision_v1',capacityKwp,annualGenerationMwh,penaltyRateTomanPerKwh:4200,outageLossMillionTomanPerKwp:8.5});
   } catch {return <div role="alert" data-testid="iranian-model-unavailable">{isFa?'محاسبه مالی در دسترس نیست؛ ورودی یا دامنه عددی نامعتبر است.':'Financial screen unavailable: invalid input or numerical domain.'}</div>;}
+
+  const irrInput={modelPolicy:'conventional_periodic_irr_bounded_v1' as const,period:'annual' as const,currency:'MILLION_TOMAN' as const,rateBasis:'nominal' as const};
+  const equityIrr=assessPeriodicIrr({...irrInput,cashFlowBasis:'equity',cashFlows:[-modelResult.equityContributionMillionToman,...modelResult.cashFlow25Years.map(c=>c.netCashFlowMillionToman)]});
+  const projectIrr=assessPeriodicIrr({...irrInput,cashFlowBasis:'project',cashFlows:[-modelResult.totalCapexMillionToman,...modelResult.cashFlow25Years.map(c=>c.revenueMillionToman-c.opexMillionToman)]});
+  const irrReasonText={
+    invalid_input:isFa?'ورودی نامعتبر':'invalid input',
+    no_sign_change:isFa?'بدون تغییر علامت':'no sign change',
+    unsupported_cash_flow_pattern:isFa?'الگوی جریان پشتیبانی نمی‌شود':'unsupported cash-flow pattern',
+    outside_policy_domain:isFa?'ریشه خارج دامنه سیاست':'root outside policy domain',
+    numerical_failure:isFa?'خطای عددی':'numerical failure',
+  };
+  const irrText=(result:ReturnType<typeof assessPeriodicIrr>)=>result.status==='available'?`${result.irrPct.toFixed(2)}%`:`${isFa?'در دسترس نیست':'Unavailable'} (${irrReasonText[result.reason]})`;
 
   const frameworksList = [
     {
@@ -217,17 +233,18 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
         {inputError&&<p role="alert">{isFa?'ورودی نامعتبر پذیرفته نشد؛ آخرین مقدار معتبر حفظ شد.':'Invalid input rejected; last validated value retained.'}</p>}
       </div>
 
+      <p data-testid="iranian-irr-policy" className="text-xs text-slate-400">{isFa?'بازده سالانه قراردادی، فقط یک تغییر علامت؛ دامنه جستجو منفی ۹۰٪ تا ۱۰۰۰٪. جریان غیرمتعارف یا ریشه خارج دامنه ارزیابی نمی‌شود. پذیرش مالی مجاز نیست.':'Conventional annual IRR only: one sign change; search domain -90% to 1000%. Nonconventional flows and out-of-domain roots are unavailable, not zero. No financial adoption.'}</p>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
             {isFa ? 'نرخ بازده داخلی آورده (Equity IRR)' : 'Equity IRR (%)'}
           </div>
-          <div className="text-2xl font-bold font-mono text-industrial-success mt-1">
-            {modelResult.equityIrrPct !== null ? `${modelResult.equityIrrPct}%` : 'N/A'}
+          <div data-testid="iranian-equity-irr" data-status={equityIrr.status} data-reason={equityIrr.status==='unavailable'?equityIrr.reason:undefined} data-raw-pct={equityIrr.irrPct ?? undefined} data-policy={irrInput.modelPolicy} className="text-2xl font-bold font-mono text-industrial-success mt-1">
+            {irrText(equityIrr)}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            Project IRR: {modelResult.projectIrrPct !== null ? `${modelResult.projectIrrPct}%` : 'N/A'}
+            {isFa?'بازده پروژه: ':'Project IRR: '}<span data-testid="iranian-project-irr" data-status={projectIrr.status} data-reason={projectIrr.status==='unavailable'?projectIrr.reason:undefined} data-raw-pct={projectIrr.irrPct ?? undefined}>{irrText(projectIrr)}</span>
           </div>
         </div>
 
@@ -266,13 +283,17 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
 
         <div className="p-3 bg-industrial-surface border border-industrial-border/80 rounded-lg">
           <div className="text-xs text-slate-400">
-            {isFa ? 'صرفه‌جویی جریمه ماده ۱۶ / خاموشی' : 'Avoided Penalty / Outage Savings'}
+            {isFa ? 'نمایه فرضی اجتناب از جریمه' : 'Illustrative penalty-avoidance proxy'}
           </div>
-          <div className="text-xl font-bold font-mono text-teal-400 mt-1">
-            {(modelResult.article16PenaltyAvoidedMillionToman / 1000).toFixed(1)} <span className="text-xs font-normal text-slate-300">{isFa ? 'میلیارد/سال' : 'Billion/yr'}</span>
+          <div data-testid="iranian-penalty-proxy" data-policy={benefitIndicators.modelPolicy} data-raw-million-toman={benefitIndicators.article16PenaltyAvoidanceProxyMillionToman} className="text-xl font-bold font-mono text-teal-400 mt-1">
+            {benefitIndicators.article16PenaltyAvoidanceProxyMillionToman.toFixed(2)} <span className="text-xs font-normal text-slate-300">{isFa ? 'میلیون تومان/سال' : 'Million Toman/yr'}</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {isFa ? 'جلوگیری از عدم‌النفع توقف خط تولید' : 'Protection against industrial downtime'}
+            {isFa ? 'نرخ فرضی ۴۲۰۰ تومان/kWh؛ نه نرخ رسمی یا صرفه‌جویی محقق‌شده. به درآمد اضافه نمی‌شود.' : 'Assumed 4200 Toman/kWh; not a verified tariff or realized saving. Not added to revenue.'}
+          </div>
+          <div data-testid="iranian-outage-proxy" data-raw-million-toman={benefitIndicators.outageLossProxyMillionToman} className="text-[10px] text-slate-400 mt-0.5">
+            {isFa ? 'نمایه جداگانه خاموشی، میلیون تومان: ' : 'Separate outage proxy, million Toman: '}{benefitIndicators.outageLossProxyMillionToman.toFixed(2)}
+            {isFa ? '؛ ضریب فرضی ۸٫۵ میلیون تومان/kWp، نه منفعت تضمین‌شده.' : '; assumed 8.5 million Toman/kWp, not a guaranteed benefit.'}
           </div>
         </div>
       </div>
@@ -288,8 +309,8 @@ export const IranianRegulationsTab: React.FC<IranianRegulationsTabProps> = ({
 
         <p className="text-[10px] text-slate-400 mb-2" data-testid="f04-regulatory-annualization-disclosure">
           {isFa
-            ? 'این برآورد صرفاً برون‌یابی مدل ۲۴ ساعته از جمع روزانه گردنشده است، نه پیش‌بینی ۸۷۶۰ ساعته. ردیف‌های تولید سالانه هرکدام مستقل به مگاوات‌ساعت صحیح گرد می‌شوند؛ LCOE از تولید سالانه گردنشده استفاده می‌کند. مدل درآمد و هزینه، مبالغ را به میلیون تومان گرد می‌کند.'
-            : 'This illustrative projection extrapolates the unrounded 24-hour daily total, not an 8,760-hour forecast. Annual generation rows are independently rounded to whole MWh; LCOE uses unrounded annual generation. The revenue and cost model rounds amounts to millions of Toman.'}
+            ? 'این برآورد فرضی از ورودی انرژی سالانه نشان‌داده‌شده در بالا استفاده می‌کند، نه جایگزین روز نماینده × ۳۶۵ یا پیش‌بینی ساعتی معتبر. دفتر محاسبات انرژی و جریان نقدی دقت کامل را حفظ می‌کند؛ فقط ردیف‌های نمایشی تولید به مگاوات‌ساعت صحیح و مبالغ به میلیون تومان گرد می‌شوند. LCOE قدیمی همچنان یک مقدار گرد‌شده است.'
+            : 'This illustrative projection uses the annual energy input shown above, not a representative-day × 365 fallback or a validated hourly forecast. The energy and cash-flow ledger retains full precision; only displayed generation rows round to whole MWh and displayed amounts to million Toman. Legacy LCOE remains a rounded scalar.'}
         </p>
         <div className="overflow-x-auto max-h-[380px] -mx-3 sm:mx-0">
           <table className={`w-full text-xs text-slate-300 min-w-[700px] ${isFa ? 'text-right' : 'text-left'}`}>

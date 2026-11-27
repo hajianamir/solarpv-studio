@@ -1,0 +1,4386 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "evaluateIranianBenefitIndicators",
+  "referenceSource": {
+    "title": "Independent 60-digit Decimal dimensional arithmetic for explicitly assumed screening rates",
+    "url": "https://docs.python.org/3/library/decimal.html",
+    "version": "Python decimal, precision 60",
+    "locator": "MWh * 1000 kWh/MWh * Toman/kWh / 1000000 Toman/million; kWp * million Toman/kWp. Exact decimal unit conversion, not tariff/avoided-loss validation."
+  },
+  "independentCalculation": "60-digit Decimal products and exact base-unit conversion. Full Cartesian pool generated without reading/importing production code. Assumed coefficients are not official/field evidence.",
+  "tolerances": {
+    "absolute": 1e-15,
+    "relative": 5e-15
+  },
+  "cases": [
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 0.5,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 4.25,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 8.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 5.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 42.5,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 10.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 85.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 50.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 425.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.0,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 0.9,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 4.88889,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 49.56,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 11.8,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 64.09878,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 0.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 0.0,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 4200.0,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 7560.51849,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 0.0
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 0.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    },
+    {
+      "inputs": [
+        {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        }
+      ],
+      "expected": {
+        "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+        "input": {
+          "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+          "capacityKwp": 1000.0,
+          "annualGenerationMwh": 1800.12345,
+          "penaltyRateTomanPerKwh": 5432.1,
+          "outageLossMillionTomanPerKwp": 8.5
+        },
+        "article16PenaltyAvoidanceProxyMillionToman": 9778.450592745,
+        "outageLossProxyMillionToman": 8500.0,
+        "unit": "MILLION_TOMAN",
+        "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+        "financialAdoptionEligible": false
+      }
+    }
+  ]
+}

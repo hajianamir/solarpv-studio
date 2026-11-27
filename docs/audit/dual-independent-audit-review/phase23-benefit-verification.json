@@ -1,0 +1,633 @@
+{
+  "schemaVersion": 1,
+  "scope": "Bounded U16b/U16c benefit-proxy precision, not phase completion",
+  "taskDate": "2026-11-03",
+  "runtimeTimestampQualification": "Retained tool/runtime timestamps differ from task date; not wall-clock attestation.",
+  "runs": [
+    {
+      "label": "baseline-initial",
+      "receipt": "docs/audit/dual-independent-audit-review/phase23-benefit-evidence/baseline-initial/receipt.json",
+      "sourceStable": true,
+      "assessment": {
+        "softwareChecks": "FAILED_OR_INCOMPLETE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "results": [
+        {
+          "script": "test:phase4",
+          "definition": "node scripts/test-phase4-verification.mjs",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 204,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/test_phase4.log",
+          "logSha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+        },
+        {
+          "script": "lint",
+          "definition": "npm run lint:types && npm run lint:eslint",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 43786,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/lint.log",
+          "logSha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+        },
+        {
+          "script": "build",
+          "definition": "vite build",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 21111,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/build.log",
+          "logSha256": "5d4b9bbc64270f0b363136f137250f5755befad54cadeb9f4b5e360ae2c10701"
+        },
+        {
+          "script": "test",
+          "definition": "tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 20767,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/test.log",
+          "logSha256": "59d00016fd60d84720a992953384d33cb6942da509172abfc0abf61065b064f3"
+        },
+        {
+          "script": "test:smoke",
+          "definition": "tsx scripts/smoke-test.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 485,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/test_smoke.log",
+          "logSha256": "94cc13347b73e6b68f58fe1bcdff8b6107f9e14a9181240d4e125dd7ebd26754"
+        },
+        {
+          "script": "test:coverage",
+          "definition": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 33525,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/test_coverage.log",
+          "logSha256": "a654150ca35508542b915f75463990761d2015109961b4e7df16385c3a1baf34"
+        },
+        {
+          "script": "test:phase1",
+          "definition": "tsx scripts/test-phase1-boundaries.ts",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1180,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/test_phase1.log",
+          "logSha256": "4346b784c5838c8f6203ce60c3c2d78ca6c0f8f363702d3d02e8dfefceec787d"
+        },
+        {
+          "script": "test:phase2",
+          "definition": "tsx scripts/test-phase2-uplift.ts && tsx scripts/test-phase2-thermal.ts && tsx scripts/test-phase2-lightning.ts && tsx scripts/test-phase2-cable.ts && tsx scripts/test-phase2-broms.ts && tsx scripts/test-phase2-finance.ts && tsx scripts/test-phase2-thermal-owner.ts && tsx scripts/test-phase2-hemisphere.ts && tsx scripts/test-phase2-clipping.ts && tsx scripts/test-phase2-lcoe.ts && tsx scripts/test-phase2-mppt-current.ts && tsx scripts/test-phase2-named-waterfall.ts && tsx scripts/test-phase2-transposition.ts && tsx scripts/test-phase2-iranian-policy.ts && npm run test:iranian:benefits",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 833,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/test_phase2.log",
+          "logSha256": "700a779a76590e2ea00f4fb2316f5ef6e4c6cb39c5b40f4de8f187b91fbf242d"
+        },
+        {
+          "script": "test:phase3",
+          "definition": "tsx scripts/test-phase3-single-diode.ts && tsx scripts/test-bounded-diode.ts && npm run test:uq:convergence && npm run test:phase3:research && npm run test:uq:retirement",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1311,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/test_phase3.log",
+          "logSha256": "c13bb866c5402adf085cdf306172252efe36ad9a37efb755be197c15efb21ca4"
+        },
+        {
+          "script": "verify:phase1-evidence",
+          "definition": "tsx scripts/phase1-evidence-inventory.ts --check",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1429,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/verify_phase1-evidence.log",
+          "logSha256": "cd51f99e0907c8de1333af80b669f293e1e3129f9d327c7c86fd180c9e8f5f07"
+        },
+        {
+          "script": "verify:physics-reference-gate",
+          "definition": "python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 170,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/verify_physics-reference-gate.log",
+          "logSha256": "b870d3e5a16a7b065a0c07d28f13afbd07334db93e13ec346b7235e773e01761"
+        },
+        {
+          "script": "verify:help",
+          "definition": "tsx scripts/verify-help-source-references.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 309,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/verify_help.log",
+          "logSha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+        },
+        {
+          "script": "verify:engine-claims",
+          "definition": "tsx scripts/verify-engine-claims.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 444,
+          "log": ".cache/phase4/baseline-2026-11-27T12-59-51-543Z-1897/verify_engine-claims.log",
+          "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+        }
+      ]
+    },
+    {
+      "label": "baseline-source-changed",
+      "receipt": "docs/audit/dual-independent-audit-review/phase23-benefit-evidence/baseline-source-changed/receipt.json",
+      "sourceStable": false,
+      "assessment": {
+        "softwareChecks": "FAILED_OR_INCOMPLETE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "results": [
+        {
+          "script": "test:phase4",
+          "definition": "node scripts/test-phase4-verification.mjs",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 201,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/test_phase4.log",
+          "logSha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+        },
+        {
+          "script": "lint",
+          "definition": "npm run lint:types && npm run lint:eslint",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 41061,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/lint.log",
+          "logSha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+        },
+        {
+          "script": "build",
+          "definition": "vite build",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 20210,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/build.log",
+          "logSha256": "ef671404d2cbdfc0da0786603415fd8f0fe74be4200fce940e99020b4d13f6e7"
+        },
+        {
+          "script": "test",
+          "definition": "tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 21121,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/test.log",
+          "logSha256": "ed97378f07a18201163c13bbaf5dca1c082355bc5cd684bb9f7eee6dfd8c84d4"
+        },
+        {
+          "script": "test:smoke",
+          "definition": "tsx scripts/smoke-test.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 413,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/test_smoke.log",
+          "logSha256": "f5e6dd7c7bbda9b1b080d97bc942519a52ba664082383afcbc40623d64b0a098"
+        },
+        {
+          "script": "test:coverage",
+          "definition": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 32032,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/test_coverage.log",
+          "logSha256": "8fffb4218b66996a4e43eec978bb14db334abf1b142a806ad80dd26fdb136b0e"
+        },
+        {
+          "script": "test:phase1",
+          "definition": "tsx scripts/test-phase1-boundaries.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1552,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/test_phase1.log",
+          "logSha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db"
+        },
+        {
+          "script": "test:phase2",
+          "definition": "tsx scripts/test-phase2-uplift.ts && tsx scripts/test-phase2-thermal.ts && tsx scripts/test-phase2-lightning.ts && tsx scripts/test-phase2-cable.ts && tsx scripts/test-phase2-broms.ts && tsx scripts/test-phase2-finance.ts && tsx scripts/test-phase2-thermal-owner.ts && tsx scripts/test-phase2-hemisphere.ts && tsx scripts/test-phase2-clipping.ts && tsx scripts/test-phase2-lcoe.ts && tsx scripts/test-phase2-mppt-current.ts && tsx scripts/test-phase2-named-waterfall.ts && tsx scripts/test-phase2-transposition.ts && tsx scripts/test-phase2-iranian-policy.ts && npm run test:iranian:benefits",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 14459,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/test_phase2.log",
+          "logSha256": "1e190457adf24ac6c5a3a3588033f439aa0a4edbf6ddba1fd1cab95d20489df3"
+        },
+        {
+          "script": "test:phase3",
+          "definition": "tsx scripts/test-phase3-single-diode.ts && tsx scripts/test-bounded-diode.ts && npm run test:uq:convergence && npm run test:phase3:research && npm run test:uq:retirement",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 6473,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/test_phase3.log",
+          "logSha256": "98717b6b12ada3b6ff49cd79ae876236b55fed7446f2116f769d0a249b0f4673"
+        },
+        {
+          "script": "verify:phase1-evidence",
+          "definition": "tsx scripts/phase1-evidence-inventory.ts --check",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1507,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/verify_phase1-evidence.log",
+          "logSha256": "cd51f99e0907c8de1333af80b669f293e1e3129f9d327c7c86fd180c9e8f5f07"
+        },
+        {
+          "script": "verify:physics-reference-gate",
+          "definition": "python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 7990,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/verify_physics-reference-gate.log",
+          "logSha256": "ba2b80c909f9c54621a3a0ffcc1f5126c336c7e3355c9b618493103f91592208"
+        },
+        {
+          "script": "verify:help",
+          "definition": "tsx scripts/verify-help-source-references.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 289,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/verify_help.log",
+          "logSha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+        },
+        {
+          "script": "verify:engine-claims",
+          "definition": "tsx scripts/verify-engine-claims.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 410,
+          "log": ".cache/phase4/baseline-2026-11-27T13-05-19-680Z-6405/verify_engine-claims.log",
+          "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+        }
+      ]
+    },
+    {
+      "label": "baseline-final",
+      "receipt": "docs/audit/dual-independent-audit-review/phase23-benefit-evidence/baseline-final/receipt.json",
+      "sourceStable": true,
+      "assessment": {
+        "softwareChecks": "PASS_WITHIN_SELECTED_SUITE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "results": [
+        {
+          "script": "test:phase4",
+          "definition": "node scripts/test-phase4-verification.mjs",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 195,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/test_phase4.log",
+          "logSha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+        },
+        {
+          "script": "lint",
+          "definition": "npm run lint:types && npm run lint:eslint",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 45709,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/lint.log",
+          "logSha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+        },
+        {
+          "script": "build",
+          "definition": "vite build",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 20526,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/build.log",
+          "logSha256": "b7a109d28271df77206ab3fdfc9114de73206664927545e3b3fce3f4a9286768"
+        },
+        {
+          "script": "test",
+          "definition": "tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 21695,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/test.log",
+          "logSha256": "9b83341c9887a52a4e10715218a4db323b4186737fb6a9e22458e60253105e70"
+        },
+        {
+          "script": "test:smoke",
+          "definition": "tsx scripts/smoke-test.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 438,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/test_smoke.log",
+          "logSha256": "25abbf950f511f9a10418727f94d8dff7e3376dba0a718e05aebbf6656e16581"
+        },
+        {
+          "script": "test:coverage",
+          "definition": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 32984,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/test_coverage.log",
+          "logSha256": "d0adad1d57f150887a6a6559a33f7a84d27c1597e7eface5c1cdfcce1217e44a"
+        },
+        {
+          "script": "test:phase1",
+          "definition": "tsx scripts/test-phase1-boundaries.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1480,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/test_phase1.log",
+          "logSha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db"
+        },
+        {
+          "script": "test:phase2",
+          "definition": "tsx scripts/test-phase2-uplift.ts && tsx scripts/test-phase2-thermal.ts && tsx scripts/test-phase2-lightning.ts && tsx scripts/test-phase2-cable.ts && tsx scripts/test-phase2-broms.ts && tsx scripts/test-phase2-finance.ts && tsx scripts/test-phase2-thermal-owner.ts && tsx scripts/test-phase2-hemisphere.ts && tsx scripts/test-phase2-clipping.ts && tsx scripts/test-phase2-lcoe.ts && tsx scripts/test-phase2-mppt-current.ts && tsx scripts/test-phase2-named-waterfall.ts && tsx scripts/test-phase2-transposition.ts && tsx scripts/test-phase2-iranian-policy.ts && npm run test:iranian:benefits",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 13393,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/test_phase2.log",
+          "logSha256": "1e190457adf24ac6c5a3a3588033f439aa0a4edbf6ddba1fd1cab95d20489df3"
+        },
+        {
+          "script": "test:phase3",
+          "definition": "tsx scripts/test-phase3-single-diode.ts && tsx scripts/test-bounded-diode.ts && npm run test:uq:convergence && npm run test:phase3:research && npm run test:uq:retirement",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 5840,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/test_phase3.log",
+          "logSha256": "98717b6b12ada3b6ff49cd79ae876236b55fed7446f2116f769d0a249b0f4673"
+        },
+        {
+          "script": "verify:phase1-evidence",
+          "definition": "tsx scripts/phase1-evidence-inventory.ts --check",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1410,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/verify_phase1-evidence.log",
+          "logSha256": "cd51f99e0907c8de1333af80b669f293e1e3129f9d327c7c86fd180c9e8f5f07"
+        },
+        {
+          "script": "verify:physics-reference-gate",
+          "definition": "python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 7818,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/verify_physics-reference-gate.log",
+          "logSha256": "ba2b80c909f9c54621a3a0ffcc1f5126c336c7e3355c9b618493103f91592208"
+        },
+        {
+          "script": "verify:help",
+          "definition": "tsx scripts/verify-help-source-references.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 246,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/verify_help.log",
+          "logSha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+        },
+        {
+          "script": "verify:engine-claims",
+          "definition": "tsx scripts/verify-engine-claims.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 416,
+          "log": ".cache/phase4/baseline-2026-11-27T13-07-58-599Z-9951/verify_engine-claims.log",
+          "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+        }
+      ]
+    },
+    {
+      "label": "integration",
+      "receipt": "docs/audit/dual-independent-audit-review/phase23-benefit-evidence/integration/receipt.json",
+      "sourceStable": true,
+      "assessment": {
+        "softwareChecks": "PASS_WITHIN_SELECTED_SUITE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "results": [
+        {
+          "script": "test:accepted-audit",
+          "definition": "tsx scripts/test-accepted-vmp-audit.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1097,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_accepted-audit.log",
+          "logSha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89"
+        },
+        {
+          "script": "test:remaining",
+          "definition": "tsx scripts/test-remaining-product-fixes.ts && tsx scripts/test-remaining-shading-lifecycle.ts && tsx scripts/test-remaining-poa-http.ts && tsx scripts/test-remaining-worker-browser.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 5238,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_remaining.log",
+          "logSha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547"
+        },
+        {
+          "script": "test:recovery",
+          "definition": "tsx scripts/test-snapshot-recovery.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 4612,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_recovery.log",
+          "logSha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+        },
+        {
+          "script": "verify:exports",
+          "definition": "tsx scripts/verify-export-artifact-readback.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 947,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/verify_exports.log",
+          "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+        },
+        {
+          "script": "test:browser",
+          "definition": "tsx scripts/test-browser-regressions.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 69117,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_browser.log",
+          "logSha256": "2f1696c9295de22c90cccc5852534b4b385e626f4b32e867bd3257905e55bf0f"
+        },
+        {
+          "script": "test:ui",
+          "definition": "tsx scripts/test-ui-refresh-browser.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 35846,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_ui.log",
+          "logSha256": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a"
+        },
+        {
+          "script": "test:pdf",
+          "definition": "tsx scripts/test-report-pdf.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 3847,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_pdf.log",
+          "logSha256": "c31240f7ebc04464487cbe33f8d47c857b76c869137d3384016c33459807647f"
+        },
+        {
+          "script": "test:browser:download",
+          "definition": "tsx scripts/test-browser-download.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 277,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_browser_download.log",
+          "logSha256": "e78ef663c5ddb7b09abf261382d0bc69759be1ebdde7ddb120d7ebe0c4c8ea6c"
+        },
+        {
+          "script": "test:uq:worker",
+          "definition": "tsx scripts/test-financial-uq-worker.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1064,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_uq_worker.log",
+          "logSha256": "7d83fc9289bde9e70b60f44bbe8e34cbf2447578546cec5148cffbd6c64e583c"
+        },
+        {
+          "script": "test:uq:archive",
+          "definition": "tsx scripts/test-financial-uq-archive.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 527,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_uq_archive.log",
+          "logSha256": "1f88aafbbe815437fcc1efaed74682801b422eb81dc99d128e8bda98b71f7f34"
+        },
+        {
+          "script": "test:gateway",
+          "definition": "tsx scripts/test-data-gateway-regressions.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 3133,
+          "log": ".cache/phase4/integration-2026-11-27T13-01-57-378Z-2537/test_gateway.log",
+          "logSha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+        }
+      ]
+    }
+  ],
+  "additionalEvidence": [
+    {
+      "path": "docs/audit/dual-independent-audit-review/phase23-benefit-evidence/focused.log",
+      "sha256": "927dede24d18d358105705d95b09ff8f7dbd80fe0549a20a27b2a30699f4b3ed"
+    },
+    {
+      "path": "docs/audit/dual-independent-audit-review/phase23-benefit-evidence/test_phase1_browser.log",
+      "sha256": "96d2fef3fa6090a4a1b7a821369dd6eb6c5a1455b5139cb0bb31f56e6d7724ea"
+    },
+    {
+      "path": "docs/audit/dual-independent-audit-review/phase23-benefit-evidence/register-final.log",
+      "sha256": "9a5c7c37b36bbb3d26e5253444c53162646d832249ad123942c8596c27672958"
+    },
+    {
+      "path": "docs/audit/dual-independent-audit-review/phase23-benefit-evidence/inventory.log",
+      "sha256": "cd51f99e0907c8de1333af80b669f293e1e3129f9d327c7c86fd180c9e8f5f07"
+    }
+  ],
+  "limits": [
+    "Phase2/3 incomplete; release blocked",
+    "93 lint warnings; no lint errors",
+    "P23-RT01 historical intermittent save failure unresolved despite current integration pass",
+    "Inherited CAD reference debt and normative/manufacturer/site/whole-model evidence unresolved",
+    "No Docker, native Windows or exact-revision remote CI acceptance",
+    "No official tariff, realized benefit or financial adoption claim",
+    "No commit or push"
+  ]
+}

@@ -1,0 +1,601 @@
+
+> solarpv-studio@1.0.3 verify:physics-reference-gate
+> python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts
+
+
+> solarpv-studio@1.0.3 test:physics-reference-gate
+> tsx scripts/test-physics-reference-gate.ts
+
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (iamCoupled)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#4a498fab2fc9
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (angleIncidenceDeg)
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (iamCoupled)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#4a498fab2fc9
+Sensitivity witness: src/engine/exampleEngine.ts#accumulate#60469748c2d8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#accumulate: src/engine/exampleEngine.ts#accumulate#60469748c2d8
+Sensitivity witness: src/engine/exampleEngine.ts#guarded#570c37003eeb (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#guarded: src/engine/exampleEngine.ts#guarded#570c37003eeb
+Sensitivity witness: src/engine/exampleEngine.ts#increment#912133bd03f5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#increment: src/engine/exampleEngine.ts#increment#912133bd03f5
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Physics reference gate tests passed (formula mutations fail closed; prose-only edits do not; CI wiring is present).
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#calculateStandardDeratingFactor#4e4825014850 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/annualYieldEngine.ts#calculateStandardDeratingFactor: src/engine/core/annualYieldEngine.ts#calculateStandardDeratingFactor#4e4825014850
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateVoltageDropDc#746c88a0e1f3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateVoltageDropDc: src/engine/solarPvEngine.ts#calculateVoltageDropDc#746c88a0e1f3
+Sensitivity witness: src/engine/core/thermalDerate.ts#calculateThermalDerate#6251a6a3528c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/thermalDerate.ts#calculateThermalDerate: src/engine/core/thermalDerate.ts#calculateThermalDerate#6251a6a3528c
+Sensitivity witness: src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels#06b119dff7af (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels: src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels#06b119dff7af
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#0a7b5f29beb5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#0a7b5f29beb5
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#13b13b7b6deb (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#13b13b7b6deb
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#1ea8a2043dca (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#1ea8a2043dca
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#22bec45baaea (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#22bec45baaea
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#354b736ded69 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#354b736ded69
+Sensitivity witness: src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels#3c7b661e79b8 (iamLossPct)
+Independent fixture executed and sensitivity-checked at src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels: src/engine/core/physicalLossContract.ts#evaluatePhysicalLossModels#3c7b661e79b8
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#57ca711e4e9a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#57ca711e4e9a
+Sensitivity witness: src/engine/core/physicalLossContract.ts#evaluatePhysicalIamLoss#5e1cb95d7803 (iamBeam)
+Sensitivity witness: src/engine/core/physicalLossContract.ts#evaluatePhysicalIamLoss#5e1cb95d7803 (iamSkyDiffuse)
+Sensitivity witness: src/engine/core/physicalLossContract.ts#evaluatePhysicalIamLoss#5e1cb95d7803 (iamGroundDiffuse)
+Sensitivity witness: src/engine/core/physicalLossContract.ts#evaluatePhysicalIamLoss#5e1cb95d7803 (iamPoaEffective)
+Sensitivity witness: src/engine/core/physicalLossContract.ts#evaluatePhysicalIamLoss#5e1cb95d7803 (effectiveTransmissionLossPercent)
+Independent fixture executed and sensitivity-checked at src/engine/core/physicalLossContract.ts#evaluatePhysicalIamLoss: src/engine/core/physicalLossContract.ts#evaluatePhysicalIamLoss#5e1cb95d7803
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#761c49b9c8db (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#761c49b9c8db
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#95eb3bf4f737 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#95eb3bf4f737
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#a8687e985013 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#a8687e985013
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#d595b0ad3bac (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#d595b0ad3bac
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#e61e81474671 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateBeamAoiDeg: src/engine/optical/iamEngine.ts#calculateBeamAoiDeg#e61e81474671
+Sensitivity witness: src/engine/optical/iamEngine.ts#calculateEffectivePoaIam#ecf0155133d0 (iamCoupled)
+Independent fixture executed and sensitivity-checked at src/engine/optical/iamEngine.ts#calculateEffectivePoaIam: src/engine/optical/iamEngine.ts#calculateEffectivePoaIam#ecf0155133d0
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#0bce74d37c79 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#0bce74d37c79
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#157d7bda6ae4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#157d7bda6ae4
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#3096e08c96b1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#3096e08c96b1
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#39558766fc36 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#39558766fc36
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#46b6b59dced6 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#46b6b59dced6
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#46c35fa66d2a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#46c35fa66d2a
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#52e5c1f22168 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#52e5c1f22168
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#68f724d1a893 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#68f724d1a893
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#77c7dcf4d76a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#77c7dcf4d76a
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#7c8d85e86f82 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#7c8d85e86f82
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#86d4c9d664d4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#86d4c9d664d4
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#9a54916d694f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#9a54916d694f
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#b53f4c427aeb (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#b53f4c427aeb
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#b70a12c317cf (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#b70a12c317cf
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#c2035abeaca1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#c2035abeaca1
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#d4365bfb021c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#d4365bfb021c
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#d61a5e8ff68b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#d61a5e8ff68b
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#d8a555ab23d2 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#d8a555ab23d2
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#da472b5deb07 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#da472b5deb07
+Sensitivity witness: src/engine/reference/kimberSeries.ts#calculateKimberSeries#e33ba0103f90 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/kimberSeries.ts#calculateKimberSeries: src/engine/reference/kimberSeries.ts#calculateKimberSeries#e33ba0103f90
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#1a0c0dbc85fc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#1a0c0dbc85fc
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#4e16af6ba541 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#4e16af6ba541
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#50bae7e98fa8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#50bae7e98fa8
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#6b3a3d0a740e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#6b3a3d0a740e
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#7d776834858a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#7d776834858a
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#7ec3b6a2aaa9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#7ec3b6a2aaa9
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#8cb9cb7c4472 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#8cb9cb7c4472
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#937a3497004c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#937a3497004c
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#93f3de04acec (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#93f3de04acec
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#c70094a3d6cf (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#c70094a3d6cf
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#f1487684a18d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#f1487684a18d
+Sensitivity witness: src/engine/reference/snowSeries.ts#calculateSnowSeries#f626031e49c0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/snowSeries.ts#calculateSnowSeries: src/engine/reference/snowSeries.ts#calculateSnowSeries#f626031e49c0
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#6ba195e31fa3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct: src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#6ba195e31fa3
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#76e77ed99368 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct: src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#76e77ed99368
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#a67aa7ac24cf (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct: src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#a67aa7ac24cf
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#bb89bb410650 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct: src/engine/reference/annualReferenceLosses.ts#combineEnvironmentalLossPct#bb89bb410650
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#15041e19dc16 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#15041e19dc16
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#1a5e60c2a59f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#1a5e60c2a59f
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#2cc8cdd135f2 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#2cc8cdd135f2
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#309fb24cb9a5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#309fb24cb9a5
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#31a4ec9d24aa (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#31a4ec9d24aa
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#3891f04536ee (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#3891f04536ee
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#3f0dc394942c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#3f0dc394942c
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#425ed87b5309 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#425ed87b5309
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#528247fcae08 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#528247fcae08
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#53eccebb3715 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#53eccebb3715
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#661409ac0ce5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#661409ac0ce5
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#6827c36617c4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#6827c36617c4
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#6b665cec370e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#6b665cec370e
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#90b04274fced (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#90b04274fced
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#a44cdbd9213a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#a44cdbd9213a
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#a501cddad27b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#a501cddad27b
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#aedfaac2e805 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#aedfaac2e805
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#b52b15fab0f0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#b52b15fab0f0
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#b5a320496268 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#b5a320496268
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#c440c2cd469b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#c440c2cd469b
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#ceae44a92d24 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#ceae44a92d24
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#d34b1d92c95c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#d34b1d92c95c
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#d950e9553387 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#d950e9553387
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#dc70474e647d (energyWeightedLossFraction)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#dc70474e647d
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#e4df360ed18f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#e4df360ed18f
+Sensitivity witness: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#ee1c9bf09fa0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses: src/engine/reference/annualReferenceLosses.ts#evaluateAnnualReferenceLosses#ee1c9bf09fa0
+Sensitivity witness: src/engine/waterfallArgs.ts#buildWaterfallArgs#c17b191da6bf (soilingLossPct)
+Independent fixture executed and sensitivity-checked at src/engine/waterfallArgs.ts#buildWaterfallArgs: src/engine/waterfallArgs.ts#buildWaterfallArgs#c17b191da6bf
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (installedCapacityKwp)
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (rawGhiEnergyKwh)
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (effectivePoaEnergyKwh)
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (netAnnualEnergyExportMwh)
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (specificAnnualYieldKwhPerKwp)
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (performanceRatioPct)
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (finalEnergyKwh)
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (compoundPerformanceRatioPct)
+Sensitivity witness: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0 (arithmeticSumLossPct)
+Independent fixture executed and sensitivity-checked at src/engine/waterfallArgs.ts#computeConfiguredWaterfall: src/engine/waterfallArgs.ts#computeConfiguredWaterfall#3fe237bbeba0
+Sensitivity witness: src/engine/waterfallArgs.ts#withReferenceLossMetadata#4dc3d0d9e0f1 (soilingLossPct)
+Sensitivity witness: src/engine/waterfallArgs.ts#withReferenceLossMetadata#4dc3d0d9e0f1 (combinedLossPct)
+Independent fixture executed and sensitivity-checked at src/engine/waterfallArgs.ts#withReferenceLossMetadata: src/engine/waterfallArgs.ts#withReferenceLossMetadata#4dc3d0d9e0f1
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#330fd1d268bc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#330fd1d268bc
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#39f160937538 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#39f160937538
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#662449347fa2 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#662449347fa2
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#7ab524546462 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#7ab524546462
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#a3b536e1aff7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#a3b536e1aff7
+Sensitivity witness: src/engine/core/signedThermalStage.ts#thermalStagePercentage#4d62ea984c25 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/signedThermalStage.ts#thermalStagePercentage: src/engine/core/signedThermalStage.ts#thermalStagePercentage#4d62ea984c25
+Sensitivity witness: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#1a9ba7aef2e8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#1a9ba7aef2e8
+Sensitivity witness: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#1d7521ca31e8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#1d7521ca31e8
+Sensitivity witness: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#415cf24efccc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#415cf24efccc
+Sensitivity witness: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#81afbda05730 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#81afbda05730
+Sensitivity witness: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#a8c5cc43e447 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#a8c5cc43e447
+Sensitivity witness: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#d4888039b524 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#d4888039b524
+Sensitivity witness: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#d5350617b721 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts: src/engine/core/cableVoltageDrop.ts#candidateVoltageDropVolts#d5350617b721
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#041b52bf8c76 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#041b52bf8c76
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#68d77e63ef1d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#68d77e63ef1d
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#69f23343a515 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#69f23343a515
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#6e630b8ca162 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#6e630b8ca162
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#754601d564d7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#754601d564d7
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#bd40df4c4c9a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#bd40df4c4c9a
+Sensitivity witness: src/engine/core/thermalDerate.ts#calculateThermalDerate#b108d5154aaa (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/thermalDerate.ts#calculateThermalDerate: src/engine/core/thermalDerate.ts#calculateThermalDerate#b108d5154aaa
+Sensitivity witness: src/engine/core/thermalDerate.ts#calculateThermalDerate#b54892b897c5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/thermalDerate.ts#calculateThermalDerate: src/engine/core/thermalDerate.ts#calculateThermalDerate#b54892b897c5
+Sensitivity witness: src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#3f70ee8d8180 (cellTempHotC)
+Independent fixture executed and sensitivity-checked at src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility: src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#3f70ee8d8180
+Sensitivity witness: src/engine/core/windElevationFactor.ts#calculateWindElevationFactor#c0bfa54bd753 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/windElevationFactor.ts#calculateWindElevationFactor: src/engine/core/windElevationFactor.ts#calculateWindElevationFactor#c0bfa54bd753
+Sensitivity witness: src/engine/core/windElevationFactor.ts#calculateWindElevationFactor#f5a47ba52f6e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/windElevationFactor.ts#calculateWindElevationFactor: src/engine/core/windElevationFactor.ts#calculateWindElevationFactor#f5a47ba52f6e
+Sensitivity witness: src/engine/core/structuralContract.ts#calculateUnifiedWindPressureQz#1ba65c64d4e4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/structuralContract.ts#calculateUnifiedWindPressureQz: src/engine/core/structuralContract.ts#calculateUnifiedWindPressureQz#1ba65c64d4e4
+Sensitivity witness: src/engine/core/structuralContract.ts#calculateUnifiedWindPressureQz#4b9e5a997451 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/structuralContract.ts#calculateUnifiedWindPressureQz: src/engine/core/structuralContract.ts#calculateUnifiedWindPressureQz#4b9e5a997451
+Sensitivity witness: src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor#4cb7b1cdfd09 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor: src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor#4cb7b1cdfd09
+Sensitivity witness: src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor#6e4ee0c39b90 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor: src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor#6e4ee0c39b90
+Sensitivity witness: src/engine/core/hourlyThermalEngine.ts#simulateAnnualHourlyThermalDerate#24a3be6d72b0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/hourlyThermalEngine.ts#simulateAnnualHourlyThermalDerate: src/engine/core/hourlyThermalEngine.ts#simulateAnnualHourlyThermalDerate#24a3be6d72b0
+Sensitivity witness: src/engine/core/signedThermalStage.ts#signedThermalLossFromStage#c10657972417 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/signedThermalStage.ts#signedThermalLossFromStage: src/engine/core/signedThermalStage.ts#signedThermalLossFromStage#c10657972417
+Sensitivity witness: src/engine/core/signedThermalStage.ts#signedThermalLossFromStage#3c3cc1db543b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/signedThermalStage.ts#signedThermalLossFromStage: src/engine/core/signedThermalStage.ts#signedThermalLossFromStage#3c3cc1db543b
+Sensitivity witness: src/engine/core/legacyClippingScreen.ts#legacyClippingScreen#9724cdcaea24 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/legacyClippingScreen.ts#legacyClippingScreen: src/engine/core/legacyClippingScreen.ts#legacyClippingScreen#9724cdcaea24
+Sensitivity witness: src/engine/core/legacyClippingScreen.ts#legacyClippingScreen#bd8997052b2b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/legacyClippingScreen.ts#legacyClippingScreen: src/engine/core/legacyClippingScreen.ts#legacyClippingScreen#bd8997052b2b
+Sensitivity witness: src/engine/core/mpptCurrentComparison.ts#exceedsMpptOperatingLimit#d35f36b70f11 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/mpptCurrentComparison.ts#exceedsMpptOperatingLimit: src/engine/core/mpptCurrentComparison.ts#exceedsMpptOperatingLimit#d35f36b70f11
+Sensitivity witness: src/engine/core/mpptCurrentComparison.ts#exceedsLegacyMpptShortCircuitLimit#f6df7705f25f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/mpptCurrentComparison.ts#exceedsLegacyMpptShortCircuitLimit: src/engine/core/mpptCurrentComparison.ts#exceedsLegacyMpptShortCircuitLimit#f6df7705f25f
+Sensitivity witness: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#0223ffd50c23 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#0223ffd50c23
+Sensitivity witness: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#643659f3eeaa (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#643659f3eeaa
+Sensitivity witness: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#74d58f12ac67 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#74d58f12ac67
+Sensitivity witness: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a000ea8123ea (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a000ea8123ea
+Sensitivity witness: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a0b439532cd0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a0b439532cd0
+Sensitivity witness: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a69eba4e64d8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#a69eba4e64d8
+Sensitivity witness: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#ba69e142c82d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe: src/engine/core/simpleLcoe.ts#calculateDiscountedLcoe#ba69e142c82d
+Sensitivity witness: src/engine/core/simpleLcoe.ts#assessSimpleLcoe#2ffdcb83e519 (discountedCosts)
+Sensitivity witness: src/engine/core/simpleLcoe.ts#assessSimpleLcoe#2ffdcb83e519 (discountedEnergyKwh)
+Sensitivity witness: src/engine/core/simpleLcoe.ts#assessSimpleLcoe#2ffdcb83e519 (lcoeValue)
+Independent fixture executed and sensitivity-checked at src/engine/core/simpleLcoe.ts#assessSimpleLcoe: src/engine/core/simpleLcoe.ts#assessSimpleLcoe#2ffdcb83e519
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateLcoe#ab7983c07a6e (lcoeValue)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateLcoe: src/engine/solarPvEngine.ts#calculateLcoe#ab7983c07a6e
+Sensitivity witness: src/engine/scenarioEngine.ts#assessScenarioLcoe#518725cabf1b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/scenarioEngine.ts#assessScenarioLcoe: src/engine/scenarioEngine.ts#assessScenarioLcoe#518725cabf1b
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (installedCapacityKwp)
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (rawGhiEnergyKwh)
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (effectivePoaEnergyKwh)
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (netAnnualEnergyExportMwh)
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (specificAnnualYieldKwhPerKwp)
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (performanceRatioPct)
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (finalEnergyKwh)
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (compoundPerformanceRatioPct)
+Sensitivity witness: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1 (arithmeticSumLossPct)
+Independent fixture executed and sensitivity-checked at src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield: src/engine/core/annualYieldEngine.ts#computeCanonicalAnnualYield#2c3d77e814c1
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (installedCapacityKwp)
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (rawGhiEnergyKwh)
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (effectivePoaEnergyKwh)
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (netAnnualEnergyExportMwh)
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (specificAnnualYieldKwhPerKwp)
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (performanceRatioPct)
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (finalEnergyKwh)
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (compoundPerformanceRatioPct)
+Sensitivity witness: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63 (arithmeticSumLossPct)
+Independent fixture executed and sensitivity-checked at src/engine/roof3dShadingEngine.ts#annualShadingSteps: src/engine/roof3dShadingEngine.ts#annualShadingSteps#a3427c625e63
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0b20eb0546ec (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0b20eb0546ec
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0273ec42632a (discountRatePct)
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0273ec42632a (tariffEscalationPct)
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0273ec42632a (opexEscalationPct)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0273ec42632a
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0e4500dfa723 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#0e4500dfa723
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#14302e72d23f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#14302e72d23f
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#2c21b691d7d4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#2c21b691d7d4
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#43b37a8c9b7a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#43b37a8c9b7a
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#7f053acf18d8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#7f053acf18d8
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#b1c45f04216f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#b1c45f04216f
+Sensitivity witness: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#cfb2e3bb6170 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel: src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#cfb2e3bb6170
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#04fb44f7732d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#04fb44f7732d
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#44f3119ddced (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#44f3119ddced
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#527dcf3452e7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#527dcf3452e7
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d083cdece6e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d083cdece6e
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d1463a58902 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d1463a58902
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#680f01237b19 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#680f01237b19
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#971fe3ea22db (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#971fe3ea22db
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#9b7af51ccf98 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#9b7af51ccf98
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#a3a8c99d4297 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#a3a8c99d4297
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#b5a906717670 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#b5a906717670
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#c2328fa70623 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#c2328fa70623
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#ca9f5664b87f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#ca9f5664b87f
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#d92630d4a826 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#d92630d4a826
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#fcc6ae3598e1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#fcc6ae3598e1
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#feef71cb977d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#feef71cb977d
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#0d7ee38dc92a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#0d7ee38dc92a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#45ff115d3181 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#45ff115d3181
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#a83365e36e47 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#a83365e36e47
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#c03d4c480648 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#c03d4c480648
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f49e22384f8d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f49e22384f8d
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f7e09cee0865 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f7e09cee0865
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#01ffd38de704 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#01ffd38de704
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#02991e367c43 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#02991e367c43
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#1636f67ed8b5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#1636f67ed8b5
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2117353cb998 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2117353cb998
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2122d023a3b9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2122d023a3b9
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a (current)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a (voltage)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a (power)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a (powerDerivative)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#4cd75e133a31 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#4cd75e133a31
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#54f974b0ecea (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#54f974b0ecea
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#5c853170cb96 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#5c853170cb96
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#7fc8029efeb1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#7fc8029efeb1
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#88c9a9d67a4e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#88c9a9d67a4e
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#95e2d293a644 (current)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#95e2d293a644 (voltage)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#95e2d293a644
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#99d0ec59ee8a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#99d0ec59ee8a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b44900a9203f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b44900a9203f
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b53fee123ddf (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b53fee123ddf
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#bbc4d583732e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#bbc4d583732e
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c5b63588a5ef (current)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c5b63588a5ef (voltage)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c5b63588a5ef
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c6150b040569 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c6150b040569
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#cf232ff89506 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#cf232ff89506
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#e4b3277ac769 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#e4b3277ac769
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#ea8def01b5d3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#ea8def01b5d3
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#febae5497404 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#febae5497404
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#049c21ccc5dc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#049c21ccc5dc
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#07f4b9e5f19d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#07f4b9e5f19d
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#0e0a749e80a7 (current)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#0e0a749e80a7
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#147548ecca9a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#147548ecca9a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#255b0bc78fb4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#255b0bc78fb4
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#49fc83862dce (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#49fc83862dce
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#5bfcb2c90429 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#5bfcb2c90429
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#775e7cda92ef (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#775e7cda92ef
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7bd873a9d917 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7bd873a9d917
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7fc6513b8b1c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7fc6513b8b1c
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#84545f05cb79 (voltage)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#84545f05cb79
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#8abbba0c7a59 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#8abbba0c7a59
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#9220febc412e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#9220febc412e
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a3c58fb796b9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a3c58fb796b9
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a8c27b96057b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a8c27b96057b
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#acbc4c8bd049 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#acbc4c8bd049
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ca7fbbd2b1ce (current)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ca7fbbd2b1ce
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#d9e647cd7763 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#d9e647cd7763
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#e572136a1724 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#e572136a1724
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ead4361ee7a7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ead4361ee7a7
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fadf8a0f81f5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fadf8a0f81f5
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fd11927b6f8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fd11927b6f8f
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fda434794892 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fda434794892
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#3ca6626f8b00 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#3ca6626f8b00
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#4721d769a35a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#4721d769a35a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#778e911812d8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#778e911812d8
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#79c2a7590420 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#79c2a7590420
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#81e293c77d07 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#81e293c77d07
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#8fb0b034608c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#8fb0b034608c
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#9a30b344fbd3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#9a30b344fbd3
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#a97c5d0f0f3d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#a97c5d0f0f3d
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b4632b6a721a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b4632b6a721a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b74f86e3fc5b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b74f86e3fc5b
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#de015636edb4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#de015636edb4
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#e1990dc59557 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#e1990dc59557
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#ec4ca70c805e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#ec4ca70c805e
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#edfec1d83fe9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#edfec1d83fe9
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#f78d88985ab0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#f78d88985ab0
+Sensitivity witness: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#666c44e04193 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#666c44e04193
+Sensitivity witness: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#78a2d0dbd3a1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#78a2d0dbd3a1
+Sensitivity witness: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#9b200709e029 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#9b200709e029
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#00a3777b7872 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#00a3777b7872
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#054e87ddf650 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#054e87ddf650
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#06b488bff3c9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#06b488bff3c9
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#084def5a9fe1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#084def5a9fe1
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#13df65eee5de (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#13df65eee5de
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#1bb74ab4944f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#1bb74ab4944f
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#27ddcd5f6aad (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#27ddcd5f6aad
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3137568ff2e3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3137568ff2e3
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#31dab05bbf43 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#31dab05bbf43
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#38e61125f124 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#38e61125f124
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3c86e0eee434 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3c86e0eee434
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3fa784ecb9e4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3fa784ecb9e4
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#5273bc3461e1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#5273bc3461e1
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6b077a52a709 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6b077a52a709
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6cec279b06af (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6cec279b06af
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6faf7452ef4b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6faf7452ef4b
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#71a2ac75bc38 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#71a2ac75bc38
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#783fab0c271b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#783fab0c271b
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#8e3b6339ba05 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#8e3b6339ba05
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#a46a4574ad6d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#a46a4574ad6d
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#aa2abbbed1c5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#aa2abbbed1c5
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#bd08f1fbf0e6 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#bd08f1fbf0e6
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e964eea98ff0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e964eea98ff0
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e9823240b0dc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e9823240b0dc
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#ef9d6d03a7df (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#ef9d6d03a7df
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#f03d6cfcba8e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#f03d6cfcba8e
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fabf17a15639 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fabf17a15639
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fb17c73969c3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fb17c73969c3
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fc308309f3cd (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fc308309f3cd
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#3f76523c1b2e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#3f76523c1b2e
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#84228b48cc0c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#84228b48cc0c
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#95042c99d6d4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#95042c99d6d4
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#974f9baf6141 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#974f9baf6141
+Sensitivity witness: src/engine/financialEngine.ts#performFinancialAnalysis#07cbbf982780 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#performFinancialAnalysis: src/engine/financialEngine.ts#performFinancialAnalysis#07cbbf982780
+Sensitivity witness: src/engine/financialEngine.ts#performFinancialAnalysis#2abf8b390bac (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#performFinancialAnalysis: src/engine/financialEngine.ts#performFinancialAnalysis#2abf8b390bac
+Sensitivity witness: src/engine/financialEngine.ts#performFinancialAnalysis#535a26248a84 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#performFinancialAnalysis: src/engine/financialEngine.ts#performFinancialAnalysis#535a26248a84
+Sensitivity witness: src/engine/financialEngine.ts#performFinancialAnalysis#a67c22a299a1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#performFinancialAnalysis: src/engine/financialEngine.ts#performFinancialAnalysis#a67c22a299a1
+Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#488ab5156c0e
+Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#4a0793d3b20d
+Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee
+Independent physics reference gate passed: no formula-expression changes in the selected engine diff (base HEAD).

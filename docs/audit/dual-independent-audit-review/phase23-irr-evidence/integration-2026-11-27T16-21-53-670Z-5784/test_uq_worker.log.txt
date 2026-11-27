@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:uq:worker
+> tsx scripts/test-financial-uq-worker.ts
+
+PASS UQ Worker: actual isolated computation parity in 3 modes, immutable inputs, bounds, cancellation, timeout, unavailable, malformed replies and disabled build flag

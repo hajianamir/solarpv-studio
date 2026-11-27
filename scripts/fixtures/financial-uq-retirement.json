@@ -1,0 +1,275 @@
+{
+  "schemaVersion": "retired-uq-historical-regression-v1",
+  "baseline": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+  "sourceHashes": {
+    "src/engine/core/uncertaintyPropagation.ts": "8f70a32346bd368a74f37a92e57e12ccfa4e08f924a34eb64d6e09fe74629491",
+    "src/studies/financialUqArchive.ts": "a518581fdcc4bed22b3b54532645ced8d8cbb4b613199f9c683df5c8ce1c2110"
+  },
+  "qualification": "Actual baseline implementation executed; known-invalid Student-t snapshot for read-only compatibility only. Gaussian hashes are internal exact regression references, not independent model validation.",
+  "input": {
+    "plantCapacityKwp": 1000,
+    "inverterCapacityKw": 1000,
+    "baseAnnualYieldKwh": 1800000,
+    "basePricing": {
+      "moduleUsdPerWp": 0.14,
+      "inverterUsdPerKw": 55,
+      "batteryUsdPerKwh": 160,
+      "structureUsdPerWp": 0.045,
+      "cablingBopUsdPerWp": 0.035,
+      "substationUsdPerMva": 35000,
+      "epcLaborUsdPerKw": 25,
+      "gridTariffTomanPerKwh": 3800,
+      "usdToTomanRate": 90000,
+      "annualOpexPctOfCapex": 1.2,
+      "discountRatePct": 18,
+      "tariffEscalationPct": 15,
+      "includeDieselGenSet": false,
+      "dieselGenSetCapexUsd": 0,
+      "dieselAnnualFuelLiters": 0,
+      "dieselFuelPriceTomanPerLiter": 3500,
+      "hvConnectionUsdPerKva": 45,
+      "ppaTariffTomanPerKwh": 2800,
+      "landLeaseUsdPerKwpYear": 0.12,
+      "gridOperatorFeeUsdPerKwpYear": 0.06,
+      "dieselAnnualServiceOpexUsd": 1800
+    },
+    "sampleSize": 60,
+    "seed": 42
+  },
+  "gaussianDeterministicHashes": {
+    "powerplant": "65d2b3ac1f6cb1ccfde5cb63e9f0039b1b15b63e2e67006d5eea8f9734337760",
+    "ongrid": "40ae604a16f1be7238445c32f1fc1a0d8466f8845eb2041507f986798a180691",
+    "offgrid": "7650a5336d10aa021c9ce1cc0584c7f40b2b675aa360ad7a08ad8e7de95e4047"
+  },
+  "legacyStudentTArchive": {
+    "schemaVersion": "financial-uq-archive-v1",
+    "source": {
+      "bundleSha256": "3dbe7f5eb3d0ed08a87a9419eb25d3fe067359acd4f3a8c3f31635e02f3c543f",
+      "files": {
+        "src/engine/core/uncertaintyPropagation.ts": "8f70a32346bd368a74f37a92e57e12ccfa4e08f924a34eb64d6e09fe74629491",
+        "src/studies/financialUqArchive.ts": "a518581fdcc4bed22b3b54532645ced8d8cbb4b613199f9c683df5c8ce1c2110"
+      }
+    },
+    "request": {
+      "plantCapacityKwp": 1000,
+      "inverterCapacityKw": 1000,
+      "baseAnnualYieldKwh": 1800000,
+      "basePricing": {
+        "moduleUsdPerWp": 0.14,
+        "inverterUsdPerKw": 55,
+        "batteryUsdPerKwh": 160,
+        "structureUsdPerWp": 0.045,
+        "cablingBopUsdPerWp": 0.035,
+        "substationUsdPerMva": 35000,
+        "epcLaborUsdPerKw": 25,
+        "gridTariffTomanPerKwh": 3800,
+        "usdToTomanRate": 90000,
+        "annualOpexPctOfCapex": 1.2,
+        "discountRatePct": 18,
+        "tariffEscalationPct": 15,
+        "dieselAnnualServiceOpexUsd": 1800,
+        "hvConnectionUsdPerKva": 45,
+        "ppaTariffTomanPerKwh": 2800,
+        "landLeaseUsdPerKwpYear": 0.12,
+        "gridOperatorFeeUsdPerKwpYear": 0.06,
+        "includeDieselGenSet": false,
+        "dieselGenSetCapexUsd": 0,
+        "dieselAnnualFuelLiters": 0,
+        "dieselFuelPriceTomanPerLiter": 3500
+      },
+      "systemMode": "powerplant",
+      "sampleSize": 60,
+      "seed": 42,
+      "copulaFamily": "students_t_copula",
+      "spearmanRhoGhiSoiling": -0.25
+    },
+    "legacyResult": {
+      "traceId": "synthetic-historical-retired-t-fixture",
+      "sampleCount": 60,
+      "copulaFamilyUsed": "students_t_copula",
+      "annualGenerationMwh": {
+        "nominal": 1818.77,
+        "mean": 1825.33,
+        "stdDev": 89.36,
+        "p10": 1734.96,
+        "p50": 1818.77,
+        "p90": 1947.92,
+        "relativeSpreadPercent": 11.7,
+        "unit": "MWh/year"
+      },
+      "lcoeUsdPerMwh": {
+        "nominal": 46.6,
+        "mean": 46.82,
+        "stdDev": 4.24,
+        "p10": 53.3,
+        "p50": 46.6,
+        "p90": 41.4,
+        "relativeSpreadPercent": 25.5,
+        "unit": "$/MWh"
+      },
+      "npvUsd": {
+        "nominal": 391160,
+        "mean": 407280.28,
+        "stdDev": 123997.1,
+        "p10": 243292,
+        "p50": 391160,
+        "p90": 585739,
+        "relativeSpreadPercent": 87.5,
+        "unit": "USD"
+      },
+      "bankableRiskCategory": "INVESTMENT_GRADE",
+      "tornadoSensitivityRanking": [
+        {
+          "variableId": "discount_rate",
+          "name": "Weighted Average Cost of Capital (Discount Rate)",
+          "varianceContributionPercent": 56.3,
+          "sensitivityType": "epistemic"
+        },
+        {
+          "variableId": "ghi_annual",
+          "name": "Annual Solar GHI Irradiance",
+          "varianceContributionPercent": 21.8,
+          "sensitivityType": "aleatory"
+        },
+        {
+          "variableId": "tariff",
+          "name": "Power Tariff / Avoided Cost",
+          "varianceContributionPercent": 17.5,
+          "sensitivityType": "epistemic"
+        },
+        {
+          "variableId": "soiling_loss",
+          "name": "Soiling Deposition & Washing Deficit",
+          "varianceContributionPercent": 1.9,
+          "sensitivityType": "aleatory"
+        },
+        {
+          "variableId": "albedo",
+          "name": "Ground Surface Albedo",
+          "varianceContributionPercent": 1.7,
+          "sensitivityType": "aleatory"
+        },
+        {
+          "variableId": "capex_variance",
+          "name": "CAPEX Equipment & EPC Pricing",
+          "varianceContributionPercent": 0.6,
+          "sensitivityType": "epistemic"
+        },
+        {
+          "variableId": "opex_variance",
+          "name": "OPEX & Recurring Maintenance",
+          "varianceContributionPercent": 0.2,
+          "sensitivityType": "epistemic"
+        }
+      ],
+      "convergenceStandardErrorNpvUsd": 16007.96,
+      "trialStatusBreakdown": {
+        "totalTrials": 60,
+        "irrDefinedTrials": 60,
+        "irrUndefinedTrials": 0,
+        "paybackAchievedTrials": 60,
+        "paybackUnachievedTrials": 0
+      },
+      "uncertaintyDecomposition": {
+        "aleatoryVariancePct": 25.4,
+        "epistemicVariancePct": 74.6,
+        "aleatoryVariables": [
+          "ghi_annual",
+          "soiling_loss",
+          "albedo"
+        ],
+        "epistemicVariables": [
+          "tariff",
+          "capex_variance",
+          "opex_variance",
+          "discount_rate"
+        ],
+        "methodologyNote": "First-order variance attribution via normalized Pearson determination coefficients (r_i² index across sampled parametric multipliers on NPV, representing exploratory linear sensitivity rather than orthogonal Sobol or rank-based ANOVA decomposition)"
+      },
+      "screeningAndBankabilityNoticeFa": "تحلیل عدم قطعیت و حساسیت مالی بر پایه نمونه‌برداری لاتین هایپرکیوب (LHS) با اعمال ضرایب بر انرژی سالانه پایه انجام شده است. نتایج صرفاً جنبه غربالگری و حساسیت‌سنجی اولیه اقتصادی دارند و معادل تحلیل چندفیزیکی چندساله P50/P90 با داده‌های ساعتی ماهواره‌ای یا گزارش مشاور فنی وام‌دهنده (LTA) نیستند.",
+      "screeningAndBankabilityNoticeEn": "Exploratory financial sensitivity based on Latin Hypercube Sampling (LHS) with parametric multipliers on baseline annual yield. Results represent preliminary sensitivity screening and do not substitute for multi-year satellite hourly time-series (P50/P90) or Lender Technical Advisor (LTA) bankability due diligence."
+    },
+    "canonicalQuantiles": {
+      "energy": {
+        "status": "available",
+        "feature": "uq_explicit_quantiles_v1",
+        "schemaVersion": "uq-quantiles-v1",
+        "source": "legacy_financial_cdf_v1",
+        "provenance": "synthetic-historical-retired-t-fixture",
+        "unit": "MWh/year",
+        "cdf": {
+          "q10": 1734.96,
+          "q50": 1818.77,
+          "q90": 1947.92
+        },
+        "energyExceedance": {
+          "p10": 1947.92,
+          "p50": 1818.77,
+          "p90": 1734.96
+        },
+        "validationStatus": "not_field_validated",
+        "policy": {
+          "financeMutation": false,
+          "researchEnergyAdoption": false,
+          "precision": "Values preserved exactly from source; no additional numerical accuracy claimed.",
+          "limitations": "Presentation mapping only. No P75/P99, mean, fitted distribution, calibration, horizon verification or bankability certification.",
+          "semantics": "Energy exceedance P90 = CDF q10; P50 is median, not necessarily mean."
+        }
+      },
+      "lcoe": {
+        "schemaVersion": "financial-metric-quantiles-v1",
+        "source": "legacy_financial_compute_stats_v1",
+        "metric": "lcoe",
+        "provenance": "synthetic-historical-retired-t-fixture",
+        "unit": "$/MWh",
+        "cdf": {
+          "q10": 41.4,
+          "q50": 46.6,
+          "q90": 53.3
+        },
+        "adverseTail": {
+          "cdfProbability": 0.9,
+          "value": 53.3,
+          "direction": "higher_cost"
+        },
+        "validationStatus": "not_field_validated",
+        "precision": "Rounded legacy values preserved; no additional accuracy claimed.",
+        "limitations": "CDF quantiles, not confidence intervals. Conditional exploratory UQ, not bankability certification. No loss probability or expected shortfall inferred.",
+        "financeMutation": false,
+        "researchEnergyAdoption": false
+      },
+      "npv": {
+        "schemaVersion": "financial-metric-quantiles-v1",
+        "source": "legacy_financial_compute_stats_v1",
+        "metric": "npv",
+        "provenance": "synthetic-historical-retired-t-fixture",
+        "unit": "USD",
+        "cdf": {
+          "q10": 243292,
+          "q50": 391160,
+          "q90": 585739
+        },
+        "adverseTail": {
+          "cdfProbability": 0.1,
+          "value": 243292,
+          "direction": "lower_npv"
+        },
+        "validationStatus": "not_field_validated",
+        "precision": "Rounded legacy values preserved; no additional accuracy claimed.",
+        "limitations": "CDF quantiles, not confidence intervals. Conditional exploratory UQ, not bankability certification. No loss probability or expected shortfall inferred.",
+        "financeMutation": false,
+        "researchEnergyAdoption": false
+      }
+    },
+    "runtime": {
+      "engine": "synthetic historical regression, not runtime attestation",
+      "timezone": "UTC"
+    },
+    "panelContextSha256": "ec9d31296ca131ffce643df7c7909b18f7b07a4434f80f1a4a3f7d69378a923e",
+    "requestSha256": "95e5f50a7f244cabefb53ebc853c298db140cfc72e093d04f44c9dc9d33a0f56",
+    "resultSha256": "ac37e6c139067e41292ce8492643434225ca2689f54bf8f8581936b3641a9b11",
+    "deterministicResultSha256": "5d68508323a5ad73dcc9daad1185c8e6ceebe2785a5cdf78cdd1d664dfecabc9",
+    "policy": "Local exploratory financial UQ snapshot. Contains pricing; treat as confidential. Hashes detect corruption, not authorship. Context hash is the financial panel snapshot, not the entire project. No research energy adoption or financial mutation.",
+    "archiveSha256": "e8a5e41746c9bcd2e82ee30e0d71c6d9545d4d8cff45c6402cc8b3d9758abdac"
+  }
+}

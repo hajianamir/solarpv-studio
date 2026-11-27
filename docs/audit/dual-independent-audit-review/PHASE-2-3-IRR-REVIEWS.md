@@ -1,0 +1,33 @@
+# Conventional periodic IRR — three internal reviews and follow-up investigations
+
+Task date: 2026-11-03. Same-agent internal reviews, not three external audits or final whole-system review cycles. Scope: IRR-01 through IRR-04 and ADR-029.
+
+## Pass 1 — contract, ownership and compatibility
+
+Traced nested legacy IRR, public result fields, Iranian settings and project/equity NPV/ledger consumers. The old solver selects its first successful guess and rounds to one decimal percent; null does not explain applicability/convergence. Kept that API/result shape byte-compatible rather than silently migrating all historical consumers. New strict policy is selected only by the current Iranian UI, using negative total CAPEX/project operating cash flows and negative equity/post-debt cash flows respectively. Existing adopted-energy block remains before assessment. No saved settings migration.
+
+Follow-up investigation: composed 96 project/equity series from the independently generated Iranian Decimal policy ledgers, then independently solved their roots/statuses using Decimal direct discounted sums. Focused integration also reconstructs the production ledgers and compares assessed rates to those independent outputs. Existing whole-result finance/policy fixtures still constrain exact legacy compatibility. The initial SSR assumption that .5kWp/11.8MWh equity IRR was inside the policy range failed: it exceeds the upper bound. Corrected the test to assert the actual `outside_policy_domain` state, added that explicit boundary witness, and used .5kWp/.9MWh as the available UI case. Did not widen the domain or silently substitute a rate.
+
+A final consumer review found stale table disclosure claiming a representative-day annualization fallback and model-level rounding of million-Toman cash flows. Actual current input/ledger ownership contradicts both statements. Corrected both locales to distinguish the authoritative annual input and full-precision ledger from display rounding; retained the legacy rounded-LCOE qualification. Added SSR and production-browser disclosure assertions. Runtime receipts before this copy/assertion change remain historical; final reruns are separate.
+
+## Pass 2 — numerical safety and primary-source investigation
+
+Acquired and inspected the pinned numpy-financial v1.0.0 `_financial.py` through GitHub's contents API. SHA256/bytes/path are recorded in `phase23-irr-source.json`, matching the previously acquired Phase3 source. Its IRR equation is periodic discounted-sum NPV=0; its implementation explicitly acknowledges multiple solutions and chooses the closest-to-zero rate. That choice is not universally correct for our screening consumers and was not adopted. No full upstream numerical package test or financial-model validation is claimed.
+
+Analytical follow-up: [-100,230,-132] yields -100(r-.1)(r-.2) after multiplying NPV by (1+r)^2, so both10% and20% are roots. Our explicit refusal avoids presenting an unexplained first guess as unique. One negative-to-positive sign change of the polynomial coefficients ensures one positive discount-factor root; restricting r to the named domain remains a separate policy. [-100,110] and [-100,100] establish exact10% and0% limits; intermediate zeros and multiple initial negative periods remain supported. Raw floating point may yield a near-zero signed residual/rate, not arbitrary-precision decimal accounting.
+
+Independent 60-digit Decimal direct summation/240 bisections verify 164 root/status cases, including scaled flows, negative/zero/positive rates, policy endpoints and the96ledger compositions; eight direct NPV cases supplement them. Negative tests cover overflow/normalization erasure, unknown/missing metadata, dimensions, nonfinite, all-zero, leading-zero investment, positive initial flows and nonconventional multiple roots. Maximum101flow entries and fixed96steps bound work. Long-horizon ill conditioning can still yield explicit numerical failure; no general arbitrary-input convergence promise.
+
+Initial registration attempts correctly rejected insufficient sensitivity coverage for endpoint evaluations and sign-presence checks. Added independent endpoint and all-negative/all-positive witnesses. No formula was removed from extraction, comparison tolerance widened or reach/sensitivity requirement bypassed. All33current expressions now execute and change output under mutation. A stale generated inventory check also failed until regenerated; it was not waived.
+
+## Pass 3 — runtime, evidence integrity and delivery
+
+Reviewed direct policy/API, JSON/nonmutation, bilingual available/unavailable rendering and real-browser three-mode raw policy/value/format assertions. Existing project save/import/export, custom policy/zero-interest/NPV, report/artifact, operational-energy and UQ boundaries remain in the broader suites. Current runtime records are in `phase23-irr-verification.json`; records before final disclosure edits are retained separately from final-source runs. Lint warnings and historical failures remain disclosed.
+
+The first post-disclosure production-browser assertion failed because it required English text while the actual default screen was Persian. Kept the substantive precision-disclosure assertion, made it recognize the two explicitly supported locale strings and reran verification on the changed test source. Both locales remain independently checked by SSR. The failed browser log is retained rather than reclassified as an application pass.
+
+Follow-up investigation: compare harness source-before/source-after identities, exact script definitions and exit results; preserve logs, dependency installation and all registration/SSR failures. This checkout initially lacked dependencies and historical git objects: `npm ci` restored the lockfile dependency tree and `git fetch --unshallow origin main` restored historical reference inputs without switching branches or changing expected outputs. No upstream model/source inputs were inferred from a passing browser result.
+
+## Stops and remaining work
+
+U16b/U16c are still partial. This is not all-root enumeration, irregular-date XIRR, global legacy-consumer migration, full financing/debt/DSCR validation, full-precision payback/LCOE replacement or validated tariffs/WACC. No automatic research-to-finance adoption, guarantee, bankability, manufacturer/normative approval, field validation or whole-model accuracy. Native Windows, Docker and exact-source remote CI remain unexecuted in this slice; inherited reference debt and P23-RT01 save-flake root cause remain open. Current browser success does not close that intermittent defect. Release BLOCKED; no commit/push.

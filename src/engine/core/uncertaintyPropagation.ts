@@ -15,6 +15,8 @@
  *   followed by marginal inverse CDF transformation X_j = F_j^{-1}(U_j).
  */
 
+import { assertFinancialUqCopulaExecutable } from '../../contracts/financialUqExecutionPolicy';
+
 export interface StochasticInputVariable {
   variableId: 'ghi_annual' | 'albedo' | 'soiling_loss' | 'fpv_water_temp_delta' | 'extreme_wind_gust' | 'capex_variance';
   name: string;
@@ -198,7 +200,7 @@ export interface CopulaBivariateSample {
 /**
  * Samples a bivariate copula with explicit family validation and runtime guards.
  * - Gaussian Copula: Z = L * \xi, U_j = \Phi(Z_j)
- * - Student's t Copula: T = (L * \xi) / \sqrt{W / \nu} where W ~ \chi^2_\nu
+ * - Student's t: RETIRED; legacy t latents were incorrectly transformed by the normal CDF.
  * - Archimedean (Clayton / Gumbel): Guarded with NOT_IMPLEMENTED error in v3.0
  */
 export function sampleBivariateCopula(
@@ -211,9 +213,13 @@ export function sampleBivariateCopula(
   // Runtime Guard for Archimedean Copulas
   if (family === 'clayton_copula' || family === 'gumbel_copula') {
     throw new Error(
-      `ARCHIMEDEAN_NOT_IMPLEMENTED_IN_V3_0: Copula family '${family}' is marked NOT_IMPLEMENTED for v3.0 core. Use 'gaussian_copula' or 'students_t_copula'.`
+      `ARCHIMEDEAN_NOT_IMPLEMENTED_IN_V3_0: Copula family '${family}' is marked NOT_IMPLEMENTED for v3.0 core. Use 'gaussian_copula'; Student-t is retired pending validated replacement.`
     );
   }
+
+  // Retired t path is retained below only as historical source, never executable.
+  // Its normal-CDF marginal transform is invalid for t latents. No Gaussian fallback.
+  assertFinancialUqCopulaExecutable(family);
 
   // Latent linear correlation mapping
   const r = calibrateLatentLinearCorrelation(rhoSpearman);

@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:phase4
+> node scripts/test-phase4-verification.mjs
+
+PASS Phase4 harness: exact script inventory, missing/duplicate/skip/order/failure/stale-source rejection; local PASS cannot authorize release; executable-source identity

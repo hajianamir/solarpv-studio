@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#78a2d0dbd3a1",
+  "independentOfImplementation": true,
+  "productionExport": "evaluateIranianBenefitIndicators",
+  "inputs": [
+    {
+      "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+      "capacityKwp": 0.5,
+      "annualGenerationMwh": 0.9,
+      "penaltyRateTomanPerKwh": 4200,
+      "outageLossMillionTomanPerKwp": 8.5
+    }
+  ],
+  "expected": {
+    "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+    "input": {
+      "modelPolicy": "iranian_benefit_indicators_full_precision_v1",
+      "capacityKwp": 0.5,
+      "annualGenerationMwh": 0.9,
+      "penaltyRateTomanPerKwh": 4200,
+      "outageLossMillionTomanPerKwp": 8.5
+    },
+    "article16PenaltyAvoidanceProxyMillionToman": 3.78,
+    "outageLossProxyMillionToman": 4.25,
+    "unit": "MILLION_TOMAN",
+    "assumptionBasis": "illustrative_rates_not_verified_statutory_or_realized_savings",
+    "financialAdoptionEligible": false
+  },
+  "independentCalculation": "60-digit Decimal products and exact base-unit conversion. Full Cartesian pool generated without reading/importing production code. Assumed coefficients are not official/field evidence.",
+  "tolerances": {
+    "absolute": 1e-15,
+    "relative": 5e-15
+  },
+  "referenceSource": {
+    "title": "Independent 60-digit Decimal dimensional arithmetic for explicitly assumed screening rates",
+    "url": "https://docs.python.org/3/library/decimal.html",
+    "version": "Python decimal, precision 60",
+    "locator": "MWh * 1000 kWh/MWh * Toman/kWh / 1000000 Toman/million; kWp * million Toman/kWp. Exact decimal unit conversion, not tariff/avoided-loss validation."
+  }
+}

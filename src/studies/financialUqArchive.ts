@@ -6,6 +6,7 @@ import { assertFinancialUqResult } from './financialUqResultValidation';
 import { explicitEnergyQuantiles } from './uqQuantileContract';
 import { financialMetricQuantiles } from './financialMetricQuantiles';
 import { parseStudyJson } from './strictStudyJson';
+import { FINANCIAL_UQ_EXECUTION_POLICY, assertFinancialUqCopulaExecutable } from '../contracts/financialUqExecutionPolicy';
 
 export const MAX_UQ_ARCHIVE_BYTES = 512 * 1024;
 export function uqCanonical(value: unknown): string {
@@ -51,7 +52,10 @@ export function makeFinancialUqArchive(input:FinancialUqRunInput,result:Financia
  const code=UqSourceSchema.parse(source);
  if(!Object.keys(code.files).length || code.bundleSha256!==uqHash(code.files))throw new Error('UQ_SOURCE_IDENTITY_INVALID');
  const request=normalizedRequest(input);assertFinancialUqResult(result,request.sampleSize);
- const payload={schemaVersion:'financial-uq-archive-v1' as const,source:code,request,legacyResult:result,canonicalQuantiles:canonicalMetrics(result),
+ assertFinancialUqCopulaExecutable(request.copulaFamily);
+ assertFinancialUqCopulaExecutable(result.copulaFamilyUsed);
+ if(result.copulaFamilyUsed!==request.copulaFamily)throw new Error('UQ_ARCHIVE_FAMILY_MISMATCH');
+ const payload={schemaVersion:'financial-uq-archive-v2' as const,executionPolicy:FINANCIAL_UQ_EXECUTION_POLICY,source:code,request,legacyResult:result,canonicalQuantiles:canonicalMetrics(result),
    runtime:{engine:typeof navigator==='undefined'?'non-browser JavaScript (not attested)':navigator.userAgent,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone},
    panelContextSha256:uqHash(panelContext),requestSha256:uqHash(request),resultSha256:uqHash(result),deterministicResultSha256:uqDeterministicResultHash(result),
    policy:'Local exploratory financial UQ snapshot. Contains pricing; treat as confidential. Hashes detect corruption, not authorship. Context hash is the financial panel snapshot, not the entire project. No research energy adoption or financial mutation.'};
@@ -59,12 +63,27 @@ export function makeFinancialUqArchive(input:FinancialUqRunInput,result:Financia
  if(new TextEncoder().encode(JSON.stringify(archive)).length>MAX_UQ_ARCHIVE_BYTES)throw new Error('UQ_ARCHIVE_TOO_LARGE');
  return archive;
 }
-export type FinancialUqArchive=ReturnType<typeof makeFinancialUqArchive>;
-const archiveSchema=z.object({schemaVersion:z.literal('financial-uq-archive-v1'),source:UqSourceSchema,request:requestSchema,legacyResult:z.unknown(),canonicalQuantiles:z.unknown(),runtime:z.object({engine:z.string().min(1).max(1000),timezone:z.string().min(1).max(100)}).strict(),panelContextSha256:digest,requestSha256:digest,resultSha256:digest,deterministicResultSha256:digest,policy:z.string().max(2000),archiveSha256:digest}).strict();
+type CurrentFinancialUqArchive=ReturnType<typeof makeFinancialUqArchive>;
+export type FinancialUqArchive=CurrentFinancialUqArchive | (Omit<CurrentFinancialUqArchive,'schemaVersion'|'executionPolicy'> & {schemaVersion:'financial-uq-archive-v1'});
+const legacyArchiveSchema=z.object({schemaVersion:z.literal('financial-uq-archive-v1'),source:UqSourceSchema,request:requestSchema,legacyResult:z.unknown(),canonicalQuantiles:z.unknown(),runtime:z.object({engine:z.string().min(1).max(1000),timezone:z.string().min(1).max(100)}).strict(),panelContextSha256:digest,requestSha256:digest,resultSha256:digest,deterministicResultSha256:digest,policy:z.string().max(2000),archiveSha256:digest}).strict();
+const archiveSchema=z.discriminatedUnion('schemaVersion',[
+ legacyArchiveSchema,
+ legacyArchiveSchema.extend({schemaVersion:z.literal('financial-uq-archive-v2'),executionPolicy:z.literal(FINANCIAL_UQ_EXECUTION_POLICY),request:requestSchema.extend({copulaFamily:z.literal('gaussian_copula')})}).strict(),
+]);
+/** Integrity/readability and replay eligibility are intentionally separate. V1 is never reinterpreted. */
+export function financialUqArchiveReplayStatus(archive:FinancialUqArchive,source:UqSource|null):'eligible'|'legacy_read_only'|'policy_unavailable'|'code_mismatch' {
+ if(archive.schemaVersion==='financial-uq-archive-v1')return 'legacy_read_only';
+ if(archive.schemaVersion!=='financial-uq-archive-v2'||archive.executionPolicy!==FINANCIAL_UQ_EXECUTION_POLICY
+  ||archive.request.copulaFamily!=='gaussian_copula'||archive.legacyResult.copulaFamilyUsed!=='gaussian_copula')return 'policy_unavailable';
+ if(!source||archive.source.bundleSha256!==source.bundleSha256)return 'code_mismatch';
+ return 'eligible';
+}
 export function readFinancialUqArchive(text:string):FinancialUqArchive {
  const a=archiveSchema.parse(parseStudyJson(text,MAX_UQ_ARCHIVE_BYTES,'Financial UQ archive'));
  const {archiveSha256,...payload}=a;
  assertFinancialUqResult(a.legacyResult,a.request.sampleSize);
+ if(a.legacyResult.copulaFamilyUsed!==a.request.copulaFamily)throw new Error('UQ_ARCHIVE_FAMILY_MISMATCH');
+ if(a.schemaVersion==='financial-uq-archive-v2')assertFinancialUqCopulaExecutable(a.legacyResult.copulaFamilyUsed);
  if(archiveSha256!==uqHash(payload)||a.source.bundleSha256!==uqHash(a.source.files)||!Object.keys(a.source.files).length
   ||a.requestSha256!==uqHash(a.request)||a.resultSha256!==uqHash(a.legacyResult)||a.deterministicResultSha256!==uqDeterministicResultHash(a.legacyResult)
   ||uqHash(a.canonicalQuantiles)!==uqHash(canonicalMetrics(a.legacyResult)))throw new Error('UQ_ARCHIVE_INTEGRITY_FAILED');

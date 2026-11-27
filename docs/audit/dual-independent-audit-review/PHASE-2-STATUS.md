@@ -1,5 +1,11 @@
 # Phase 2 status — scoped repairs, not complete
 
+## Conventional periodic IRR continuation — 2026-11-03 task date
+
+U16b/U16c: strict opt-in `conventional_periodic_irr_bounded_v1` now separates available unrounded annual IRR from invalid/no-sign-change/nonconventional/out-of-domain/numerical outcomes. Iranian UI explicitly assesses project/equity series from existing unrounded ledgers and shows localized reasons; the legacy financial API, NPV, ledgers and saved project settings remain unchanged. No multiple-root selection, XIRR, guaranteed convergence or financial adoption.
+
+Independent Decimal evidence:164 root/status cases (including96 project/equity ledger compositions), eight NPV cases and33 reached/mutation-sensitive expressions. See ADR-029, `PHASE-2-3-IRR-ASSESSMENT-PLAN.md`, `PHASE-2-3-IRR-REVIEWS.md` and `phase23-irr-verification.json` for current runtime evidence, failed attempts and stops. **U16b/U16c remain PARTIAL, Phase2 INCOMPLETE, Phase3 PARTIAL, release BLOCKED.** This snapshot supersedes only the statement that every UI IRR is legacy-rounded; legacy API and other economic policies remain open.
+
 ## Named transposition continuation — 2026-11-03
 
 Extracted the unchanged production fixed-tilt heuristic into `core/scalarTransposition.ts` as **legacy_latitude_tilt_screen_v1**; the former public export is a deprecated identity re-export. Canonical/App/waterfall/roof continue through the configured production owner, with unchanged energy/report shapes and17-slot compatibility. Bilingual waterfall/help now name the policy and disclose the retained clear-sky tracker1.168anchor. The unused constant-gain `calculateUnifiedAnnualYield` is explicitly deprecated, not silently numerically replaced; a production-import guard prevents accidental promotion of that alternate policy.

@@ -1,0 +1,643 @@
+{
+  "schemaVersion": "phase4-start-evidence-v1",
+  "taskDate": "2026-11-03",
+  "clockQualification": "Run timestamps are the sandbox clock as observed, including its 2026-11-27 values; not rewritten to match the task date. No wall-clock attestation.",
+  "baseCheckout": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+  "branch": "arena/e2cfedea-solarpv-studio",
+  "implementation": "Starting verification harness and plan implemented; production behavior unchanged",
+  "verification": "Baseline 13/13 and integration 11/11 pass after history acquisition; platform dependency check passes, real container gate fails Docker ENOENT. Initial failures retained.",
+  "release": "BLOCKED",
+  "sourceManifestSha256": "b6cdf3fb526ddf7e51e77bd522e93dd4c98656cd959966929e633895b8b717d1",
+  "installation": {
+    "command": "npm ci",
+    "exitCode": 0,
+    "node": "v22.22.3",
+    "npm": "10.9.8",
+    "log": ".cache/phase4/npm-ci.log",
+    "logSha256": "de8e339819fd9299ec295637f60c489e9f4df011de87ab6060a9e682bf839079",
+    "observation": "466 packages installed; npm reported zero vulnerabilities at installation. Not a complete security audit or clean OS matrix."
+  },
+  "historyCorrection": {
+    "initial": "Shallow checkout lacked historical commits required by existing tests",
+    "command": "git fetch --unshallow origin main",
+    "exitCode": 0,
+    "qualification": "Fetched history without changing branch, source files or expected values. Initial failures preserved; no gate weakened."
+  },
+  "runs": [
+    {
+      "schemaVersion": "phase4-local-verification-v1",
+      "suite": "baseline",
+      "startedAt": "2026-11-27T11:20:01.093Z",
+      "checkout": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+      "branch": "arena/e2cfedea-solarpv-studio",
+      "initialWorkingTree": " M package.json\n?? scripts/phase4-verification.mjs\n?? scripts/test-phase4-verification.mjs\n",
+      "runtime": {
+        "node": "v22.22.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "packageScriptsSha256": "86a12e7ffbe8befa6b32db1d8ac144818e23c2959e0cfdc75a0d3a790b5d3e63",
+      "lockfileSha256": "cebfe714b44bc31c4ec32ec39ccb5264d352e45c7d5b2ad2bbd9559dc3bf8087",
+      "sourceBefore": {
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets.",
+        "sha256": "217cd11b166e88e7d0ed117033a75348b1245b39280413d97400c66d6ff684d7",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json"
+      },
+      "results": [
+        {
+          "script": "test:phase4",
+          "definition": "node scripts/test-phase4-verification.mjs",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 200,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/test_phase4.log",
+          "logSha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+        },
+        {
+          "script": "lint",
+          "definition": "npm run lint:types && npm run lint:eslint",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 44284,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/lint.log",
+          "logSha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+        },
+        {
+          "script": "build",
+          "definition": "vite build",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 25713,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/build.log",
+          "logSha256": "1b5bcf090894abd8d78adbeb6dbd40b940fa0329686a275749e533985dadf54c"
+        },
+        {
+          "script": "test",
+          "definition": "tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 32287,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/test.log",
+          "logSha256": "32b1fc2d3e32d71e95ea61d223c1950e397da906039e67b353e1941ea3e14e40"
+        },
+        {
+          "script": "test:smoke",
+          "definition": "tsx scripts/smoke-test.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 605,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/test_smoke.log",
+          "logSha256": "6ccb45959a82b1f2aa6c8697eff043d0624cc40131268deccedfb937055e3817"
+        },
+        {
+          "script": "test:coverage",
+          "definition": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 51929,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/test_coverage.log",
+          "logSha256": "460aa631c9b254d9a1b0c523680d5a072ce7ce8b4545811b116b0551c3edd0eb"
+        },
+        {
+          "script": "test:phase1",
+          "definition": "tsx scripts/test-phase1-boundaries.ts",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1415,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/test_phase1.log",
+          "logSha256": "792e98cfb670643ca04a0ef4617b34d970b1445d068eceac7b7df990f98e712a"
+        },
+        {
+          "script": "test:phase2",
+          "definition": "tsx scripts/test-phase2-uplift.ts && tsx scripts/test-phase2-thermal.ts && tsx scripts/test-phase2-lightning.ts && tsx scripts/test-phase2-cable.ts && tsx scripts/test-phase2-broms.ts && tsx scripts/test-phase2-finance.ts && tsx scripts/test-phase2-thermal-owner.ts && tsx scripts/test-phase2-hemisphere.ts && tsx scripts/test-phase2-clipping.ts && tsx scripts/test-phase2-lcoe.ts && tsx scripts/test-phase2-mppt-current.ts && tsx scripts/test-phase2-named-waterfall.ts && tsx scripts/test-phase2-transposition.ts && tsx scripts/test-phase2-iranian-policy.ts",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1085,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/test_phase2.log",
+          "logSha256": "c6c43efdd07806a0dabc6a390e7ae0cb0c445daed0bcb882e913e62587759795"
+        },
+        {
+          "script": "test:phase3",
+          "definition": "tsx scripts/test-phase3-single-diode.ts && tsx scripts/test-bounded-diode.ts && npm run test:uq:convergence && npm run test:phase3:research",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1559,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/test_phase3.log",
+          "logSha256": "aa8399e1d45e6a5950e9448082c96def154739f5008c460b9c511c45f7e26044"
+        },
+        {
+          "script": "verify:phase1-evidence",
+          "definition": "tsx scripts/phase1-evidence-inventory.ts --check",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1814,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/verify_phase1-evidence.log",
+          "logSha256": "d442a6ab71446a85012fee9fa34a34a928db1b5ee167390763180e55bc2c5bc4"
+        },
+        {
+          "script": "verify:physics-reference-gate",
+          "definition": "python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 9236,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/verify_physics-reference-gate.log",
+          "logSha256": "6f31fda1eeebf8b743a5fa6c3228dc0d2f57f5e0b6267889eac34ce5078fec55"
+        },
+        {
+          "script": "verify:help",
+          "definition": "tsx scripts/verify-help-source-references.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 329,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/verify_help.log",
+          "logSha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+        },
+        {
+          "script": "verify:engine-claims",
+          "definition": "tsx scripts/verify-engine-claims.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 547,
+          "log": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/verify_engine-claims.log",
+          "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+        }
+      ],
+      "scope": "Sequential local verification only; logs may contain project/test data and remain in ignored cache. Historical receipts are not rerun evidence.",
+      "sourceAfter": {
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets.",
+        "sha256": "217cd11b166e88e7d0ed117033a75348b1245b39280413d97400c66d6ff684d7",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json"
+      },
+      "sourceStable": true,
+      "finishedAt": "2026-11-27T11:22:52.228Z",
+      "assessment": {
+        "softwareChecks": "FAILED_OR_INCOMPLETE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "originalReceiptPath": ".cache/phase4/baseline-2026-11-27T11-20-01-093Z-1539/receipt.json",
+      "originalReceiptSha256": "49e8695736abadd04148a755b94f939359526a2ab6254cc77125bd48e61c6892"
+    },
+    {
+      "schemaVersion": "phase4-local-verification-v1",
+      "suite": "baseline",
+      "startedAt": "2026-11-27T11:23:13.666Z",
+      "checkout": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+      "branch": "arena/e2cfedea-solarpv-studio",
+      "initialWorkingTree": " M package.json\n?? docs/audit/dual-independent-audit-review/PHASE-4-PLAN.md\n?? scripts/phase4-verification.mjs\n?? scripts/test-phase4-verification.mjs\n",
+      "runtime": {
+        "node": "v22.22.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "packageScriptsSha256": "86a12e7ffbe8befa6b32db1d8ac144818e23c2959e0cfdc75a0d3a790b5d3e63",
+      "lockfileSha256": "cebfe714b44bc31c4ec32ec39ccb5264d352e45c7d5b2ad2bbd9559dc3bf8087",
+      "sourceBefore": {
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets.",
+        "sha256": "217cd11b166e88e7d0ed117033a75348b1245b39280413d97400c66d6ff684d7",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json"
+      },
+      "results": [
+        {
+          "script": "test:phase4",
+          "definition": "node scripts/test-phase4-verification.mjs",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 216,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/test_phase4.log",
+          "logSha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+        },
+        {
+          "script": "lint",
+          "definition": "npm run lint:types && npm run lint:eslint",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 45989,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/lint.log",
+          "logSha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+        },
+        {
+          "script": "build",
+          "definition": "vite build",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 22835,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/build.log",
+          "logSha256": "018c509ca9cedaf50335d8e165906fc00d6cca8777147bfe0857e875b80b97b2"
+        },
+        {
+          "script": "test",
+          "definition": "tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 34900,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/test.log",
+          "logSha256": "70671ebc9ea0c8a662b5a28ed486f7c52e2cbe2f7b8632a9772aab29e59a63f4"
+        },
+        {
+          "script": "test:smoke",
+          "definition": "tsx scripts/smoke-test.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 628,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/test_smoke.log",
+          "logSha256": "7e66d8f4fb1fbcad1209c33b2ccc1d2f82002dff7bd68e25ffd5726141d5dcff"
+        },
+        {
+          "script": "test:coverage",
+          "definition": "c8 --include='src/engine/core/**' --exclude='src/engine/core/prng.ts' tsx scripts/run-all-benchmarks.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 52510,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/test_coverage.log",
+          "logSha256": "90e853ebc28d99b801189a85e0c78218964dec0a49d7ce9a1ac9a34ceea7ef68"
+        },
+        {
+          "script": "test:phase1",
+          "definition": "tsx scripts/test-phase1-boundaries.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1799,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/test_phase1.log",
+          "logSha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db"
+        },
+        {
+          "script": "test:phase2",
+          "definition": "tsx scripts/test-phase2-uplift.ts && tsx scripts/test-phase2-thermal.ts && tsx scripts/test-phase2-lightning.ts && tsx scripts/test-phase2-cable.ts && tsx scripts/test-phase2-broms.ts && tsx scripts/test-phase2-finance.ts && tsx scripts/test-phase2-thermal-owner.ts && tsx scripts/test-phase2-hemisphere.ts && tsx scripts/test-phase2-clipping.ts && tsx scripts/test-phase2-lcoe.ts && tsx scripts/test-phase2-mppt-current.ts && tsx scripts/test-phase2-named-waterfall.ts && tsx scripts/test-phase2-transposition.ts && tsx scripts/test-phase2-iranian-policy.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 15596,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/test_phase2.log",
+          "logSha256": "8be9ade7d3a711d8d226ef09eff6d3ea13be4837453061bba9430713de8f9661"
+        },
+        {
+          "script": "test:phase3",
+          "definition": "tsx scripts/test-phase3-single-diode.ts && tsx scripts/test-bounded-diode.ts && npm run test:uq:convergence && npm run test:phase3:research",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 7076,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/test_phase3.log",
+          "logSha256": "8fcdd3df228a5e7f052ef44c00a9ed6af34bd0eb8cfefc4ff487a89ef904ef23"
+        },
+        {
+          "script": "verify:phase1-evidence",
+          "definition": "tsx scripts/phase1-evidence-inventory.ts --check",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1745,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/verify_phase1-evidence.log",
+          "logSha256": "d442a6ab71446a85012fee9fa34a34a928db1b5ee167390763180e55bc2c5bc4"
+        },
+        {
+          "script": "verify:physics-reference-gate",
+          "definition": "python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 9977,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/verify_physics-reference-gate.log",
+          "logSha256": "6f31fda1eeebf8b743a5fa6c3228dc0d2f57f5e0b6267889eac34ce5078fec55"
+        },
+        {
+          "script": "verify:help",
+          "definition": "tsx scripts/verify-help-source-references.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 295,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/verify_help.log",
+          "logSha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+        },
+        {
+          "script": "verify:engine-claims",
+          "definition": "tsx scripts/verify-engine-claims.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 505,
+          "log": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/verify_engine-claims.log",
+          "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+        }
+      ],
+      "scope": "Sequential local verification only; logs may contain project/test data and remain in ignored cache. Historical receipts are not rerun evidence.",
+      "sourceAfter": {
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets.",
+        "sha256": "217cd11b166e88e7d0ed117033a75348b1245b39280413d97400c66d6ff684d7",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json"
+      },
+      "sourceStable": true,
+      "finishedAt": "2026-11-27T11:26:27.885Z",
+      "assessment": {
+        "softwareChecks": "PASS_WITHIN_SELECTED_SUITE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "originalReceiptPath": ".cache/phase4/baseline-2026-11-27T11-23-13-666Z-4438/receipt.json",
+      "originalReceiptSha256": "27a1600c1c9c516c44d412884e4f5d7030434645a08b41987d6cf96184054e41"
+    },
+    {
+      "schemaVersion": "phase4-local-verification-v1",
+      "suite": "integration",
+      "startedAt": "2026-11-27T11:26:28.058Z",
+      "checkout": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+      "branch": "arena/e2cfedea-solarpv-studio",
+      "initialWorkingTree": " M package.json\n?? docs/audit/dual-independent-audit-review/PHASE-4-PLAN.md\n?? scripts/phase4-verification.mjs\n?? scripts/test-phase4-verification.mjs\n",
+      "runtime": {
+        "node": "v22.22.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "packageScriptsSha256": "86a12e7ffbe8befa6b32db1d8ac144818e23c2959e0cfdc75a0d3a790b5d3e63",
+      "lockfileSha256": "cebfe714b44bc31c4ec32ec39ccb5264d352e45c7d5b2ad2bbd9559dc3bf8087",
+      "sourceBefore": {
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets.",
+        "sha256": "217cd11b166e88e7d0ed117033a75348b1245b39280413d97400c66d6ff684d7",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json"
+      },
+      "results": [
+        {
+          "script": "test:accepted-audit",
+          "definition": "tsx scripts/test-accepted-vmp-audit.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 964,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_accepted-audit.log",
+          "logSha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89"
+        },
+        {
+          "script": "test:remaining",
+          "definition": "tsx scripts/test-remaining-product-fixes.ts && tsx scripts/test-remaining-shading-lifecycle.ts && tsx scripts/test-remaining-poa-http.ts && tsx scripts/test-remaining-worker-browser.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 6364,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_remaining.log",
+          "logSha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547"
+        },
+        {
+          "script": "test:recovery",
+          "definition": "tsx scripts/test-snapshot-recovery.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 5634,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_recovery.log",
+          "logSha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+        },
+        {
+          "script": "verify:exports",
+          "definition": "tsx scripts/verify-export-artifact-readback.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1136,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/verify_exports.log",
+          "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+        },
+        {
+          "script": "test:browser",
+          "definition": "tsx scripts/test-browser-regressions.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 78486,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_browser.log",
+          "logSha256": "b2106db7101302f54cd0afe7185994b17af5279bdae70a2ba32797a1403f056c"
+        },
+        {
+          "script": "test:ui",
+          "definition": "tsx scripts/test-ui-refresh-browser.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 36682,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_ui.log",
+          "logSha256": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a"
+        },
+        {
+          "script": "test:pdf",
+          "definition": "tsx scripts/test-report-pdf.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 4700,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_pdf.log",
+          "logSha256": "c31240f7ebc04464487cbe33f8d47c857b76c869137d3384016c33459807647f"
+        },
+        {
+          "script": "test:browser:download",
+          "definition": "tsx scripts/test-browser-download.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 322,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_browser_download.log",
+          "logSha256": "e78ef663c5ddb7b09abf261382d0bc69759be1ebdde7ddb120d7ebe0c4c8ea6c"
+        },
+        {
+          "script": "test:uq:worker",
+          "definition": "tsx scripts/test-financial-uq-worker.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1158,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_uq_worker.log",
+          "logSha256": "7d83fc9289bde9e70b60f44bbe8e34cbf2447578546cec5148cffbd6c64e583c"
+        },
+        {
+          "script": "test:uq:archive",
+          "definition": "tsx scripts/test-financial-uq-archive.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 555,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_uq_archive.log",
+          "logSha256": "1f88aafbbe815437fcc1efaed74682801b422eb81dc99d128e8bda98b71f7f34"
+        },
+        {
+          "script": "test:gateway",
+          "definition": "tsx scripts/test-data-gateway-regressions.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 3204,
+          "log": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/test_gateway.log",
+          "logSha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+        }
+      ],
+      "scope": "Sequential local verification only; logs may contain project/test data and remain in ignored cache. Historical receipts are not rerun evidence.",
+      "sourceAfter": {
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets.",
+        "sha256": "217cd11b166e88e7d0ed117033a75348b1245b39280413d97400c66d6ff684d7",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json"
+      },
+      "sourceStable": true,
+      "finishedAt": "2026-11-27T11:28:47.398Z",
+      "assessment": {
+        "softwareChecks": "PASS_WITHIN_SELECTED_SUITE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "originalReceiptPath": ".cache/phase4/integration-2026-11-27T11-26-28-058Z-9005/receipt.json",
+      "originalReceiptSha256": "a4d0a036ea5504cee20ab4ef4b169747fc3e0c9a0ac1878370a9e40c13715569"
+    },
+    {
+      "schemaVersion": "phase4-local-verification-v1",
+      "suite": "platform",
+      "startedAt": "2026-11-27T11:28:47.535Z",
+      "checkout": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+      "branch": "arena/e2cfedea-solarpv-studio",
+      "initialWorkingTree": " M CHANGELOG.md\n M package.json\n?? docs/audit/dual-independent-audit-review/PHASE-4-PLAN.md\n?? scripts/phase4-verification.mjs\n?? scripts/test-phase4-verification.mjs\n",
+      "runtime": {
+        "node": "v22.22.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "packageScriptsSha256": "86a12e7ffbe8befa6b32db1d8ac144818e23c2959e0cfdc75a0d3a790b5d3e63",
+      "lockfileSha256": "cebfe714b44bc31c4ec32ec39ccb5264d352e45c7d5b2ad2bbd9559dc3bf8087",
+      "sourceBefore": {
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets.",
+        "sha256": "217cd11b166e88e7d0ed117033a75348b1245b39280413d97400c66d6ff684d7",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json"
+      },
+      "results": [
+        {
+          "script": "test:dependencies",
+          "definition": "node scripts/test-pc-launcher.mjs && tsx scripts/test-dependency-modernization.ts",
+          "status": "PASS",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 1287,
+          "log": ".cache/phase4/platform-2026-11-27T11-28-47-535Z-12318/test_dependencies.log",
+          "logSha256": "cd46706dfdfae27b00f2547487a84945bf4483a6b9962c7d6e1fea89c3cc4401"
+        },
+        {
+          "script": "test:container",
+          "definition": "node scripts/test-container-runtime.mjs",
+          "status": "FAIL",
+          "exitCode": 1,
+          "signal": null,
+          "errorCode": null,
+          "durationMs": 145,
+          "log": ".cache/phase4/platform-2026-11-27T11-28-47-535Z-12318/test_container.log",
+          "logSha256": "00b416e45d93552e49dd68518aa6c2461beaca39edc9b25fb13c703c38ccb46b"
+        }
+      ],
+      "scope": "Sequential local verification only; logs may contain project/test data and remain in ignored cache. Historical receipts are not rerun evidence.",
+      "sourceAfter": {
+        "scope": "All git-visible tracked/untracked non-ignored files excluding docs/ and CHANGELOG.md. Does not attest installed dependencies or external datasets.",
+        "sha256": "217cd11b166e88e7d0ed117033a75348b1245b39280413d97400c66d6ff684d7",
+        "manifestFile": "docs/audit/dual-independent-audit-review/phase4-start-source-manifest.json"
+      },
+      "sourceStable": true,
+      "finishedAt": "2026-11-27T11:28:49.084Z",
+      "assessment": {
+        "softwareChecks": "FAILED_OR_INCOMPLETE",
+        "release": "BLOCKED",
+        "qualification": "Selected local command exits only; not Phase4 completion. Phase2/3, inherited references, exact-SHA remote matrix and applicable platform/whole-model evidence require separate acceptance."
+      },
+      "originalReceiptPath": ".cache/phase4/platform-2026-11-27T11-28-47-535Z-12318/receipt.json",
+      "originalReceiptSha256": "826a9359e30e1585e366b4a785f3f76eada809a2d356aff501390f5095b8dd31"
+    }
+  ],
+  "remoteBaseSnapshot": {
+    "command": "gh run list --branch main --limit 20 --json databaseId,workflowName,status,conclusion,headSha,url",
+    "runs": [
+      {
+        "conclusion": "",
+        "databaseId": 45989066145,
+        "headSha": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+        "status": "in_progress",
+        "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45989066145",
+        "workflowName": "F0 F1 foundation acceptance"
+      },
+      {
+        "conclusion": "",
+        "databaseId": 45989065936,
+        "headSha": "16d3ff4056b528c2d9a5215a5e44703e58b49db7",
+        "status": "in_progress",
+        "url": "https://github.com/hajianamir/solarpv-studio/actions/runs/45989065936",
+        "workflowName": "CI Pipeline"
+      }
+    ],
+    "qualification": "Read-only observation of base checkout jobs, pending at observation; not evidence for uncommitted Phase4 changes. No remote run triggered."
+  },
+  "coverageLimits": [
+    "c8 includes src/engine/core and excludes prng.ts; percentage is not whole-project/physical accuracy coverage",
+    "Browser download adapter test is DOM/cleanup behavior, not native browser or all-platform delivery validation",
+    "Browser climate responses are synthetic/mock with explicit offline fallback, not real-provider climate validation",
+    "PDF and DOCX/XLSX/JSON tests actually read bytes; not independent numerical/conformity validation",
+    "Node20/24, Windows install.bat/start.bat, native Safari/iOS, optional Python reference runtimes and post-install offline installation matrix not executed here",
+    "test:audit and all remaining research/operational/CAD suites are still required as applicable; this is an initial subset",
+    "Raw logs remain ignored local artifacts; this receipt retains hashes and outcomes, not a remote durable log archive"
+  ],
+  "stops": [
+    "Phase2/3 acceptance incomplete",
+    "Inherited 56 CAD-expression reference debt unresolved",
+    "Docker executable unavailable: final-image acceptance failed, not skipped",
+    "Whole-model reference/project/normative/manufacturer applicability not established",
+    "Final exact-revision remote matrix and rollout/rollback evidence not established"
+  ]
+}

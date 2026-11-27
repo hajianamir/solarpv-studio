@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/periodicIrr.ts#assessPeriodicIrr#fabf17a15639",
+  "independentOfImplementation": true,
+  "productionExport": "assessPeriodicIrr",
+  "inputs": [
+    {
+      "modelPolicy": "conventional_periodic_irr_bounded_v1",
+      "cashFlows": [
+        -1e-7,
+        1.1e-7
+      ],
+      "period": "annual",
+      "cashFlowBasis": "project",
+      "currency": "MILLION_TOMAN",
+      "rateBasis": "nominal"
+    }
+  ],
+  "expected": {
+    "status": "available",
+    "rate": 0.1,
+    "irrPct": 10,
+    "normalizedNpvResidual": 0,
+    "input": {
+      "modelPolicy": "conventional_periodic_irr_bounded_v1",
+      "cashFlows": [
+        -1e-7,
+        1.1e-7
+      ],
+      "period": "annual",
+      "cashFlowBasis": "project",
+      "currency": "MILLION_TOMAN",
+      "rateBasis": "nominal"
+    },
+    "modelPolicy": "conventional_periodic_irr_bounded_v1",
+    "rateDomain": [
+      -0.9,
+      10
+    ],
+    "financialAdoptionEligible": false
+  },
+  "independentCalculation": "Independent Decimal periodic cash-flow roots; no TS imports or production output.\nRoot: sum(C_t/(1+r)**t)=0. 60-digit direct summation and 240 bisections,\nnot the production normalized Horner implementation. Test policy domain is explicit.\n",
+  "tolerances": {
+    "absolute": 1e-9,
+    "relative": 1e-11
+  },
+  "referenceSource": {
+    "title": "Periodic cash-flow IRR equation and independent Decimal bisection",
+    "url": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+    "version": "numpy-financial v1.0.0 equation; local 60-digit Decimal oracle",
+    "locator": "irr documentation: sum(values[t]/(1+irr)**t)=0. Decimal direct sum solves only explicit conventional test series; not numpy polynomial implementation or financial validation."
+  }
+}

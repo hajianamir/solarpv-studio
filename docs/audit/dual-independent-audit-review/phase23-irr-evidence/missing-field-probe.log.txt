@@ -1,0 +1,6 @@
+PASS missing required field modelPolicy
+PASS missing required field cashFlows
+PASS missing required field period
+PASS missing required field currency
+PASS missing required field cashFlowBasis
+PASS missing required field rateBasis

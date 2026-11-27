@@ -1,0 +1,485 @@
+{
+  "qualification": "Receipts remain byte-original. Logs copied from their runtime cache paths have a .txt suffix so repository-wide *.log ignores do not discard durable audit evidence. Map by suite directory and original basename.",
+  "files": [
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/build.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/build.log.txt",
+      "sha256": "292d3777c03a9cfecfeb51022553044a9da2ed9c26a88696a4a164a1b6b434c9"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/lint.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/lint.log.txt",
+      "sha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test.log.txt",
+      "sha256": "3e84d23b848d5520575f4d798041614e7b01ff7eed554433777508399f593840"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_coverage.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_coverage.log.txt",
+      "sha256": "9465190dc952ad8294bb347780e22b3fcf26da2dd44e193e0fcc999545bc0cf0"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_phase1.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_phase1.log.txt",
+      "sha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_phase2.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_phase2.log.txt",
+      "sha256": "41b357812a6a6763d4f41a5aadc07f5920ec6178789418f195e25852181027e5"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_phase3.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_phase3.log.txt",
+      "sha256": "98717b6b12ada3b6ff49cd79ae876236b55fed7446f2116f769d0a249b0f4673"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_phase4.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_phase4.log.txt",
+      "sha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_smoke.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/test_smoke.log.txt",
+      "sha256": "1ba6e08d5593acb749441171c1fa4bf67737060d1baa8bff527c8927033614f9"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/verify_engine-claims.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/verify_engine-claims.log.txt",
+      "sha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/verify_help.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/verify_help.log.txt",
+      "sha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/verify_phase1-evidence.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/verify_phase1-evidence.log.txt",
+      "sha256": "057d2a4e3d151c8ccfa62cd7970456abc77e9e365206d4aae578f4edde564732"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/verify_physics-reference-gate.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-18-30-320Z-2197/verify_physics-reference-gate.log.txt",
+      "sha256": "9737b8b36b4f3216fcbb7f16d8c4b6bc7320cc9cd4ae992eb7daaf3b670242f7"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/build.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/build.log.txt",
+      "sha256": "308dfa9d96f7b58436cb016394db68078ce5a6719c1dbb54533673040804f096"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/lint.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/lint.log.txt",
+      "sha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test.log.txt",
+      "sha256": "29b84bc9b93ac954e03386ff9c2570622a84a1446696d127470279e4e0a6d513"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_coverage.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_coverage.log.txt",
+      "sha256": "6e1d70a666032ade0998ebeaa5b8a02dd9d29fb1268e1f2d3f12c442b1480bf6"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_phase1.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_phase1.log.txt",
+      "sha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_phase2.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_phase2.log.txt",
+      "sha256": "41b357812a6a6763d4f41a5aadc07f5920ec6178789418f195e25852181027e5"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_phase3.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_phase3.log.txt",
+      "sha256": "98717b6b12ada3b6ff49cd79ae876236b55fed7446f2116f769d0a249b0f4673"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_phase4.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_phase4.log.txt",
+      "sha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_smoke.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/test_smoke.log.txt",
+      "sha256": "03695073c86d04f04cf7b23ce88ba85c54428a24a0552ca5de56c507065c008a"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/verify_engine-claims.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/verify_engine-claims.log.txt",
+      "sha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/verify_help.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/verify_help.log.txt",
+      "sha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/verify_phase1-evidence.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/verify_phase1-evidence.log.txt",
+      "sha256": "057d2a4e3d151c8ccfa62cd7970456abc77e9e365206d4aae578f4edde564732"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/verify_physics-reference-gate.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-24-57-563Z-8994/verify_physics-reference-gate.log.txt",
+      "sha256": "9737b8b36b4f3216fcbb7f16d8c4b6bc7320cc9cd4ae992eb7daaf3b670242f7"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/build.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/build.log.txt",
+      "sha256": "2a1583b479e059ee7840084c6c08f0b954da066839a276772fd8a5e1db416753"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/lint.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/lint.log.txt",
+      "sha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test.log.txt",
+      "sha256": "a572b9d036a93bbca9c71266b671b2ce3bb16172dcf5a8924bc81e2b1e23e2ee"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_coverage.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_coverage.log.txt",
+      "sha256": "defe4704fa4056161269959bfe8b12450259c49f4cefe3f74925ab3ee5be5742"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_phase1.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_phase1.log.txt",
+      "sha256": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_phase2.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_phase2.log.txt",
+      "sha256": "41b357812a6a6763d4f41a5aadc07f5920ec6178789418f195e25852181027e5"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_phase3.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_phase3.log.txt",
+      "sha256": "98717b6b12ada3b6ff49cd79ae876236b55fed7446f2116f769d0a249b0f4673"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_phase4.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_phase4.log.txt",
+      "sha256": "54601fb96213b5336d2be05c53a46d74d0afe6172a93435a8b410255bbe1c8ce"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_smoke.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/test_smoke.log.txt",
+      "sha256": "002b2d36b0c83ef1c52ac316057f59153408e4d8548886dd79a951ef0b2f2508"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/verify_engine-claims.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/verify_engine-claims.log.txt",
+      "sha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/verify_help.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/verify_help.log.txt",
+      "sha256": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/verify_phase1-evidence.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/verify_phase1-evidence.log.txt",
+      "sha256": "057d2a4e3d151c8ccfa62cd7970456abc77e9e365206d4aae578f4edde564732"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/verify_physics-reference-gate.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/baseline-2026-11-27T16-30-54-382Z-16161/verify_physics-reference-gate.log.txt",
+      "sha256": "9737b8b36b4f3216fcbb7f16d8c4b6bc7320cc9cd4ae992eb7daaf3b670242f7"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/final_test_phase1_browser.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/final_test_phase1_browser.log.txt",
+      "sha256": "0e98d192c2afa64fbf2fb56dfb17ebf4b83d59dd92e1337d900214cfaca7fe74"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/final_verify_phase4_baseline.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/final_verify_phase4_baseline.log.txt",
+      "sha256": "70310e11db8ad313956bffe2242a9c3ea67d362ce2c91e60b4cebcc9fc6b94e2"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/final_verify_phase4_integration.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/final_verify_phase4_integration.log.txt",
+      "sha256": "92c0d31f3e30a4398234b806943856322897a0fd56fe407f0d9965c2912e7335"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/focused-2.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/focused-2.log.txt",
+      "sha256": "938409b1ceadf2e3d85cad252d58cce71b2dca30b981182d01428ba617b0e3eb"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/focused-final-2.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/focused-final-2.log.txt",
+      "sha256": "f986ce7f787250bec6fdb1407c7edc8d9f038a42fd943c82756041979a5f2f51"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/focused-final.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/focused-final.log.txt",
+      "sha256": "f986ce7f787250bec6fdb1407c7edc8d9f038a42fd943c82756041979a5f2f51"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/focused.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/focused.log.txt",
+      "sha256": "d04ce99efee2cafa1865b8a732600be3b499e8af0823903192d5c3f5e1c8cde5"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_accepted-audit.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_accepted-audit.log.txt",
+      "sha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_browser.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_browser.log.txt",
+      "sha256": "627dc2fd0109a90f43f705a4a78c22eb607b24f09939cc8dc01d68b923c80a38"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_browser_download.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_browser_download.log.txt",
+      "sha256": "e78ef663c5ddb7b09abf261382d0bc69759be1ebdde7ddb120d7ebe0c4c8ea6c"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_gateway.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_gateway.log.txt",
+      "sha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_pdf.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_pdf.log.txt",
+      "sha256": "c31240f7ebc04464487cbe33f8d47c857b76c869137d3384016c33459807647f"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_recovery.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_recovery.log.txt",
+      "sha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_remaining.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_remaining.log.txt",
+      "sha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_ui.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_ui.log.txt",
+      "sha256": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_uq_archive.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_uq_archive.log.txt",
+      "sha256": "1f88aafbbe815437fcc1efaed74682801b422eb81dc99d128e8bda98b71f7f34"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_uq_worker.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/test_uq_worker.log.txt",
+      "sha256": "7d83fc9289bde9e70b60f44bbe8e34cbf2447578546cec5148cffbd6c64e583c"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/verify_exports.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-21-53-670Z-5784/verify_exports.log.txt",
+      "sha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_accepted-audit.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_accepted-audit.log.txt",
+      "sha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_browser.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_browser.log.txt",
+      "sha256": "2054bef69bd6320f3f46a70d6b9ae0b14bfd9f9bdf892104d4a252583d529713"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_browser_download.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_browser_download.log.txt",
+      "sha256": "e78ef663c5ddb7b09abf261382d0bc69759be1ebdde7ddb120d7ebe0c4c8ea6c"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_gateway.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_gateway.log.txt",
+      "sha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_pdf.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_pdf.log.txt",
+      "sha256": "c31240f7ebc04464487cbe33f8d47c857b76c869137d3384016c33459807647f"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_recovery.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_recovery.log.txt",
+      "sha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_remaining.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_remaining.log.txt",
+      "sha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_ui.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_ui.log.txt",
+      "sha256": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_uq_archive.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_uq_archive.log.txt",
+      "sha256": "1f88aafbbe815437fcc1efaed74682801b422eb81dc99d128e8bda98b71f7f34"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_uq_worker.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/test_uq_worker.log.txt",
+      "sha256": "7d83fc9289bde9e70b60f44bbe8e34cbf2447578546cec5148cffbd6c64e583c"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/verify_exports.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-28-11-396Z-12915/verify_exports.log.txt",
+      "sha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_accepted-audit.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_accepted-audit.log.txt",
+      "sha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_browser.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_browser.log.txt",
+      "sha256": "178736cbfb9b9e71db7468ea20cfc83ce7abee60fb4c3599e708dda59a9fd8d2"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_browser_download.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_browser_download.log.txt",
+      "sha256": "e78ef663c5ddb7b09abf261382d0bc69759be1ebdde7ddb120d7ebe0c4c8ea6c"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_gateway.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_gateway.log.txt",
+      "sha256": "7140403db492ebeac6eefaa8b70277d7d9bb9f8b1e3e67205809035c95f1668d"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_pdf.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_pdf.log.txt",
+      "sha256": "c31240f7ebc04464487cbe33f8d47c857b76c869137d3384016c33459807647f"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_recovery.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_recovery.log.txt",
+      "sha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_remaining.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_remaining.log.txt",
+      "sha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_ui.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_ui.log.txt",
+      "sha256": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_uq_archive.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_uq_archive.log.txt",
+      "sha256": "1f88aafbbe815437fcc1efaed74682801b422eb81dc99d128e8bda98b71f7f34"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_uq_worker.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/test_uq_worker.log.txt",
+      "sha256": "7d83fc9289bde9e70b60f44bbe8e34cbf2447578546cec5148cffbd6c64e583c"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/verify_exports.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/integration-2026-11-27T16-34-13-023Z-20852/verify_exports.log.txt",
+      "sha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/inventory-final-2.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/inventory-final-2.log.txt",
+      "sha256": "efba65681246f185f23267ceacec828bac6d981321096ed6cf7f6765a0696900"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/inventory-final.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/inventory-final.log.txt",
+      "sha256": "efba65681246f185f23267ceacec828bac6d981321096ed6cf7f6765a0696900"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/inventory-regenerate.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/inventory-regenerate.log.txt",
+      "sha256": "efba65681246f185f23267ceacec828bac6d981321096ed6cf7f6765a0696900"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/inventory.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/inventory.log.txt",
+      "sha256": "542f20965033e7664e5187b1067f65762bd7a2ab42bb10b7b6de0db5b8b4cc7e"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/lint.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/lint.log.txt",
+      "sha256": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/locale_final_test_phase1_browser.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/locale_final_test_phase1_browser.log.txt",
+      "sha256": "96d2fef3fa6090a4a1b7a821369dd6eb6c5a1455b5139cb0bb31f56e6d7724ea"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/locale_final_verify_phase4_baseline.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/locale_final_verify_phase4_baseline.log.txt",
+      "sha256": "a144d91ddf604c8cb86cf8982e82221241fa38b9c69c29a51d120303b26714fb"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/locale_final_verify_phase4_integration.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/locale_final_verify_phase4_integration.log.txt",
+      "sha256": "64e1439003df2054b9eb5e7fa12bd1a54556cbfe1e8fb37163ae2f8e07df7607"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/missing-field-probe.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/missing-field-probe.log.txt",
+      "sha256": "dc7860183718fcab1350d987c21e4f99cd6fa97ac45dc86f47039c2bd6a95ee1"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/npm-ci.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/npm-ci.log.txt",
+      "sha256": "b3c032bf72687c4af61f62aaf01f2221dc0c4f9b3044dcd9b44c7cc2e9d58c1f"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/register-2.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/register-2.log.txt",
+      "sha256": "42877376728ffc5c11c14985e9902725ec6d851df09c2bbe6277e77c92ec16da"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/register-3.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/register-3.log.txt",
+      "sha256": "e9584a9a81b891644f3ad808a03b9475919dec7fcefd1fe34b76df6ae875f7a3"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/register-final.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/register-final.log.txt",
+      "sha256": "e9584a9a81b891644f3ad808a03b9475919dec7fcefd1fe34b76df6ae875f7a3"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/register.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/register.log.txt",
+      "sha256": "4e0863fcb9495d2a342e024e8499daac614552f71ac57fc9bc441d209c8e2f92"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/test_phase1_browser.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/test_phase1_browser.log.txt",
+      "sha256": "96d2fef3fa6090a4a1b7a821369dd6eb6c5a1455b5139cb0bb31f56e6d7724ea"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/verify_phase4_baseline.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/verify_phase4_baseline.log.txt",
+      "sha256": "a47ca13094ba29b60587870e1bc3296c63e9a2b6a5eec3ab6a184597b7d7b8a5"
+    },
+    {
+      "originalArchivedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/verify_phase4_integration.log",
+      "persistedPath": "docs/audit/dual-independent-audit-review/phase23-irr-evidence/verify_phase4_integration.log.txt",
+      "sha256": "42cea28d7fe030851b3c54f9a190e7bdb2db30dad611095c2d2f8b4a8c052f2f"
+    }
+  ]
+}

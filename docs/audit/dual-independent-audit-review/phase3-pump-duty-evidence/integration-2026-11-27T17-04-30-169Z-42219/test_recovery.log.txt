@@ -1,0 +1,14 @@
+
+> solarpv-studio@1.0.3 test:recovery
+> tsx scripts/test-snapshot-recovery.ts
+
+PASS broken-json-term
+PASS broken-json-int
+PASS unsupported-schema
+PASS malformed-map
+PASS valid-empty
+PASS valid-populated
+PASS new-file
+PASS io-error-directory
+PASS dangling-symlink
+PASS snapshot recovery: missing vs unreadable/invalid, no seed/partial import, direct-save and SIGINT/SIGTERM preservation, degraded health.

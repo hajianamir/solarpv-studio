@@ -21,11 +21,19 @@ jobs:
       REAL_INTERNET: 'false'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Exact historical-base compatibility tests require ancestor objects.
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - run: node scripts/ci-command.mjs npm ci
+      - name: Full-precision screening indicator regression
+        run: node scripts/ci-command.mjs npm run test:iranian:benefits
+      - name: Explicit bounded conventional IRR regression
+        run: node scripts/ci-command.mjs npm run test:periodic-irr
+      - name: Explicit steady-duty pumping energy regression
+        run: node scripts/ci-command.mjs npm run test:pump:duty
       - name: Locate native Windows Chromium
         if: runner.os == 'Windows'
         shell: pwsh
@@ -38,6 +46,7 @@ jobs:
       - run: npm run test:uq:contract
       - run: npm run test:uq:worker
       - run: npm run test:uq:archive
+      - run: npm run test:uq:retirement
       - run: npm run test:uq:display
       - run: npm run test:uq:metrics
       - run: npm run build

@@ -20,6 +20,40 @@ try {
  const address=server.httpServer.address();assert.ok(address&&typeof address==='object');
  await page.goto(`http://127.0.0.1:${address.port}`);
  const tab=async(id:string)=>page.getByTestId(`workflow-tab-${id}`).locator(':visible').first().click();
+ // Real controls: independent explicit duty inputs, never inferred from the legacy panel.
+ await tab('iran_regulations');
+ const pumpingNpvBefore=await page.getByTestId('iranian-equity-npv').getAttribute('data-value');
+ await tab('solar_pumping');
+ assert.equal(await page.locator('#pump-duty-enable').isChecked(),false);
+ await page.locator('#pump-duty-enable').check();
+ await page.getByTestId('pump-duty-unavailable').waitFor();
+ const pumpOracle=JSON.parse(await readFile('scripts/fixtures/physics/pump-duty-energy-decimal.json','utf8'));
+ const duty=pumpOracle.cases.find((c:{inputs:Record<string,unknown>[]})=>{
+  const v=c.inputs[0];return v.dailyWaterVolumeM3===120&&v.totalDynamicHeadM===50&&v.pumpingHoursPerDay===5&&v.pumpHydraulicEfficiency===.6&&v.motorEfficiency===.8&&v.driveEfficiency===.95&&v.availableDcEnergyKwhPerDay===100;
+ });
+ assert.ok(duty);
+ for(const [key,value] of Object.entries(duty.inputs[0]))if(typeof value==='number')await page.locator(`#pump-duty-${key}`).fill(String(value));
+ const pumpResult=page.getByTestId('pump-duty-result');await pumpResult.waitFor();
+ assert.equal(await pumpResult.getAttribute('data-policy'),'pump_steady_duty_energy_v1');
+ assert.equal(await pumpResult.getAttribute('data-guaranteed'),'false');
+ assert.equal(await pumpResult.getAttribute('data-energy-balance'),'no_aggregate_deficit');
+ for(const key of ['hydraulicPowerKw','pumpShaftPowerKw','motorElectricalPowerKw','driveDcInputPowerKw']) {
+  const metric=page.getByTestId(`pump-duty-${key}`);const raw=Number(await metric.getAttribute('data-raw'));
+  assert.ok(Math.abs(raw-duty.expected[key])<1e-10);assert.equal(await metric.innerText(),raw.toFixed(4));
+ }
+ assert.ok(Math.abs(Number(await page.getByTestId('pump-duty-required-energy').getAttribute('data-raw'))-duty.expected.requiredDcEnergyKwhPerDay)<1e-10);
+ await page.locator('#pump-duty-availableDcEnergyKwhPerDay').fill('10');
+ assert.equal(await pumpResult.getAttribute('data-energy-balance'),'deficit');
+ assert.ok(Math.abs(Number(await page.getByTestId('pump-duty-deficit').getAttribute('data-raw'))-(duty.expected.requiredDcEnergyKwhPerDay-10))<1e-10);
+ await page.locator('#pump-duty-dailyWaterVolumeM3').fill('0');
+ assert.equal(Number(await page.getByTestId('pump-duty-required-energy').getAttribute('data-raw')),0);
+ assert.equal(await pumpResult.getAttribute('data-guaranteed'),'false');
+ await page.locator('#pump-duty-pumpHydraulicEfficiency').fill('0');
+ await page.getByTestId('pump-duty-unavailable').waitFor();assert.equal(await pumpResult.count(),0);
+ await page.locator('#pump-duty-enable').uncheck();assert.equal(await pumpResult.count(),0);
+ await tab('iran_regulations');assert.equal(await page.getByTestId('iranian-equity-npv').getAttribute('data-value'),pumpingNpvBefore,'Duty comparison must not mutate finance');
+ await tab('solar_pumping');assert.equal(await page.locator('#pump-duty-enable').isChecked(),false,'Temporary comparison is not persisted as selected project policy');
+
  async function check() {
   await tab('waterfall_loss');
   assert.match(await page.getByTestId('scalar-transposition-policy').innerText(),/legacy_latitude_tilt_screen_v1/);
@@ -46,6 +80,27 @@ try {
   await tab('iran_regulations');
   assert.equal(Number(await page.getByTestId('iranian-input-summary').getAttribute('data-dc-kwp')),dc);
   assert.equal(Number(await page.getByTestId('iranian-input-summary').getAttribute('data-annual-mwh')),annual);
+  const penalty=page.getByTestId('iranian-penalty-proxy');
+  assert.equal(await penalty.getAttribute('data-policy'),'iranian_benefit_indicators_full_precision_v1');
+  assert.ok(Math.abs(Number(await penalty.getAttribute('data-raw-million-toman'))-annual*4.2)<1e-8);
+  assert.ok((await penalty.innerText()).includes((annual*4.2).toFixed(2)));
+  assert.ok(Math.abs(Number(await page.getByTestId('iranian-outage-proxy').getAttribute('data-raw-million-toman'))-dc*8.5)<1e-8);
+  for(const kind of ['project','equity']) {
+   const irr=page.getByTestId(`iranian-${kind}-irr`);
+   const status=await irr.getAttribute('data-status');
+   assert.ok(status==='available'||status==='unavailable');
+   if(status==='available') {
+    const raw=Number(await irr.getAttribute('data-raw-pct'));
+    assert.ok(Number.isFinite(raw)&&raw>=-90&&raw<=1000);
+    assert.equal(await irr.innerText(),raw.toFixed(2)+'%');
+   } else {
+    assert.ok(await irr.getAttribute('data-reason'));
+    assert.equal(await irr.getAttribute('data-raw-pct'),null);
+   }
+  }
+  assert.equal(await page.getByTestId('iranian-equity-irr').getAttribute('data-policy'),'conventional_periodic_irr_bounded_v1');
+  await page.getByTestId('iranian-irr-policy').waitFor();
+  assert.match(await page.getByTestId('f04-regulatory-annualization-disclosure').innerText(),/cash-flow ledger retains full precision|جریان نقدی دقت کامل/);
   return dc;
  }
  await tab('electrical_requirements');await page.locator('#target-plant-capacity-input').fill('1100');

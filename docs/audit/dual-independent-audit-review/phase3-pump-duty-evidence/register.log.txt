@@ -1,0 +1,20 @@
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#05f8b69d8881 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#05f8b69d8881
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#11a977d37072 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#11a977d37072
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#1406d30c54b7: fixture inputs did not execute the exact formula AST node
+    at executeReferenceFixture (/home/user/solarpv-studio/scripts/verify-physics-reference-gate.ts:625:10)
+    at async <anonymous> (/home/user/solarpv-studio/scripts/register-pump-duty-evidence.ts:14:8) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

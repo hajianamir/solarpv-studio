@@ -1,0 +1,7 @@
+{
+  "changedSourceHashes": [
+    "src/engine/solarPumpEngine.ts"
+  ],
+  "allNumericalComparisonsAndQualificationsIdentical": true,
+  "reason": "Only added explanatory comments to legacy pump numerical owner; actual-base48case compatibility unchanged"
+}

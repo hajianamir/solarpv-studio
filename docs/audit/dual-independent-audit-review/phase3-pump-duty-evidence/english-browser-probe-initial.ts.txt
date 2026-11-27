@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {preview} from 'vite';
+import {chromium} from 'playwright-core';
+const server=await preview({preview:{host:'127.0.0.1',port:0,strictPort:true}});
+let browser:Awaited<ReturnType<typeof chromium.launch>>|undefined;
+try {
+ let executablePath:string|undefined;
+ if(process.platform==='linux'){process.env.AWS_EXECUTION_ENV??='AWS_Lambda_nodejs20.x';executablePath=await(await import('@sparticuz/chromium')).default.executablePath();}
+ browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
+ const page=await browser.newPage({serviceWorkers:'block'});const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.route('https://**/*',route=>route.abort());
+ const address=server.httpServer.address();assert.ok(address&&typeof address==='object');await page.goto(`http://127.0.0.1:${address.port}`);
+ await page.getByTestId('workflow-tab-solar_pumping').locator(':visible').first().click();
+ await page.keyboard.press('Control+e');
+ assert.match(await page.getByTestId('pump-duty-disclosure').innerText(),/runtime is not inferred from PSH/);
+ await page.locator('#pump-duty-enable').check();await page.getByTestId('pump-duty-unavailable').waitFor();
+ const fixture=JSON.parse(await readFile('scripts/fixtures/physics/pump-duty-energy-decimal.json','utf8'));
+ const witness=fixture.cases.find((c:{inputs:Record<string,unknown>[]})=>{const v=c.inputs[0];return v.dailyWaterVolumeM3===120&&v.totalDynamicHeadM===50&&v.pumpingHoursPerDay===5&&v.pumpHydraulicEfficiency===.6&&v.motorEfficiency===.8&&v.driveEfficiency===.95&&v.availableDcEnergyKwhPerDay===100;});assert.ok(witness);
+ for(const [key,value] of Object.entries(witness.inputs[0]))if(typeof value==='number')await page.locator(`#pump-duty-${key}`).fill(String(value));
+ await page.getByTestId('pump-duty-result').waitFor();
+ assert.match(await page.getByTestId('pump-duty-qualification').innerText(),/No aggregate deficit; chronological feasibility and water delivery remain unassessed/);
+ assert.ok(Math.abs(Number(await page.getByTestId('pump-duty-required-energy').getAttribute('data-raw'))-witness.expected.requiredDcEnergyKwhPerDay)<1e-10);
+ await page.locator('#pump-duty-availableDcEnergyKwhPerDay').fill('10');
+ assert.match(await page.getByTestId('pump-duty-qualification').innerText(),/Aggregate daily energy is insufficient/);
+ await page.locator('#pump-duty-driveEfficiency').fill('0');await page.getByTestId('pump-duty-unavailable').waitFor();assert.equal(await page.getByTestId('pump-duty-result').count(),0);
+ assert.deepEqual(errors,[]);
+ console.log('PASS supplementary English production-browser real form, independent energy witness, no-deficit/deficit/invalid and disclosure; default-Persian path remains in test:phase1:browser.');
+} finally {await browser?.close();await new Promise<void>((resolve,reject)=>server.httpServer.close(error=>error?reject(error):resolve()));}
