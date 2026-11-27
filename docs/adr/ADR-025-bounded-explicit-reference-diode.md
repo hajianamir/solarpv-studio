@@ -2,6 +2,8 @@
 
 Date: 2026-11-03. Status: implemented for a separate opt-in numerical API; not a replacement of legacy extraction or full U05/Phase3/adoption approval. Preserve ADR-024's legacy failure witness and all Phase2 gates.
 
+UI continuation: ADR-033 now adds a temporary explicit I–V metrics selector. The no-UI statements below describe the original numerical-only scope. Catalog/persistence/HTTP/annual-energy/financial adoption and all physical/fitting limits remain unchanged.
+
 ## Decision and compatibility
 
 Add strict `desoto_reference_bounded_v1` inputs in `src/contracts/referenceDiode.ts` and numerical owner `src/engine/core/referenceDiodeSolver.ts`. Public entry: `evaluateReferenceDiode`, also re-exported by `singleDiodeModel.ts`. The old positional `calculateSingleDiodeCurve`, its STC-extraction heuristic, sampled metrics, callers and known seed failure are unchanged. No hidden fallback is permitted between the two APIs.

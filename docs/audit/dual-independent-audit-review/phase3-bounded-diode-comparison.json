@@ -22,7 +22,7 @@
   "limitations": [
     "No arbitrary datasheet fitting or beta/gamma constraint",
     "No field/manufacturer/whole-model applicability approval",
-    "No current App/catalog/persistence/HTTP/annual-energy/financial selection",
+    "Only temporary explicit I-V metrics UI selection; no catalog/persistence/HTTP/annual-energy/financial adoption",
     "Legacy solver and its defect remain unchanged; new API is explicit only"
   ]
 }

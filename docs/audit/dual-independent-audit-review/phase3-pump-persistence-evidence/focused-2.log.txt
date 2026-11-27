@@ -1,0 +1,42 @@
+
+> solarpv-studio@1.0.3 test:pump:duty
+> tsx scripts/test-pump-duty-energy.ts && tsx scripts/test-pump-duty-settings.ts
+
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#05f8b69d8881 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#05f8b69d8881
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#11a977d37072 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#11a977d37072
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#1406d30c54b7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#1406d30c54b7
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#333f9bfdd296 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#333f9bfdd296
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#34feadf8240b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#34feadf8240b
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#4bfe92046bc3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#4bfe92046bc3
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#4ee4547e71b3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#4ee4547e71b3
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#5018c66ff417 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#5018c66ff417
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#5cde07ddb1d2 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#5cde07ddb1d2
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#6278ebd4df20 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#6278ebd4df20
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#6fac04b9b615 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#6fac04b9b615
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#a5b9afbebd52 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#a5b9afbebd52
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c418006bf49d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c418006bf49d
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c42994af6dd0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c42994af6dd0
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c972fb52ae3c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#c972fb52ae3c
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#ca99f73525a6 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#ca99f73525a6
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#efa30bb53b6b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#efa30bb53b6b
+Sensitivity witness: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#ffdaec5ddf08 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy: src/engine/core/pumpDutyEnergy.ts#assessPumpDutyEnergy#ffdaec5ddf08
+PASS 869 Decimal duty cases; 18 reached/sensitive expressions; explicit energy stages, no delivery/finance adoption, invalid/zero/overflow/underflow/serialization/bilingual boundaries
+Pump settings: 59 invalid schema/migration/transfer cases, legacy defaults, roundtrip, no mutation, bilingual SSR passed.

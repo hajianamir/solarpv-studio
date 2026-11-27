@@ -1,0 +1,33 @@
+# Thermal scalar-origin qualification — internal reviews
+
+Task date2026-11-03. Same branch/base as plan. Three passes by the same coding agent; not independent reviewers, external model execution or certification. Scope is TO-01–03; previous pump work preserved.
+
+## Pass1 — Contract and compatibility, followed by producer/consumer investigation
+
+Traced optional17th signed thermal override through positional waterfall, named adapter and canonical annual API. The shared stage previously inferred synthetic8760origin for every supplied scalar although no profile enters that API. Added optional report metadata (old report literals/files stay compatible) but fresh computation always emits qualification. Unknown legacy reports explicitly render unknown. No signature/default/slot migration.
+
+Follow-up: executed actual base c171538 waterfall source through a temporary sibling module, cleaned in finally, for30cross-product cases (three mount environments, zero/positive PSH, absent/cold/zero/hot/full-loss override). Compared whole report objects after stripping only additive metadata and changed thermal explanatory strings. Everything else, including stages/raw signs/rounded values/PR/final energy, must match exactly. Direct/named/canonical metadata and JSON serialization agree. This is actual-base compatibility, not independent climate validation.
+
+## Pass2 — Correctness and safety, followed by evidence investigation
+
+Reviewed signed-thermal owner and existing pinned pvlib0131 reference fixture. That fixture verifies conversion of signed loss to stage gain/loss from component conditions; it cannot identify a caller scalar's time-series origin. Likewise App's separately generated synthetic profile does not justify a claim for every direct API caller. No new physical source/coefficient or normative assertion is needed to remove an unsupported provenance claim. No new external-source acquisition or hourly climate-model validation is claimed.
+
+Follow-up: metadata uses unknown coverage/null sample count/false validated applicability and financial adoption eligibility in both branches. It intentionally does not trust a claimed origin or convert arbitrary scalar output into adoption permission. Tests preserve0vsabsence and cold-gain signs and prohibit the8760/synthetic claims in both stage descriptions. Both locales render qualified known bases and missing-metadata legacy state. Existing independent signed-thermal references and full financial regressions remain required; no expected physical output is generated from current production output.
+
+## Pass3 — Runtime and delivery, followed by artifact investigation
+
+Traced App's shared waterfall report into report snapshot producer (OfficialReportModal), not just a UI import. Added production-browser assertions for displayed basis and actual downloaded JSON basis/null sample count/false eligibility. Existing synthetic profile's separate policy/isMeasuredHourlyWeather checks remain intact. Added focused suite to existing phase2 command; combined phase1 browser remains in Ubuntu CI from prior continuation. Configuration is not remote execution evidence.
+
+Follow-up: captured final focused/baseline/browser/integration outcomes in the accompanying receipt, preserving any failed attempts. Inventory regeneration adds the explicit contract with unknown whole-model classification rather than inventing a reference record. No native Windows/Docker/exact-source remote-CI or whole-model claim. Rollback follows ADR-032: selective metadata/UI inverse, retaining corrected neutral provenance text. Full U02/U07 and Phase2/3 remain incomplete, release blocked. No commit/push/PR/merge performed.
+
+## Findings from the first broad attempt and follow-up
+
+The first broad baseline failed core/coverage/phase2 exact whole-report fixture shape/text expectations and the reference gate's new comparison-expression obligations. These failures are retained, not waived. The gate recognizes comparisons as scientific candidates even for new provenance-only predicates placed directly in `src/engine/waterfallLossEngine.ts`. The final implementation places origin classification and bilingual explanatory selection in `src/contracts/thermalOrigin.ts`, where they belong semantically; the numerical engine merely attaches/uses the returned contract. No mathematical operation, threshold or guard was moved or changed, and no gate source or exclusion rule was changed. Re-extracting formula units against actual HEAD reports zero added/changed waterfall formula units. Existing numerical tests and the full independent-reference gate pass after that separation.
+
+Existing expected whole-report fixtures were extended only with the known static metadata contract and corrected thermal strings, with matching generator updates. All numerical trees of the three affected existing fixtures were compared against actual HEAD after excluding only the new metadata key: exactly unchanged. The two standard-library Decimal generator functions reproduce the updated named/roof expected objects semantically, without TypeScript imports/outputs. Annual-reference scientific Python outputs were not regenerated or reinterpreted as new evidence; only its static zero-capacity report metadata/text contract changed. Scientific fields, source versions and tolerances remain unchanged. A static `thermal-origin-text-contract.json` is API contract data, explicitly not a new independent physical reference.
+
+Failed-run reference instrumentation left two UUID temporary sibling source files; inspected names/content and confirmed no test process remained, then removed only those generated scratch modules before final source identification. This did not remove user-authored files or weaken reference assertions. Final source identity is checked again after all gates. Neither removing unsupported provenance prose nor updating static API expected fields closes inherited scientific reference debt.
+
+## Final disposition
+
+Final sequential baseline13/13, combined phase1 production-browser command and integration11/11 PASS. Both broad receipts have stable executable identity `bc581e78a3b02d31bec7ee7406c05fb65c2a3595cebe142274dd36ec30865ed7`; final source rechecked against that digest. Lint93warnings/0errors. Initial baseline9/13 and source instability from failed-run temporary instrumentation remain recorded, not converted to a pass. Static-contract generator checks and numerical-tree preservation proof are archived. TO-01–03: VERIFIED_WITHIN_SCOPE; implementation IMPLEMENTED; release BLOCKED. Raw sandbox clock dates differ from task date and are preserved. No final-source native/remote/platform release claim.

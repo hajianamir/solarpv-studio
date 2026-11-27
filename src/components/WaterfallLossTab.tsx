@@ -1,3 +1,4 @@
+import {THERMAL_ORIGIN_DISCLOSURE} from '../contracts/thermalOrigin';
 import { SCALAR_TRANSPOSITION_DISCLOSURE } from '../engine/core/scalarTransposition';
 import {BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import {ReferenceLossStatus} from './ReferenceLossStatus';
@@ -70,6 +71,9 @@ export const WaterfallLossTab: React.FC<WaterfallLossTabProps> = ({
   return (
     <div className="space-y-6">
       <ReferenceLossStatus evaluation={report.annualReference} lang={lang}/>
+      <p role="note" data-testid="thermal-input-qualification" data-basis={report.thermalInputQualification?.basis??'unknown_legacy_report'} className="text-xs text-slate-400">
+        {report.thermalInputQualification?.basis??'unknown_legacy_report'} · {THERMAL_ORIGIN_DISCLOSURE[lang]}
+      </p>
       {/* Title */}
       <div className="studio-card">
         <h1 className="text-lg sm:text-xl font-bold text-industrial-accent mb-1 flex items-center gap-2">

@@ -1,0 +1,2 @@
+PASS pump lifecycle fa: actual local save/restore/cancel, null/zero/off/remount, downloaded portable JSON, replacement, rejection, legacy reset.
+PASS pump lifecycle en: actual local save/restore/cancel, null/zero/off/remount, downloaded portable JSON, replacement, rejection, legacy reset.

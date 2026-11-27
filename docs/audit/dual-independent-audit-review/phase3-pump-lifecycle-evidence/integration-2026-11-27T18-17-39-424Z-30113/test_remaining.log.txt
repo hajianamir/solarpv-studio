@@ -1,0 +1,8 @@
+
+> solarpv-studio@1.0.3 test:remaining
+> tsx scripts/test-remaining-product-fixes.ts && tsx scripts/test-remaining-shading-lifecycle.ts && tsx scripts/test-remaining-poa-http.ts && tsx scripts/test-remaining-worker-browser.ts
+
+{"status":"PASS","trackerCases":1260,"maxShadeError":2.6645352591003757e-15,"rearCases":128,"layouts":27,"fuelTankLiters":2,"annualShadingFraction":0.05651224353318144}
+PASS shading lifecycle: two concurrent jobs, isolated cancellation, capacity, runtime/message/post errors, owned-worker cleanup, sync/cooperative parity, and live fallback timer cancellation. Fake Worker protocol tests; native browser tested separately by browser regression.
+PASS real HTTP POA: deterministic legacy south-zero default, both explicit conventions continuous around 180°, unknown convention rejected.
+PASS real Chromium: two native Workers, cancellation during progress isolated from concurrent completion; live no-Worker fallback processes timer cancellation. Vite module harness, not production bundle coverage.

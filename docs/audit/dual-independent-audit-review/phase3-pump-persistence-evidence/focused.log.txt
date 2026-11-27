@@ -1,0 +1,22 @@
+
+> solarpv-studio@1.0.3 test:pump:duty
+> tsx scripts/test-pump-duty-energy.ts && tsx scripts/test-pump-duty-settings.ts
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /در پروژه ذخیره نمی‌شوند/. Input:
+
+'<section class="studio-card space-y-3" data-testid="pump-duty-panel"><label for="pump-duty-enable" class="flex gap-2 items-center font-bold text-sm"><input id="pump-duty-enable" type="checkbox"/>مقایسه اختیاری تراز انرژی کارکرد ثابت</label><p class="text-xs" data-testid="pump-duty-disclosure">فقط تراز انرژی با هد و راندمان ثابت؛ ساعات کار از PSH استنتاج نمی‌شود. هیچ مقداری از مدل قدیمی کپی نمی‌شود. نبود کسری روزانه، راه‌اندازی، انتخاب تجهیزات یا آبدهی را تضمین نمی‌کند؛ منحنی پمپ، موتور، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند. ورودی‌ها در پروژه ذخیره می‌شوند، اما فرض کاربر و بدون تطبیق با سایت یا تجهیزات‌اند؛ پس از تغییر زمینه بازبینی کنید. نتیجه یا تأیید تجهیزات ذخیره نمی‌شود؛ به انرژی سالانه یا مالی منتقل نمی‌شوند.</p><p data-testid="pump-duty-settings-policy" class="text-xs">pump-duty-settings-v1 · user_declared_unmatched</p></section>'
+
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-pump-duty-energy.ts:57:9) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '<section class="studio-card space-y-3" data-testid="pump-duty-panel"><label for="pump-duty-enable" class="flex gap-2 items-center font-bold text-sm"><input id="pump-duty-enable" type="checkbox"/>مقایسه اختیاری تراز انرژی کارکرد ثابت</label><p class="text-xs" data-testid="pump-duty-disclosure">فقط تراز انرژی با هد و راندمان ثابت؛ ساعات کار از PSH استنتاج نمی‌شود. هیچ مقداری از مدل قدیمی کپی نمی‌شود. نبود کسری روزانه، راه‌اندازی، انتخاب تجهیزات یا آبدهی را تضمین نمی‌کند؛ منحنی پمپ، موتور، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند. ورودی‌ها در پروژه ذخیره می‌شوند، اما فرض کاربر و بدون تطبیق با سایت یا تجهیزات‌اند؛ پس از تغییر زمینه بازبینی کنید. نتیجه یا تأیید تجهیزات ذخیره نمی‌شود؛ به انرژی سالانه یا مالی منتقل نمی‌شوند.</p><p data-testid="pump-duty-settings-policy" class="text-xs">pump-duty-settings-v1 · user_declared_unmatched</p></section>',
+  expected: /در پروژه ذخیره نمی‌شوند/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

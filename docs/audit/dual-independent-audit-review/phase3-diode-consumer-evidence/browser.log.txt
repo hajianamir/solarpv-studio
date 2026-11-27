@@ -1,0 +1,2 @@
+PASS reference diode fa: explicit independent metrics, invalid/stale/dark/exhaustion, temporary reset, unchanged legacy/finance and no project settings.
+PASS reference diode en: explicit independent metrics, invalid/stale/dark/exhaustion, temporary reset, unchanged legacy/finance and no project settings.

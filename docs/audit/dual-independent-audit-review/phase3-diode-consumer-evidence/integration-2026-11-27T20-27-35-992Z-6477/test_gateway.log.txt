@@ -1,0 +1,31 @@
+
+> solarpv-studio@1.0.3 test:gateway
+> tsx scripts/test-data-gateway-regressions.ts
+
+[PASS] SoilGrids valid zeros are retained as valid provider values
+[PASS] Incomplete soil texture payload is explicitly analytical, not mislabeled live
+[PASS] Incomplete depth coverage is disclosed per property, including bulk density and pH
+[PASS] Overlapping SoilGrids intervals are rejected rather than averaged as 0-30cm coverage
+[PASS] Duplicate SoilGrids property layers invalidate the profile and prevent a fully-live classification
+[PASS] Soil provider errors use explicitly estimated fallback and short fallback-cache hit
+[PASS] Remote climate cache hit reports hit and reuses provider data
+[PASS] PVGIS path overlays NASA POWER extrema from the same coordinates and records reanalysis provenance, not field measurement
+[PASS] Missing NASA extrema remain location-dependent local-model estimates with preliminary limitations
+[PASS] Analytical-only policy refuses an incompatible remote cache entry
+[PASS] Near-zero positive NASA provider values remain positive, available, and explicit
+[PASS] Provider HTTP failures result in explicit analytical fallback metadata
+[PASS] Complete primary-provider zero is preserved as unsizable and does not fall through to positive secondary data
+[PASS] NASA POWER primary zero is a valid unsizable value and does not trigger secondary substitution
+[PASS] Existing positive PSH<1 scenario floor is preserved and explicitly observable
+[PASS] Caller abort propagates without analytical fallback or circuit-breaker failure
+[PASS] Circuit breaker never counts an AbortError or invokes fallback
+[PASS] Soil provider propagates caller abort instead of returning a successful fallback
+[PASS] Provider limiter enforces one shared concurrency cap across callers
+[provider-limiter] post-invocation lease release failed or was unconfirmed; no automatic upstream retry
+[PASS] Nominatim request uses a distributed claim and post-start release
+[PASS] Invalid/HTTP-failed coordinator replies fail closed before every upstream start (synthetic REST bridge)
+[provider-limiter] post-invocation lease release failed or was unconfirmed; no automatic upstream retry
+[PASS] Malformed post-start release is reported as post-start and does not retry upstream
+[PASS] Distributed start gate rechecks after a 900ms asymmetric claim response (mocked Redis REST)
+[PASS] Production Nominatim fails closed without a shared coordinator
+Data gateway regression checks: 24/24 PASS

@@ -1,0 +1,31 @@
+
+> solarpv-studio@1.0.3 verify:physics-reference-gate
+> python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts
+
+
+> solarpv-studio@1.0.3 test:physics-reference-gate
+> tsx scripts/test-physics-reference-gate.ts
+
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (iamCoupled)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#4a498fab2fc9
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (angleIncidenceDeg)
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (iamCoupled)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#4a498fab2fc9
+Sensitivity witness: src/engine/exampleEngine.ts#accumulate#60469748c2d8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#accumulate: src/engine/exampleEngine.ts#accumulate#60469748c2d8
+Sensitivity witness: src/engine/exampleEngine.ts#guarded#570c37003eeb (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#guarded: src/engine/exampleEngine.ts#guarded#570c37003eeb
+Sensitivity witness: src/engine/exampleEngine.ts#increment#912133bd03f5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#increment: src/engine/exampleEngine.ts#increment#912133bd03f5
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Physics reference gate tests passed (formula mutations fail closed; prose-only edits do not; CI wiring is present).
+Independent physics reference gate FAILED: every changed/new formula expression needs an independently sourced fixture and executable assertion.
+- src/engine/waterfallLossEngine.ts#computeWaterfallLosses#5c372ee4a7c5: expected exactly one independent reference fixture record, found 0
+- src/engine/waterfallLossEngine.ts#computeWaterfallLosses#7f5dfa5853b5: expected exactly one independent reference fixture record, found 0
+- src/engine/waterfallLossEngine.ts#computeWaterfallLosses#ed780d73caed: expected exactly one independent reference fixture record, found 0
+Do not substitute checked-in targets, labels, copied implementation outputs, or analytic self-comparisons for independent reference data.

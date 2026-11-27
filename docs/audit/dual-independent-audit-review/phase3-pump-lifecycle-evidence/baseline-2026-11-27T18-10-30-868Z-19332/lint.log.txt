@@ -1,0 +1,26 @@
+
+> solarpv-studio@1.0.3 lint
+> npm run lint:types && npm run lint:eslint
+
+
+> solarpv-studio@1.0.3 lint:types
+> npm run lint:types:client && npm run lint:types:node
+
+
+> solarpv-studio@1.0.3 lint:types:client
+> tsc --noEmit
+
+
+> solarpv-studio@1.0.3 lint:types:node
+> tsc --project tsconfig.node.json --noEmit
+
+scripts/test-pump-duty-lifecycle-browser.ts(13,9): error TS7022: 'context' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+scripts/test-pump-duty-lifecycle-browser.ts(15,10): error TS7022: 'page' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+scripts/test-pump-duty-lifecycle-browser.ts(15,84): error TS7006: Parameter 'e' implicitly has an 'any' type.
+scripts/test-pump-duty-lifecycle-browser.ts(16,36): error TS7006: Parameter 'r' implicitly has an 'any' type.
+scripts/test-pump-duty-lifecycle-browser.ts(23,10): error TS7023: 'enable' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+scripts/test-pump-duty-lifecycle-browser.ts(37,40): error TS7006: Parameter 'd' implicitly has an 'any' type.
+scripts/test-pump-duty-lifecycle-browser.ts(43,24): error TS7006: Parameter 'value' implicitly has an 'any' type.
+scripts/test-pump-duty-lifecycle-browser.ts(44,40): error TS7006: Parameter 'd' implicitly has an 'any' type.
+scripts/test-pump-duty-lifecycle-browser.ts(49,24): error TS7006: Parameter 'value' implicitly has an 'any' type.
+scripts/test-pump-duty-lifecycle-browser.ts(51,38): error TS7006: Parameter 'd' implicitly has an 'any' type.

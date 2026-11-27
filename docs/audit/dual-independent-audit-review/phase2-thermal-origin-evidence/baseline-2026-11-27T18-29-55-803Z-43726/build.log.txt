@@ -1,0 +1,141 @@
+
+> solarpv-studio@1.0.3 build
+> vite build
+
+vite v6.4.5 building for production...
+transforming...
+node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `Number`, so the bare object literal survived into every bundle."
+
+in "node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `Number`, so the bare object literal survived into every bundle."
+
+in "node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `Number`, so the bare object literal survived into every bundle."
+
+in "node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `Number`, so the bare object literal survived into every bundle."
+
+in "node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+✓ 2617 modules transformed.
+rendering chunks...
+[plugin vite:reporter] 
+(!) /home/user/solarpv-studio/src/studies/studyExchange.ts is dynamically imported by /home/user/solarpv-studio/src/studies/studyLibrary.ts but also statically imported by /home/user/solarpv-studio/src/components/PvlibStudyPanel.tsx, /home/user/solarpv-studio/src/components/StudyLibrary.tsx, /home/user/solarpv-studio/src/components/StudyLibraryTools.tsx, /home/user/solarpv-studio/src/studies/energyUncertaintyReview.ts, /home/user/solarpv-studio/src/studies/fieldEvidenceReview.ts, /home/user/solarpv-studio/src/studies/integratedStudy.ts, /home/user/solarpv-studio/src/studies/outputCalibrationReview.ts, /home/user/solarpv-studio/src/studies/studyProtocol.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /home/user/solarpv-studio/src/engine/catalogRepository.ts is dynamically imported by /home/user/solarpv-studio/src/engine/equipmentCatalogData.ts but also statically imported by /home/user/solarpv-studio/src/App.tsx, /home/user/solarpv-studio/src/components/BessTab.tsx, /home/user/solarpv-studio/src/components/CatalogTab.tsx, /home/user/solarpv-studio/src/components/PvArrayEngineeringTab.tsx, /home/user/solarpv-studio/src/engine/offlineTransferEngine.ts, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                                       2.19 kB │ gzip:   0.93 kB
+dist/assets/jetbrains-mono-vietnamese-wght-normal-Bt-aOZkq.woff2      7.50 kB
+dist/assets/jetbrains-mono-greek-wght-normal-Bw9x6K1M.woff2           9.00 kB
+dist/assets/inter-vietnamese-wght-normal-CBcvBZtf.woff2              10.25 kB
+dist/assets/inter-greek-ext-wght-normal-DlzME5K_.woff2               11.23 kB
+dist/assets/jetbrains-mono-cyrillic-wght-normal-D73BlboJ.woff2       12.11 kB
+dist/assets/jetbrains-mono-latin-ext-wght-normal-DBQx-q_a.woff2      15.20 kB
+dist/assets/inter-cyrillic-wght-normal-DqGufNeO.woff2                18.75 kB
+dist/assets/inter-greek-wght-normal-CkhJZR-_.woff2                   19.00 kB
+dist/assets/vazirmatn-latin-ext-wght-normal-tDTa1Fj6.woff2           21.86 kB
+dist/manifest.web.json                                               25.74 kB │ gzip:   2.69 kB
+dist/assets/inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2            25.96 kB
+dist/assets/financialUq.worker-CzFH2VbJ.js                           30.80 kB
+dist/assets/vazirmatn-latin-wght-normal-BFexNX-K.woff2               34.52 kB
+dist/assets/jetbrains-mono-latin-wght-normal-B9CIFXIH.woff2          40.40 kB
+dist/assets/vazirmatn-arabic-wght-normal-Cafbb7Zc.woff2              46.31 kB
+dist/assets/inter-latin-wght-normal-Dx4kXJAl.woff2                   48.26 kB
+dist/assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2               85.07 kB
+dist/assets/shadingWorker-BHjxjAkf.js                               156.32 kB
+dist/assets/advancedDispatch.worker-KJfZbq80.js                     518.14 kB
+dist/assets/operatingExperiments.worker-BDfrnY22.js                 524.41 kB
+dist/assets/DejaVuSans-B62gFs84.ttf                                 759.72 kB
+dist/assets/index-JfDZCEQu.css                                      107.08 kB │ gzip:  25.14 kB
+dist/assets/financialUqExecutionPolicy--M-DDCUM.js                    0.25 kB │ gzip:   0.21 kB
+dist/assets/ReferenceLossStatus-CE6DDQcx.js                           1.39 kB │ gzip:   0.88 kB
+dist/assets/geoCoordinates-DNo1ipUD.js                                1.52 kB │ gzip:   0.82 kB
+dist/assets/projectProvenance-CKm6r4xQ.js                             2.37 kB │ gzip:   1.07 kB
+dist/assets/singleDiodeModel-IYporkli.js                              2.47 kB │ gzip:   1.32 kB
+dist/assets/solarPumpEngine-BDJQ87mR.js                               2.84 kB │ gzip:   1.50 kB
+dist/assets/ExternalDataReview-Bfr4DW_V.js                            3.63 kB │ gzip:   1.82 kB
+dist/assets/harmonicsEngine-B_Ltal2f.js                               4.08 kB │ gzip:   2.07 kB
+dist/assets/ResearchWorkspace-EjuC2qJ6.js                             4.65 kB │ gzip:   2.12 kB
+dist/assets/reportingEngine-BqhtJPAJ.js                               4.74 kB │ gzip:   2.04 kB
+dist/assets/provenanceBuilder-D__IeFFs.js                             5.84 kB │ gzip:   2.50 kB
+dist/assets/ScenarioComparisonTab-C4_ev_Ud.js                         7.86 kB │ gzip:   3.07 kB
+dist/assets/OperationalReportModal-tYrY57G9.js                        8.10 kB │ gzip:   3.61 kB
+dist/assets/AdvancedDispatchPanel-D3LHocrr.js                         8.71 kB │ gzip:   3.37 kB
+dist/assets/uncertaintyPropagation-CzYk7cLK.js                        9.02 kB │ gzip:   4.44 kB
+dist/assets/IvCurveTracerTab-B8pSGaMW.js                             11.48 kB │ gzip:   3.68 kB
+dist/assets/WaterfallLossTab-CRz5-1G2.js                             13.67 kB │ gzip:   4.40 kB
+dist/assets/Simulation24hTab-DOwOpit9.js                             13.71 kB │ gzip:   4.24 kB
+dist/assets/reportPdf-BXUddQPt.js                                    14.84 kB │ gzip:   7.28 kB
+dist/assets/HarmonicsGridTab-Cspl9IEG.js                             16.26 kB │ gzip:   4.34 kB
+dist/assets/SolarPumpingTab-GHhpFehv.js                              19.56 kB │ gzip:   6.51 kB
+dist/assets/PowerplantCadLayoutTab-TzuOxrSa.js                       20.33 kB │ gzip:   7.35 kB
+dist/assets/BessTab-6WY7W4Jp.js                                      21.60 kB │ gzip:   6.36 kB
+dist/assets/SiteLocationMap-DgaPzGlZ.js                              25.35 kB │ gzip:   8.01 kB
+dist/assets/IranianRegulationsTab-f9NfY_t9.js                        25.77 kB │ gzip:   8.93 kB
+dist/assets/mvSubstationEngine-DHUagDoG.js                           26.64 kB │ gzip:   9.48 kB
+dist/assets/MvSubstationTab-McWCbpXo.js                              32.10 kB │ gzip:   7.53 kB
+dist/assets/ThreeJsViewer-DSsoxF-O.js                                39.71 kB │ gzip:  12.09 kB
+dist/assets/ClimateTab-CgqUmT6e.js                                   45.68 kB │ gzip:  13.41 kB
+dist/assets/ProtectionBomTab-B7lbSIVn.js                             49.14 kB │ gzip:  13.97 kB
+dist/assets/vendor-lucide-CISi8dMb.js                                50.81 kB │ gzip:  12.12 kB
+dist/assets/structureRecommendationEngine-Byol0vRW.js                52.50 kB │ gzip:  16.61 kB
+dist/assets/RFC3ReportsTab-5eTkjwbE.js                               77.53 kB │ gzip:  21.71 kB
+dist/assets/FinancialTab-CfYnTMlk.js                                 98.55 kB │ gzip:  33.38 kB
+dist/assets/vendor-validation-CD1vSTSx.js                            99.96 kB │ gzip:  28.35 kB
+dist/assets/StructuralFoundationTab-vxwbFanI.js                     106.12 kB │ gzip:  22.91 kB
+dist/assets/OfficialReportModal-B4ecRFQZ.js                         130.99 kB │ gzip:  34.48 kB
+dist/assets/vendor-react-BRvyjzeM.js                                134.67 kB │ gzip:  43.23 kB
+dist/assets/vendor-leaflet-DCIffZry.js                              149.58 kB │ gzip:  43.34 kB
+dist/assets/PvlibStudyPanel-T_G29wwK.js                             168.58 kB │ gzip:  47.48 kB
+dist/assets/ResearchEditor-CuiPGFNF.js                              177.95 kB │ gzip:  65.36 kB
+dist/assets/research-forcing-CN4qD8Xh.js                            178.10 kB │ gzip:  77.41 kB
+dist/assets/vendor-docx-e1s-8cAE.js                                 181.34 kB │ gzip:  51.88 kB
+dist/assets/unitTestsCore-DoswKYO3.js                               261.21 kB │ gzip:  82.45 kB
+dist/assets/vendor-pdf-C54KaIe1.js                                  430.78 kB │ gzip: 178.18 kB
+dist/assets/vendor-three-CaFemgdW.js                                472.70 kB │ gzip: 118.08 kB
+dist/assets/vendor-pdf-font-BQ9bhSnR.js                             716.78 kB │ gzip: 329.76 kB
+dist/assets/vendor-spreadsheet-mhZc_zmi.js                          939.78 kB │ gzip: 271.10 kB
+dist/assets/index-DdQyxWsp.js                                     1,000.31 kB │ gzip: 299.93 kB
+
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 21.71s

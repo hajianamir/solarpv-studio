@@ -1,0 +1,83 @@
+
+> solarpv-studio@1.0.3 test
+> tsx scripts/run-all-benchmarks.ts
+
+{"status":"PASS","cases":58,"auditTables":748,"auditStations":7,"stationRoadOverlapM2":0,"pitchCases":[{"requested":3,"effective":4.6,"gcr":0.999,"tables":1144},{"requested":4,"effective":4.6,"gcr":0.999,"tables":1144},{"requested":4.6,"effective":4.6,"gcr":0.999,"tables":1144}],"scope":"Analytical rectangle constraints, DXF readback and geometric route connectivity; not civil/turning-radius or field validation"}
+{"status":"PASS","trackerCases":1260,"maxShadeError":2.6645352591003757e-15,"rearCases":128,"layouts":27,"fuelTankLiters":2,"annualShadingFraction":0.05651224353318144}
+PASS structural claims: 8 foundation paths retain non-certification independently of diagnostic FoS; report has explicit certification boundary. Not numerical or standards validation.
+{
+  "status": "PASS",
+  "solarRows": 887,
+  "maxZenithErrorDeg": 0.005863801425533666,
+  "maxAzimuthErrorDeg": 0.022482629825390177,
+  "stringInfeasible": {
+    "minModules": 1,
+    "maxModules": 0,
+    "status": "infeasible",
+    "hasWarning": true,
+    "warnings": [
+      "Vmp temperature coefficient is approximated from Pmp/Voc; not guaranteed conservative for hot or cold MPPT limits. Verify manufacturer Vmp data; this is screening, not conformity assessment.",
+      "Minimum required modules exceeds maximum allowed string voltage."
+    ],
+    "effectiveCellTempMaxC": 25
+  },
+  "quickFinancialParity": true,
+  "automaticStorageKwh": 4.8
+}
+Reference Kimber: boundary/missing-data contracts and 20 pvlib 0.13.1 fixtures PASS (not field validation).
+Reference snow: boundary/missing contracts, 12 pinned pvlib fixtures, and hourly/sub-hourly snow/soiling comparisons PASS (not field validation).
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+... Skipped lines
+
+  [
+    'arithmeticSumLossPct',
+    'compoundPerformanceRatioPct',
+    'effectivePoaEnergyKwh',
+    'finalEnergyKwh',
+...
+    'stages',
++   'thermalInputQualification'
+  ]
+
+    at close (/home/user/solarpv-studio/scripts/test-reference-integration.ts:13:320)
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-reference-integration.ts:15:93)
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [
+    'arithmeticSumLossPct',
+    'compoundPerformanceRatioPct',
+    'effectivePoaEnergyKwh',
+    'finalEnergyKwh',
+    'installedCapacityKwp',
+    'netAnnualEnergyExportMwh',
+    'performanceRatioPct',
+    'rawGhiEnergyKwh',
+    'specificAnnualYieldKwhPerKwp',
+    'stages',
+    'thermalInputQualification'
+  ],
+  expected: [
+    'arithmeticSumLossPct',
+    'compoundPerformanceRatioPct',
+    'effectivePoaEnergyKwh',
+    'finalEnergyKwh',
+    'installedCapacityKwp',
+    'netAnnualEnergyExportMwh',
+    'performanceRatioPct',
+    'rawGhiEnergyKwh',
+    'specificAnnualYieldKwhPerKwp',
+    'stages'
+  ],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

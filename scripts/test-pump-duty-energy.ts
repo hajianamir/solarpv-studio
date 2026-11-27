@@ -51,10 +51,10 @@ for(const peakSunHours of [.5,2,5,8])for(const dailyWaterRequirementM3 of [0,10,
 }
 
 for(const lang of ['fa','en'] as const) {
- const help=getContextualHelp('solar_pumping','powerplant',lang);assert.match(help.method,/pump_steady_duty_energy_v1/);assert.ok(help.sources);assert.match(help.sources,/assessPumpDutyEnergy/);assert.match(help.limitations,lang==='en'?/not saved in projects/:/در پروژه ذخیره نمی‌شود/);
+ const help=getContextualHelp('solar_pumping','powerplant',lang);assert.match(help.method,/pump_steady_duty_energy_v1/);assert.ok(help.sources);assert.match(help.sources,/assessPumpDutyEnergy/);assert.match(help.limitations,lang==='en'?/saved in projects/:/در پروژه ذخیره می‌شود/);
  const panel=renderToStaticMarkup(React.createElement(PumpDutyEnergyPanel,{lang}));assert.doesNotMatch(panel,/data-testid="pump-duty-result"|data-testid="pump-duty-unavailable"/);
  assert.match(panel,lang==='en'?/runtime is not inferred from PSH/:/ساعات کار از PSH استنتاج نمی‌شود/);
- assert.match(panel,lang==='en'?/not saved in projects/:/در پروژه ذخیره نمی‌شوند/);
+ assert.match(panel,lang==='en'?/saved in projects/:/در پروژه ذخیره می‌شوند/);
  const page=renderToStaticMarkup(React.createElement(SolarPumpingTab,{lang,peakSunHours:5}));
  assert.match(page,/pump-legacy-disclosure/);assert.match(page,lang==='en'?/Monthly factors are synthetic/:/ضرایب ماهانه مصنوعی‌اند/);
  assert.doesNotMatch(page,/safety service factor of 1.25x/);

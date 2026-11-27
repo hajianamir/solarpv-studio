@@ -118,8 +118,8 @@
           "id": "thermal",
           "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
           "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
-          "descriptionFa": "کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC",
-          "descriptionEn": "Thermal degradation of silicon cells operating above standard STC 25°C rating.",
+          "descriptionFa": "تقریب اسکالر NOCT با دمای ورودی؛ شبیه‌سازی ساعتی سالانه یا تأیید انطباق با سایت نیست.",
+          "descriptionEn": "Scalar NOCT screening approximation at the supplied ambient temperature; not an hourly annual simulation or site-applicability assessment.",
           "nominalEnergyKwh": 170453.0,
           "percentageLoss": 0.0,
           "percentageLossRaw": 0.0,
@@ -230,7 +230,16 @@
       "performanceRatioPct": 85.5,
       "finalEnergyKwh": 155988.0,
       "compoundPerformanceRatioPct": 85.4726,
-      "arithmeticSumLossPct": -15.5
+      "arithmeticSumLossPct": -15.5,
+      "thermalInputQualification": {
+        "schemaVersion": "thermal-input-qualification-v1",
+        "basis": "scalar_noct_screen",
+        "assessment": "screening_only",
+        "chronologicalCoverage": "not_established",
+        "timeSeriesSampleCount": null,
+        "independentlyValidatedApplicability": false,
+        "financialAdoptionEligible": false
+      }
     },
     "targetAnnualHorizontalIrradiationKwhM2": 1825,
     "simulatedAnnualHorizontalIrradiationKwhM2": 1825,
@@ -354,8 +363,8 @@
               "id": "thermal",
               "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
               "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
-              "descriptionFa": "کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC",
-              "descriptionEn": "Thermal degradation of silicon cells operating above standard STC 25°C rating.",
+              "descriptionFa": "تقریب اسکالر NOCT با دمای ورودی؛ شبیه‌سازی ساعتی سالانه یا تأیید انطباق با سایت نیست.",
+              "descriptionEn": "Scalar NOCT screening approximation at the supplied ambient temperature; not an hourly annual simulation or site-applicability assessment.",
               "nominalEnergyKwh": 170453.0,
               "percentageLoss": 0.0,
               "percentageLossRaw": 0.0,
@@ -466,7 +475,16 @@
           "performanceRatioPct": 85.5,
           "finalEnergyKwh": 155988.0,
           "compoundPerformanceRatioPct": 85.4726,
-          "arithmeticSumLossPct": -15.5
+          "arithmeticSumLossPct": -15.5,
+          "thermalInputQualification": {
+            "schemaVersion": "thermal-input-qualification-v1",
+            "basis": "scalar_noct_screen",
+            "assessment": "screening_only",
+            "chronologicalCoverage": "not_established",
+            "timeSeriesSampleCount": null,
+            "independentlyValidatedApplicability": false,
+            "financialAdoptionEligible": false
+          }
         },
         "targetAnnualHorizontalIrradiationKwhM2": 1825,
         "simulatedAnnualHorizontalIrradiationKwhM2": 1825,
@@ -590,8 +608,8 @@
               "id": "thermal",
               "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
               "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
-              "descriptionFa": "کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC",
-              "descriptionEn": "Thermal degradation of silicon cells operating above standard STC 25°C rating.",
+              "descriptionFa": "تقریب اسکالر NOCT با دمای ورودی؛ شبیه‌سازی ساعتی سالانه یا تأیید انطباق با سایت نیست.",
+              "descriptionEn": "Scalar NOCT screening approximation at the supplied ambient temperature; not an hourly annual simulation or site-applicability assessment.",
               "nominalEnergyKwh": 682.0,
               "percentageLoss": 0.0,
               "percentageLossRaw": 0.0,
@@ -702,7 +720,16 @@
           "performanceRatioPct": 85.5,
           "finalEnergyKwh": 624.0,
           "compoundPerformanceRatioPct": 85.4726,
-          "arithmeticSumLossPct": -15.5
+          "arithmeticSumLossPct": -15.5,
+          "thermalInputQualification": {
+            "schemaVersion": "thermal-input-qualification-v1",
+            "basis": "scalar_noct_screen",
+            "assessment": "screening_only",
+            "chronologicalCoverage": "not_established",
+            "timeSeriesSampleCount": null,
+            "independentlyValidatedApplicability": false,
+            "financialAdoptionEligible": false
+          }
         },
         "targetAnnualHorizontalIrradiationKwhM2": 730,
         "simulatedAnnualHorizontalIrradiationKwhM2": 730,
@@ -826,8 +853,8 @@
               "id": "thermal",
               "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
               "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
-              "descriptionFa": "کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC",
-              "descriptionEn": "Thermal degradation of silicon cells operating above standard STC 25°C rating.",
+              "descriptionFa": "تقریب اسکالر NOCT با دمای ورودی؛ شبیه‌سازی ساعتی سالانه یا تأیید انطباق با سایت نیست.",
+              "descriptionEn": "Scalar NOCT screening approximation at the supplied ambient temperature; not an hourly annual simulation or site-applicability assessment.",
               "nominalEnergyKwh": 2045438.0,
               "percentageLoss": 0.0,
               "percentageLossRaw": 0.0,
@@ -938,7 +965,16 @@
           "performanceRatioPct": 85.5,
           "finalEnergyKwh": 1871851.0,
           "compoundPerformanceRatioPct": 85.4726,
-          "arithmeticSumLossPct": -15.5
+          "arithmeticSumLossPct": -15.5,
+          "thermalInputQualification": {
+            "schemaVersion": "thermal-input-qualification-v1",
+            "basis": "scalar_noct_screen",
+            "assessment": "screening_only",
+            "chronologicalCoverage": "not_established",
+            "timeSeriesSampleCount": null,
+            "independentlyValidatedApplicability": false,
+            "financialAdoptionEligible": false
+          }
         },
         "targetAnnualHorizontalIrradiationKwhM2": 2190,
         "simulatedAnnualHorizontalIrradiationKwhM2": 2190,
@@ -1062,8 +1098,8 @@
               "id": "thermal",
               "nameFa": "تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)",
               "nameEn": "Cell Operating Temperature Loss (Pmp coeff)",
-              "descriptionFa": "کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC",
-              "descriptionEn": "Thermal degradation of silicon cells operating above standard STC 25°C rating.",
+              "descriptionFa": "تقریب اسکالر NOCT با دمای ورودی؛ شبیه‌سازی ساعتی سالانه یا تأیید انطباق با سایت نیست.",
+              "descriptionEn": "Scalar NOCT screening approximation at the supplied ambient temperature; not an hourly annual simulation or site-applicability assessment.",
               "nominalEnergyKwh": 0.0,
               "percentageLoss": 0.0,
               "percentageLossRaw": 0.0,
@@ -1174,7 +1210,16 @@
           "performanceRatioPct": 0,
           "finalEnergyKwh": 0.0,
           "compoundPerformanceRatioPct": 85.4726,
-          "arithmeticSumLossPct": -15.5
+          "arithmeticSumLossPct": -15.5,
+          "thermalInputQualification": {
+            "schemaVersion": "thermal-input-qualification-v1",
+            "basis": "scalar_noct_screen",
+            "assessment": "screening_only",
+            "chronologicalCoverage": "not_established",
+            "timeSeriesSampleCount": null,
+            "independentlyValidatedApplicability": false,
+            "financialAdoptionEligible": false
+          }
         },
         "targetAnnualHorizontalIrradiationKwhM2": 1825,
         "simulatedAnnualHorizontalIrradiationKwhM2": 1825,

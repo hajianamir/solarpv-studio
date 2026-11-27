@@ -125,6 +125,9 @@ jobs:
       - name: Snapshot recovery preserves original bytes through shutdown
         run: npm run test:recovery
 
+      - name: Phase1 reports, bilingual pump lifecycle and explicit diode consumer
+        run: npm run test:phase1:browser
+
       - name: Real Browser Regressions (cold offline)
         run: npm run test:browser
         env:

@@ -1,3 +1,4 @@
+import {ReferenceDiodePanel} from './ReferenceDiodePanel';
 import React, { useState, useMemo } from 'react';
 import { Activity, Sun, Thermometer, Layers, AlertCircle, RefreshCw } from 'lucide-react';
 import { calculateSingleDiodeCurve, type IvCurveResult } from '../engine/singleDiodeModel';
@@ -6,7 +7,7 @@ interface IvCurveTracerTabProps {
   lang?: 'fa' | 'en';
 }
 
-export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' }) => {
+const LegacyIvCurveTracer: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' }) => {
   const isEn = lang === 'en';
   const [irradiance, setIrradiance] = useState<number>(1000);
   const [cellTempC, setCellTempC] = useState<number>(25);
@@ -324,5 +325,16 @@ export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' 
       </div>
     </div>
   );
+};
+export const IvCurveTracerTab: React.FC<IvCurveTracerTabProps> = ({lang='fa'}) => {
+  const [model,setModel]=useState('legacy_nameplate_screen_v1');
+  return <div className="space-y-4">
+    <label htmlFor="iv-model-policy" className="block text-xs">{lang==='en'?'I–V assessment model':'مدل ارزیابی جریان–ولتاژ'}</label>
+    <select id="iv-model-policy" className="studio-input" value={model} onChange={e=>setModel(e.target.value)}>
+      <option value="legacy_nameplate_screen_v1">{lang==='en'?'Legacy illustrative nameplate screen':'غربالگری نامی نمونه قدیمی'}</option>
+      <option value="desoto_reference_bounded_v1">{lang==='en'?'Explicit bounded reference metrics':'شاخص‌های مرجع صریح با حل محدود'}</option>
+    </select>
+    {model==='desoto_reference_bounded_v1'?<ReferenceDiodePanel lang={lang}/>:<LegacyIvCurveTracer lang={lang}/>}
+  </div>;
 };
 export default IvCurveTracerTab;

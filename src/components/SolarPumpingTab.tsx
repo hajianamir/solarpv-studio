@@ -1,3 +1,4 @@
+import {type PumpDutySettings} from '../contracts/pumpDutySettings';
 import {PumpDutyEnergyPanel} from './PumpDutyEnergyPanel';
 import React, { useState } from 'react';
 import { Droplet, Sun, Zap, Gauge, Compass, Activity, CheckCircle2 } from 'lucide-react';
@@ -6,9 +7,11 @@ import { calculateSolarPump, type SolarPumpInput, type SolarPumpResult } from '.
 interface SolarPumpingTabProps {
   peakSunHours: number;
   lang?: 'fa' | 'en';
+  dutySettings?:PumpDutySettings;
+  onDutySettingsChange?:(settings:PumpDutySettings)=>void;
 }
 
-export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, lang = 'fa' }) => {
+export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, lang = 'fa',dutySettings,onDutySettingsChange }) => {
   const isFa = lang === 'fa';
   const [wellDepthM, setWellDepthM] = useState<number>(60);
   const [tankHeightM, setTankHeightM] = useState<number>(10);
@@ -97,7 +100,7 @@ export const SolarPumpingTab: React.FC<SolarPumpingTabProps> = ({ peakSunHours, 
 
       {isEnabled && (
         <>
-          <PumpDutyEnergyPanel lang={lang}/>
+          <PumpDutyEnergyPanel lang={lang} settings={dutySettings} onSettingsChange={onDutySettingsChange}/>
           <p role="note" data-testid="pump-legacy-disclosure" className="studio-card text-xs">{isFa?'مدل قدیمی غربالگری: راندمان‌های فرضی، ساعات کار ۰٫۹×PSH، سری توان موتور و ضرایب ۱٫۲۵/۱٫۳۵ تأیید تجهیزات یا راه‌اندازی نیستند. ضرایب ماهانه مصنوعی‌اند، نه پیش‌بینی آبدهی یا تضمین بدترین ماه.':'Legacy screening: assumed efficiencies, 0.9×PSH runtime, motor series and 1.25/1.35 factors do not establish equipment duty or startup. Monthly factors are synthetic, not water-delivery predictions or a worst-month guarantee.'}</p>
           {/* Hydraulic Parameter Inputs */}
           <div className="studio-card">
