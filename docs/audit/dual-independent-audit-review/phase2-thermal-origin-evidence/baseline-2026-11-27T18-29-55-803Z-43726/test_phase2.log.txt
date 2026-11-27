@@ -1,0 +1,132 @@
+
+> solarpv-studio@1.0.3 test:phase2
+> tsx scripts/test-thermal-origin.ts && tsx scripts/test-phase2-uplift.ts && tsx scripts/test-phase2-thermal.ts && tsx scripts/test-phase2-lightning.ts && tsx scripts/test-phase2-cable.ts && tsx scripts/test-phase2-broms.ts && tsx scripts/test-phase2-finance.ts && tsx scripts/test-phase2-thermal-owner.ts && tsx scripts/test-phase2-hemisphere.ts && tsx scripts/test-phase2-clipping.ts && tsx scripts/test-phase2-lcoe.ts && tsx scripts/test-phase2-mppt-current.ts && tsx scripts/test-phase2-named-waterfall.ts && tsx scripts/test-phase2-transposition.ts && tsx scripts/test-phase2-iranian-policy.ts && npm run test:iranian:benefits && npm run test:periodic-irr
+
+PASS thermal origin: 30 actual-base whole-report compatibility cases; direct/named/canonical/JSON/bilingual SSR/legacy unknown, no inferred chronology or eligibility.
+PASS Phase 2 uplift forwarding: 108 synthetic consumer cases, 72 expose original defect; report/input readback. Not physical or conformity validation.
+PASS shared foundation AST parity; only reviewed wind-owner changes are ADR-015 SI conversion, unified default height and explicit input validation.
+PASS Phase 2 signed thermal: 15 external pvlib component cases; three-mount loss/gain/zero and named/legacy/canonical consumer parity. Annual climate accuracy NOT established.
+PASS LPS containment: 48 screen inputs retain null angle/separation through JSON, qualified rolling sphere and non-imperative installation guidance. No IEC validation claimed.
+PASS cable: 144 independent Decimal voltage-drop conditions; 81 candidate/phase/PF/length/current checks, 64 accepted screens satisfy all constraints; unknown impedance and X-only exhaustion blocked; schema round trip.
+PASS Broms containment: 144 unsupported domain cases cannot assert safety, 85 previous green-screen witnesses retained as diagnostic only; actual structural consumer blocked.
+PASS finance precision: 18 independent 50-digit Decimal ledgers at .5/1/5/10/50/1000kWp, zero/debt/interest cases; unrounded NPV and row accounting; legacy illustrative assumptions remain unvalidated.
+PASS thermal owner: 24 external pvlib conditions, independent MPPT hot-window witness, 9 ground/shed/roof parity cases and explicit override authority; 9 independent SI Ke conditions and pressure propagation/Kd-once checks. Not whole-model validation.
+PASS hemisphere thermal: 32 independent numpy/pvlib policy-integration cases; ±latitude/equator/polar, zero PSH, invalid input and signed canonical/waterfall JSON parity. Synthetic policy verification, NOT measured-weather validation.
+PASS unchanged clipping consolidation: 14 independent Decimal arithmetic characterizations, annual/waterfall precision adapters and historical nonfinite boundaries. NOT external physical clipping validation.
+PASS strict LCOE: 42 independent Decimal cost/energy/ratio cases, valid-zero vs unavailable/overflow, deprecated adapter, full-precision scenarios, bilingual render and real HTTP degradation/metadata/input boundary. Simple unlevered screening only.
+PASS MPPT raw thresholds: 40 independent exact Decimal comparisons, adjacent-float direct/array/central-facade false-pass witnesses, exact-limit acceptance, invalid inputs; rating evidence remains separately unassessed.
+PASS named waterfall: 17 slots/defaults/aliases, 19 report cases, invalid overrides; 5 canonical and 4 roof independent Decimal cases; two gated call replacements only; 36 canonical, 4 empty and 8 populated roof baseline JSON comparisons plus cooperative parity. No production positional exception; not physical validation.
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#04fb44f7732d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#04fb44f7732d
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#44f3119ddced (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#44f3119ddced
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#527dcf3452e7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#527dcf3452e7
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d083cdece6e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d083cdece6e
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d1463a58902 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#5d1463a58902
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#680f01237b19 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#680f01237b19
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#971fe3ea22db (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#971fe3ea22db
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#9b7af51ccf98 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#9b7af51ccf98
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#a3a8c99d4297 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#a3a8c99d4297
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#b5a906717670 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#b5a906717670
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#c2328fa70623 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#c2328fa70623
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#ca9f5664b87f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#ca9f5664b87f
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#d92630d4a826 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#d92630d4a826
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#fcc6ae3598e1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#fcc6ae3598e1
+Sensitivity witness: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#feef71cb977d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain: src/engine/core/scalarTransposition.ts#calculateFixedTiltTranspositionGain#feef71cb977d
+PASS transposition owner: 122 independent Decimal cases, 15 executed mutation-sensitive nodes, 153 actual base scalar comparisons; bilingual UI and legacy-consumer guard. No physical POA validation.
+PASS Iranian policy: 48 independent Decimal ledgers, project/equity separation and debt invariance, zero/negative/positive discount, strict basis/inputs/overflow, legacy/current project roundtrip and bilingual rendering. Screening only, financial adoption false.
+
+> solarpv-studio@1.0.3 test:iranian:benefits
+> tsx scripts/test-iranian-benefit-indicators.ts
+
+Sensitivity witness: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#666c44e04193 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#666c44e04193
+Sensitivity witness: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#78a2d0dbd3a1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#78a2d0dbd3a1
+Sensitivity witness: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#9b200709e029 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators: src/engine/core/iranianBenefitIndicators.ts#evaluateIranianBenefitIndicators#9b200709e029
+PASS 168 independent Decimal benefit indicators; 3 exact AST reach/sensitivity witnesses; legacy preserved, double-rounding repaired in bilingual UI, invalid/zero/overflow/serialization/adoption boundaries
+
+> solarpv-studio@1.0.3 test:periodic-irr
+> tsx scripts/test-periodic-irr.ts
+
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#00a3777b7872 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#00a3777b7872
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#054e87ddf650 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#054e87ddf650
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#06b488bff3c9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#06b488bff3c9
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#084def5a9fe1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#084def5a9fe1
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#13df65eee5de (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#13df65eee5de
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#1bb74ab4944f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#1bb74ab4944f
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#27ddcd5f6aad (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#27ddcd5f6aad
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3137568ff2e3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3137568ff2e3
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#31dab05bbf43 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#31dab05bbf43
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#38e61125f124 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#38e61125f124
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3c86e0eee434 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3c86e0eee434
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3fa784ecb9e4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#3fa784ecb9e4
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#5273bc3461e1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#5273bc3461e1
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6b077a52a709 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6b077a52a709
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6cec279b06af (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6cec279b06af
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6faf7452ef4b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#6faf7452ef4b
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#71a2ac75bc38 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#71a2ac75bc38
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#783fab0c271b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#783fab0c271b
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#8e3b6339ba05 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#8e3b6339ba05
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#a46a4574ad6d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#a46a4574ad6d
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#aa2abbbed1c5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#aa2abbbed1c5
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#bd08f1fbf0e6 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#bd08f1fbf0e6
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e964eea98ff0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e964eea98ff0
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e9823240b0dc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#e9823240b0dc
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#ef9d6d03a7df (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#ef9d6d03a7df
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#f03d6cfcba8e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#f03d6cfcba8e
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fabf17a15639 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fabf17a15639
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fb17c73969c3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fb17c73969c3
+Sensitivity witness: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fc308309f3cd (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#assessPeriodicIrr: src/engine/core/periodicIrr.ts#assessPeriodicIrr#fc308309f3cd
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#3f76523c1b2e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#3f76523c1b2e
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#84228b48cc0c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#84228b48cc0c
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#95042c99d6d4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#95042c99d6d4
+Sensitivity witness: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#974f9baf6141 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/periodicIrr.ts#evaluatePeriodicNpv: src/engine/core/periodicIrr.ts#evaluatePeriodicNpv#974f9baf6141
+PASS 164 Decimal root/status cases, 8 NPV cases, 33 reached/sensitive expressions; explicit root statuses, scaling/zero/legacy/bilingual/adoption boundaries

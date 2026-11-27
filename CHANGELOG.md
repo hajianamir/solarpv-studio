@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased — explicit bounded-reference I–V metrics selection
+
+- Keep the legacy illustrative curve as default and add a separate opt-in reference-metrics view using the existing strict bounded solver. No nameplate fitting, catalog copying or legacy fallback.
+- Require explicit bounded-length JSON; distinguish available/dark/invalid/numerical/unconverged states and clear stale results on edits. Drafts reset on leaving and are not project/energy/financial adoption inputs.
+- Add bilingual independent-metric browser/failure/isolation coverage and SSR checks. Numerical formulas, tolerances and reference vectors remain unchanged; see ADR-033 and the explicit-reference guide. Full U05 and Phase2/3 remain open.
+
+## Unreleased — thermal scalar origin qualification
+
+- Stop labeling every supplied annual thermal-loss scalar as an8760sample synthetic profile; source and time coverage cannot be inferred from a scalar.
+- Add versioned screening-only thermal input qualification to fresh waterfall/report JSON and bilingual UI; historical reports without it remain explicitly unknown.
+- Preserve all thermal, energy,17-slot adapter and financial arithmetic; add30actual-base report comparisons plus named/canonical/JSON/bilingual SSR and production-browser readback. See ADR-032 and the thermal-origin guide. Full U02/U07 and Phase2/3 remain open.
+
+## Unreleased — versioned pump-duty draft persistence
+
+- Save opt-in explicit duty settings across tabs, local saves and portable/report project snapshots; never persist trusted results or adopt energy/finance values.
+- Add strict `pump-duty-settings-v1` unmatched-user-assumption inputs, nullable incomplete drafts and legacy absent-field defaults. Invalid supplied settings block restore; invalid edits clear the affected field with notice.
+- Add isolated English/Persian production-browser lifecycle regressions, including actual last-local-save restore/cancel and malformed stored-draft preservation; register the combined browser command in Ubuntu CI.
+- Retain all pump and financial arithmetic and no-guarantee disclosures. See ADR-031 and the pump guide; full U19 and Phase2/3 remain incomplete.
+
 ## Unreleased — explicit steady-duty pump energy comparison
 
 - Add a strict opt-in steady-duty energy policy with explicit volume/head/runtime/fluid/efficiency/DC-energy inputs and separate hydraulic, shaft, motor-electrical and drive-DC boundaries. Preserve full precision; reject invalid and numerical-failure domains.

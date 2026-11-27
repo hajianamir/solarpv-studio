@@ -1,3 +1,4 @@
+import {PumpDutyDraftInputsSchema,createDefaultPumpDutySettings,type PumpDutySettings} from '../contracts/pumpDutySettings';
 import React,{useState} from 'react';
 import {assessPumpDutyEnergy} from '../engine/core/pumpDutyEnergy';
 
@@ -13,25 +14,33 @@ const fields=[
   ['availableDcEnergyKwhPerDay','Available DC-bus energy at VFD input (kWh/day)','انرژی موجود باس DC در ورودی درایو (kWh/day)'],
 ] as const;
 
-export function PumpDutyEnergyPanel({lang='fa'}:{lang?:'en'|'fa'}) {
+export function PumpDutyEnergyPanel({lang='fa',settings:controlledSettings,onSettingsChange}:{lang?:'en'|'fa';settings?:PumpDutySettings;onSettingsChange?:(settings:PumpDutySettings)=>void}) {
   const isFa=lang==='fa';
-  const [enabled,setEnabled]=useState(false);
-  const [values,setValues]=useState<Record<string,string>>({});
-  // An empty value is invalid, not Number('')=0. No legacy/PSH/rating is inherited.
-  const input=Object.fromEntries(fields.map(([key])=>[key,values[key]?.trim()?Number(values[key]):NaN]));
-  const result=enabled?assessPumpDutyEnergy({modelPolicy:'pump_steady_duty_energy_v1',powerBoundary:'dc_bus_to_vfd',...input}):null;
+  const [localSettings,setLocalSettings]=useState(createDefaultPumpDutySettings);
+  const [inputError,setInputError]=useState(false);
+  const settings=controlledSettings??localSettings;
+  const {enabled,inputs}=settings;
+  const update=(next:PumpDutySettings)=>{setLocalSettings(next);onSettingsChange?.(next);};
+  const result=enabled?assessPumpDutyEnergy({modelPolicy:settings.modelPolicy,powerBoundary:settings.powerBoundary,...inputs}):null;
   return <section className="studio-card space-y-3" data-testid="pump-duty-panel">
     <label htmlFor="pump-duty-enable" className="flex gap-2 items-center font-bold text-sm">
-      <input id="pump-duty-enable" type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/>
+      <input id="pump-duty-enable" type="checkbox" checked={enabled} onChange={e=>update({...settings,enabled:e.target.checked})}/>
       {isFa?'مقایسه اختیاری تراز انرژی کارکرد ثابت':'Opt-in explicit steady-duty energy balance'}
     </label>
     <p className="text-xs" data-testid="pump-duty-disclosure">{isFa
-      ?'فقط تراز انرژی با هد و راندمان ثابت؛ ساعات کار از PSH استنتاج نمی‌شود. هیچ مقداری از مدل قدیمی کپی نمی‌شود. نبود کسری روزانه، راه‌اندازی، انتخاب تجهیزات یا آبدهی را تضمین نمی‌کند؛ منحنی پمپ، موتور، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند. ورودی‌ها فقط موقت‌اند و در پروژه ذخیره نمی‌شوند؛ به انرژی سالانه یا مالی منتقل نمی‌شوند.'
-      :'Constant-head/efficiency energy balance only; runtime is not inferred from PSH. No legacy values are copied. No daily deficit does not guarantee startup, equipment selection or water delivery: pump/motor curves, drive limits and chronology are unassessed. Inputs are temporary, not saved in projects; no annual-energy or financial transfer.'}</p>
+      ?'فقط تراز انرژی با هد و راندمان ثابت؛ ساعات کار از PSH استنتاج نمی‌شود. هیچ مقداری از مدل قدیمی کپی نمی‌شود. نبود کسری روزانه، راه‌اندازی، انتخاب تجهیزات یا آبدهی را تضمین نمی‌کند؛ منحنی پمپ، موتور، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند. ورودی‌ها در پروژه ذخیره می‌شوند، اما فرض کاربر و بدون تطبیق با سایت یا تجهیزات‌اند؛ پس از تغییر زمینه بازبینی کنید. نتیجه یا تأیید تجهیزات ذخیره نمی‌شود؛ به انرژی سالانه یا مالی منتقل نمی‌شوند.'
+      :'Constant-head/efficiency energy balance only; runtime is not inferred from PSH. No legacy values are copied. No daily deficit does not guarantee startup, equipment selection or water delivery: pump/motor curves, drive limits and chronology are unassessed. Inputs are saved in projects as user-declared, unmatched assumptions; review after site/equipment changes. Results or equipment approval are not saved; no annual-energy or financial transfer.'}</p>
+    <p data-testid="pump-duty-settings-policy" className="text-xs">{settings.schemaVersion} · {settings.contextBasis}</p>
+    {inputError&&<p role="alert" data-testid="pump-duty-invalid-edit">{isFa?'مقدار نامعتبر ذخیره نشد؛ فیلد خالی شد و تا تکمیل ورودی، نتیجه در دسترس نیست.':'Invalid value was not saved; the field was cleared and the result is unavailable until inputs are complete.'}</p>}
     {enabled&&<>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {fields.map(([key,en,fa])=><label key={key} htmlFor={`pump-duty-${key}`} className="text-xs">{isFa?fa:en}
-          <input id={`pump-duty-${key}`} type="number" step="any" value={values[key]??''} onChange={e=>setValues(previous=>({...previous,[key]:e.target.value}))} className="studio-input"/>
+          <input id={`pump-duty-${key}`} type="number" step="any" value={inputs[key]??''} onChange={e=>{
+            const parsed=PumpDutyDraftInputsSchema.shape[key].safeParse(e.currentTarget.value===''?null:e.currentTarget.valueAsNumber);
+            const invalid=!parsed.success||e.currentTarget.validity.badInput;
+            setInputError(invalid);
+            update({...settings,inputs:{...inputs,[key]:invalid?null:parsed.data}});
+          }} className="studio-input"/>
         </label>)}
       </div>
       {result?.status==='unavailable'&&<p role="status" data-testid="pump-duty-unavailable" data-reason={result.reason}>{isFa?'تراز در دسترس نیست؛ ورودی کامل و معتبر و دامنه عددی لازم است.':'Balance unavailable: complete valid inputs and a supported numerical range are required.'}</p>}

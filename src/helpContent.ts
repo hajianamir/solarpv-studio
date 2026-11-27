@@ -271,27 +271,27 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
       title: 'Solar water pumping',
       inputs: 'Legacy screen: enter well depth, tank elevation, pipe data, daily volume and irrigation type; site PSH is used only by that heuristic. The separate opt-in duty comparison requires explicit volume, constant TDH, runtime, density/gravity, pump/motor/drive efficiencies and DC energy; it copies no legacy defaults.',
       method: 'Legacy nameplate/monthly heuristics remain unassessed. The explicit pump_steady_duty_energy_v1 comparison uses rho*g*V*H and separate efficiency stages to distinguish hydraulic, shaft, motor electrical and drive DC power/energy plus aggregate daily DC deficit.',
-      limitations: 'No aggregate deficit is not startup or water-delivery feasibility. Equipment curves, NPSH/drawdown, drive limits and chronology remain unassessed; synthetic monthly factors are not a forecast. Explicit comparison inputs are temporary and not saved in projects; no finance/annual-energy adoption.',
+      limitations: 'No aggregate deficit is not startup or water-delivery feasibility. Equipment curves, NPSH/drawdown, drive limits and chronology remain unassessed; synthetic monthly factors are not a forecast. Explicit comparison inputs are saved in projects as user-declared unmatched assumptions, not equipment approval; no finance/annual-energy adoption.',
     },
     fa: {
       title: 'پمپاژ خورشیدی آب',
       inputs: 'مدل قدیمی از عمق، مخزن، لوله، حجم روزانه، نوع آبیاری و PSH محل استفاده می‌کند. مقایسه اختیاری جدید نیازمند حجم، هد ثابت، ساعات کار، چگالی/گرانش، راندمان پمپ/موتور/درایو و انرژی DC صریح است؛ هیچ فرض قدیمی کپی نمی‌شود.',
       method: 'توان نامی و ضرایب ماهانه قدیمی تأیید نشده‌اند. مقایسه pump_steady_duty_energy_v1 با rho*g*V*H و مراحل راندمان جدا، توان و انرژی هیدرولیکی، محور، ورودی موتور و ورودی DC درایو و کسری تجمیعی روزانه را محاسبه می‌کند.',
-      limitations: 'نبود کسری تجمیعی، امکان راه‌اندازی یا آبدهی را ثابت نمی‌کند. منحنی تجهیزات، افت سطح/NPSH، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند؛ ضرایب ماهانه مصنوعی‌اند. ورودی مقایسه موقت است و در پروژه ذخیره نمی‌شود؛ انتقال مالی/انرژی سالانه ندارد.',
+      limitations: 'نبود کسری تجمیعی، امکان راه‌اندازی یا آبدهی را ثابت نمی‌کند. منحنی تجهیزات، افت سطح/NPSH، محدودیت درایو و توالی زمانی ارزیابی نشده‌اند؛ ضرایب ماهانه مصنوعی‌اند. ورودی مقایسه در پروژه ذخیره می‌شود اما فرض کاربر و بدون تطبیق با سایت یا تجهیزات است؛ انتقال مالی/انرژی سالانه ندارد.',
     },
   },
   iv_curve: {
     en: {
       title: 'I–V curve model',
-      inputs: 'Set irradiance, cell temperature and series-module count; the current page uses a fixed single-module reference parameter set. The partial-shading toggle modifies the displayed curve shape.',
+      inputs: 'Set irradiance, cell temperature and series-module count; the default legacy view uses a fixed illustrative module. Select explicit bounded reference metrics to paste a complete desoto_reference_bounded_v1 request. The partial-shading toggle modifies the displayed curve shape.',
       method: 'Legacy single-diode screening with heuristic STC extraction and De Soto-style parameter translation. gamma_Pmp is unused; beta_Voc only seeds the solver. MPP is sampled on an80step grid; scalar Isc is approximate. The shading checkbox only alters plotted points, not bypass circuits or KPI outputs.',
-      limitations: 'This is not using the currently selected catalog module and is not a measured tracer curve. Do not compare with field measurements unless the reference parameters and test conditions are reconciled.',
+      limitations: 'This is not using the currently selected catalog module and is not a measured tracer curve. The explicit reference view uses user-attributed, unmatched parameters with bounded continuous metrics, not a curve fit. Drafts reset on leaving; no project persistence or energy/financial adoption. Do not compare with field measurements unless parameters and conditions are reconciled.',
     },
     fa: {
       title: 'مدل منحنی I–V',
-      inputs: 'تابش، دمای سلول و تعداد ماژول سری را تنظیم کنید؛ این صفحه از مجموعه پارامتر مرجع ثابت یک ماژول استفاده می‌کند. کلید سایهٔ جزئی شکل منحنی نمایش‌داده‌شده را تغییر می‌دهد.',
+      inputs: 'تابش، دمای سلول و تعداد ماژول سری را تنظیم کنید؛ نمای قدیمی پیش‌فرض از ماژول نمونه ثابت استفاده می‌کند. برای JSON کامل desoto_reference_bounded_v1 نمای شاخص‌های مرجع صریح را انتخاب کنید. کلید سایهٔ جزئی شکل منحنی نمایش‌داده‌شده را تغییر می‌دهد.',
       method: 'غربالگری تک‌دیودی با استخراج ابتکاری STC و انتقال پارامتر به سبک De Soto؛ gamma_Pmp استفاده نمی‌شود و beta_Voc فقط حدس اولیه است. MPP روی شبکه ۸۰گامی و Isc تقریبی است. کلید سایه فقط رسم را تغییر می‌دهد، نه مدار بای‌پس یا شاخص‌ها.',
-      limitations: 'این صفحه از ماژول کاتالوگ انتخاب‌شده استفاده نمی‌کند و منحنی tracer اندازه‌گیری‌شده نیست. بدون تطبیق پارامتر مرجع و شرایط آزمون با اندازه‌گیری میدانی مقایسه نکنید.',
+      limitations: 'این صفحه از ماژول کاتالوگ انتخاب‌شده استفاده نمی‌کند و منحنی tracer اندازه‌گیری‌شده نیست. نمای مرجع، شاخص پیوسته با حل محدود است، نه برازش؛ منشأ ورودی ادعای کاربر و بدون تطبیق است. ورودی موقت و بدون ذخیره در پروژه یا انتقال مالی/انرژی است. بدون تطبیق پارامتر و شرایط آزمون با اندازه‌گیری میدانی مقایسه نکنید.',
     },
   },
   rfc3_reports: {
@@ -346,7 +346,7 @@ export const HELP_SOURCE_REFERENCES: Record<string, string> = {
   catalog: 'src/engine/catalogRepository.ts — CatalogRepository; src/engine/equipmentCatalogData.ts — built-in records.',
   iran_regulations: 'src/components/IranianRegulationsTab.tsx — reference display; no authority query/certification function.',
   solar_pumping: 'src/engine/solarPumpEngine.ts — calculateSolarPump() legacy screening; src/engine/core/pumpDutyEnergy.ts — assessPumpDutyEnergy() explicit steady-duty energy, not equipment/chronological validation.',
-  iv_curve: 'src/engine/singleDiodeModel.ts — calculateSingleDiodeCurve().',
+  iv_curve: 'src/engine/singleDiodeModel.ts — calculateSingleDiodeCurve() legacy; evaluateReferenceDiode() explicit bounded reference; src/components/ReferenceDiodePanel.tsx.',
   rfc3_reports: 'src/components/RFC3ReportsTab.tsx — report composition and displayed checks; each check links to its engine module.',
 };
 

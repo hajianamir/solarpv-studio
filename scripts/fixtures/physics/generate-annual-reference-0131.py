@@ -48,7 +48,7 @@ def recompute_fixture(data):
         stages=json.loads(Path(__file__).with_name('reference-waterfall-text-contract.json').read_text())
         compound=1
         for p in pct.values():compound*=1+p/100
-        return dict(installedCapacityKwp=0,rawGhiEnergyKwh=0,effectivePoaEnergyKwh=0,stages=[dict(s,nominalEnergyKwh=0,percentageLoss=pct[s['id']],percentageLossRaw=pct[s['id']],stageOutputKwh=0) for s in stages],netAnnualEnergyExportMwh=0,specificAnnualYieldKwhPerKwp=0,performanceRatioPct=0,finalEnergyKwh=0,compoundPerformanceRatioPct=round(compound*100,4),arithmeticSumLossPct=round(sum(pct.values()),2))
+        return dict(thermalInputQualification=json.loads(Path(__file__).with_name('thermal-origin-text-contract.json').read_text()),installedCapacityKwp=0,rawGhiEnergyKwh=0,effectivePoaEnergyKwh=0,stages=[dict(s,nominalEnergyKwh=0,percentageLoss=pct[s['id']],percentageLossRaw=pct[s['id']],stageOutputKwh=0) for s in stages],netAnnualEnergyExportMwh=0,specificAnnualYieldKwhPerKwp=0,performanceRatioPct=0,finalEnergyKwh=0,compoundPerformanceRatioPct=round(compound*100,4),arithmeticSumLossPct=round(sum(pct.values()),2))
     raise ValueError(fn)
 
 if __name__=='__main__':

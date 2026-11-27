@@ -1,3 +1,4 @@
+import {qualifyThermalInput,describeThermalInput,type ThermalInputQualification} from '../contracts/thermalOrigin';
 import { calculateFixedTiltTranspositionGain } from './core/scalarTransposition';
 import {legacyClippingScreen} from './core/legacyClippingScreen';
 import {thermalStagePercentage} from './core/signedThermalStage';
@@ -25,6 +26,8 @@ export interface LossStage {
 }
 
 export interface WaterfallLossReport {
+  /** Optional only for historical report compatibility; current outputs always qualify. */
+  thermalInputQualification?:ThermalInputQualification;
   annualReference?: import('./reference/annualReferenceLosses').AnnualReferenceEvaluation;
   installedCapacityKwp: number;
   rawGhiEnergyKwh: number;
@@ -212,12 +215,8 @@ export function computeWaterfallLosses(
     'تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)',
     'Cell Operating Temperature Loss (Pmp coeff)',
     Math.round(thermalLossPct * 10) / 10,
-    annualThermalDerateOverridePct !== undefined
-      ? 'برآورد حرارتی سالانه با پروفایل ساعتی مصنوعی؛ PSH و میانگین دما مفروض است، نه داده آب‌وهوای ساعتی اندازه‌گیری‌شده.'
-      : 'کاهش توان سلول سیلیکونی در دمای کاری بیش از ۲۵ درجه استاندارد STC',
-    annualThermalDerateOverridePct !== undefined
-      ? 'Synthetic 8760-sample annual thermal profile normalized to annual PSH; not measured/reanalysis hourly weather or TMY.'
-      : 'Thermal degradation of silicon cells operating above standard STC 25°C rating.',
+    describeThermalInput(annualThermalDerateOverridePct).fa,
+    describeThermalInput(annualThermalDerateOverridePct).en,
 
     thermalLossPct // raw unrounded value for audit/tests
   );
@@ -333,6 +332,7 @@ export function computeWaterfallLosses(
   );
 
   return {
+    thermalInputQualification:qualifyThermalInput(annualThermalDerateOverridePct),
     installedCapacityKwp,
     rawGhiEnergyKwh: Math.round(rawGhiEnergyKwh),
     effectivePoaEnergyKwh: Math.round(effectivePoaEnergyKwh),

@@ -1,0 +1,73 @@
+
+> solarpv-studio@1.0.3 test:phase2
+> tsx scripts/test-thermal-origin.ts && tsx scripts/test-phase2-uplift.ts && tsx scripts/test-phase2-thermal.ts && tsx scripts/test-phase2-lightning.ts && tsx scripts/test-phase2-cable.ts && tsx scripts/test-phase2-broms.ts && tsx scripts/test-phase2-finance.ts && tsx scripts/test-phase2-thermal-owner.ts && tsx scripts/test-phase2-hemisphere.ts && tsx scripts/test-phase2-clipping.ts && tsx scripts/test-phase2-lcoe.ts && tsx scripts/test-phase2-mppt-current.ts && tsx scripts/test-phase2-named-waterfall.ts && tsx scripts/test-phase2-transposition.ts && tsx scripts/test-phase2-iranian-policy.ts && npm run test:iranian:benefits && npm run test:periodic-irr
+
+PASS thermal origin: 30 actual-base whole-report compatibility cases; direct/named/canonical/JSON/bilingual SSR/legacy unknown, no inferred chronology or eligibility.
+PASS Phase 2 uplift forwarding: 108 synthetic consumer cases, 72 expose original defect; report/input readback. Not physical or conformity validation.
+PASS shared foundation AST parity; only reviewed wind-owner changes are ADR-015 SI conversion, unified default height and explicit input validation.
+PASS Phase 2 signed thermal: 15 external pvlib component cases; three-mount loss/gain/zero and named/legacy/canonical consumer parity. Annual climate accuracy NOT established.
+PASS LPS containment: 48 screen inputs retain null angle/separation through JSON, qualified rolling sphere and non-imperative installation guidance. No IEC validation claimed.
+PASS cable: 144 independent Decimal voltage-drop conditions; 81 candidate/phase/PF/length/current checks, 64 accepted screens satisfy all constraints; unknown impedance and X-only exhaustion blocked; schema round trip.
+PASS Broms containment: 144 unsupported domain cases cannot assert safety, 85 previous green-screen witnesses retained as diagnostic only; actual structural consumer blocked.
+PASS finance precision: 18 independent 50-digit Decimal ledgers at .5/1/5/10/50/1000kWp, zero/debt/interest cases; unrounded NPV and row accounting; legacy illustrative assumptions remain unvalidated.
+PASS thermal owner: 24 external pvlib conditions, independent MPPT hot-window witness, 9 ground/shed/roof parity cases and explicit override authority; 9 independent SI Ke conditions and pressure propagation/Kd-once checks. Not whole-model validation.
+PASS hemisphere thermal: 32 independent numpy/pvlib policy-integration cases; ±latitude/equator/polar, zero PSH, invalid input and signed canonical/waterfall JSON parity. Synthetic policy verification, NOT measured-weather validation.
+PASS unchanged clipping consolidation: 14 independent Decimal arithmetic characterizations, annual/waterfall precision adapters and historical nonfinite boundaries. NOT external physical clipping validation.
+PASS strict LCOE: 42 independent Decimal cost/energy/ratio cases, valid-zero vs unavailable/overflow, deprecated adapter, full-precision scenarios, bilingual render and real HTTP degradation/metadata/input boundary. Simple unlevered screening only.
+PASS MPPT raw thresholds: 40 independent exact Decimal comparisons, adjacent-float direct/array/central-facade false-pass witnesses, exact-limit acceptance, invalid inputs; rating evidence remains separately unassessed.
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: $.waterfallReport: output keys mismatch
++ actual - expected
+... Skipped lines
+
+  [
+    'arithmeticSumLossPct',
+    'compoundPerformanceRatioPct',
+    'effectivePoaEnergyKwh',
+    'finalEnergyKwh',
+...
+    'stages',
++   'thermalInputQualification'
+  ]
+
+    at assertReferenceValue (/home/user/solarpv-studio/scripts/verify-physics-reference-gate.ts:355:12)
+    at assertReferenceValue (/home/user/solarpv-studio/scripts/verify-physics-reference-gate.ts:357:7)
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-phase2-named-waterfall.ts:15:34)
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: [
+    'arithmeticSumLossPct',
+    'compoundPerformanceRatioPct',
+    'effectivePoaEnergyKwh',
+    'finalEnergyKwh',
+    'installedCapacityKwp',
+    'netAnnualEnergyExportMwh',
+    'performanceRatioPct',
+    'rawGhiEnergyKwh',
+    'specificAnnualYieldKwhPerKwp',
+    'stages',
+    'thermalInputQualification'
+  ],
+  expected: [
+    'arithmeticSumLossPct',
+    'compoundPerformanceRatioPct',
+    'effectivePoaEnergyKwh',
+    'finalEnergyKwh',
+    'installedCapacityKwp',
+    'netAnnualEnergyExportMwh',
+    'performanceRatioPct',
+    'rawGhiEnergyKwh',
+    'specificAnnualYieldKwhPerKwp',
+    'stages'
+  ],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

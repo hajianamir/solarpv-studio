@@ -1,0 +1,41 @@
+
+> solarpv-studio@1.0.3 test:phase1:browser
+> tsx scripts/test-phase1-browser.ts
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('workflow-tab-solar_pumping').locator(':visible').first()
+    - locator resolved to <div class="flex items-center gap-2 truncate">…</div>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <div class="fixed inset-0 bg-black/85 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">…</div> intercepts pointer events
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <div class="fixed inset-0 bg-black/85 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">…</div> intercepts pointer events
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <div class="fixed inset-0 bg-black/85 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">…</div> intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+
+    at tab (/home/user/solarpv-studio/scripts/test-phase1-browser.ts:22:97)
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-phase1-browser.ts:228:8) {
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.3

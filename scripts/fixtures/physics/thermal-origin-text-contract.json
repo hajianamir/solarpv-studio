@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "thermal-input-qualification-v1",
+  "basis": "supplied_signed_annual_loss_unknown_origin",
+  "assessment": "screening_only",
+  "chronologicalCoverage": "not_established",
+  "timeSeriesSampleCount": null,
+  "independentlyValidatedApplicability": false,
+  "financialAdoptionEligible": false
+}

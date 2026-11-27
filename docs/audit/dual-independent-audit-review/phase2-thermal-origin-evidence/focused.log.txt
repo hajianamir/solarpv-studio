@@ -1,0 +1,1 @@
+PASS thermal origin: 30 actual-base whole-report compatibility cases; direct/named/canonical/JSON/bilingual SSR/legacy unknown, no inferred chronology or eligibility.

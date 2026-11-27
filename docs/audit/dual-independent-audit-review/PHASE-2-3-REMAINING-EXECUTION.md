@@ -1,5 +1,11 @@
 # Phase 2/3 remaining work — prioritized continuation
 
+## Current continuation (2026-11-03)
+
+Branch `arena/1bdbc808-solarpv-studio`, base `c171538de7eade1a4090531820adb97306251105` (merged PR53). Earlier branch notes below are historical. U19 now has strict versioned unmatched-user draft persistence in App local/portable/report snapshots and controlled remount/restore. See ADR-031, `PHASE-3-PUMP-PERSISTENCE-{PLAN,REVIEWS}.md` and `phase3-pump-persistence-verification.json`. Implementation is bounded; the subsequent `phase3-pump-lifecycle-verification.json` closes the local-load/full bilingual lifecycle evidence gaps. Pump draft persistence is VERIFIED_WITHIN_SCOPE, not all of U19. Equipment/chronology/authenticated applicability remain open; Phase2 INCOMPLETE, Phase3 PARTIAL, release BLOCKED. No commit/push/PR/merge authorized or performed for this continuation.
+
+## Historical PR53 queue context
+
 Date: 2026-11-03. Branch `arena/e2cfedea-solarpv-studio`, base `16d3ff4056b528c2d9a5215a5e44703e58b49db7`.
 
 Preserve the uncommitted Phase4 kickoff and historical receipts. Return to unfinished implementation rather than treating Phase4 runtime passes as earlier-phase acceptance. No commit/push/release authorized. The canonical Phase2/3 tables and model evidence cards remain authoritative; this is an execution queue, not a reduced acceptance scope.
@@ -46,12 +52,12 @@ Not goals: implementing a new t-CDF/dependence calibration, changing Gaussian qu
 | Package | Next implementation/evidence action |
 |---|---|
 | U20 | This slice closes retired-path execution/archive containment only. Calibrated scenarios, defensible quantile variability intervals and any t replacement remain separate |
-| U05 | Design explicit consumer/model selector and legacy adapter; fit failures/physical bounds/coefficient residuals before operational fitting |
+| U05 | Temporary explicit bounded-reference I–V metrics selector now implemented/verified (ADR-033). Complete fit failures/physical bounds/coefficient residuals and other-consumer/service applicability before operational fitting; no inferred catalog/nameplate fallback |
 | U07b/U08 | Reuse acquired real-weather/reference cases for explicit annual evaluator and opt-in parameterized thermal/IAM boundaries; southern cases and applicability still required |
 | U17 | Enforce screening-only restrictions or separately introduce infinite-sheds option with matched geometry and versioned persisted inputs; no retired target tuning |
 | U11b/U09c | Complete metadata/readiness and catalog provenance round trips, preserve unknown measured coefficients; site/normative/manufacturer acquisition still blocks their applicable claims |
 | U15 | Build a physical control-volume balance only after matching independent multi-regime cases/geometry/flow; no one-point 1.417 tuning or gradient-floor claim |
-| U19 | Explicit hydraulic/shaft/motor/DC duty boundaries and necessary aggregate energy-deficit assessment now implemented with temporary opt-in UI (ADR-030). Still require sourced pump/motor/VFD curves/limits, chronological energy/water feasibility, qualified PV policy and durable project/model/provenance selection |
+| U19 | Explicit hydraulic/shaft/motor/DC duty boundaries and aggregate energy-deficit assessment implemented with versioned unmatched-user draft persistence (ADR-030/031); actual bilingual local/portable restore verified. Still require sourced pump/motor/VFD curves/limits, chronological energy/water feasibility, qualified PV policy and authenticated matched provenance |
 | U16c | Compare all financial paths by project/equity, nominal/real/currency/debt basis; complete independent root and unrounded-ledger coverage |
 
 ## Review and stop policy
@@ -69,3 +75,11 @@ Implementation: retired-path policy and archive compatibility implemented. Verif
 3. **Runtime/delivery review:** exercised production Chromium v2 download/replay, genuine legacy-t and same-source v1-Gaussian imports, cancellation, stale inputs, asset failures and offline Worker. Follow-up inspected real test logs, investigated the broad save timeout through its exact assertion/App save message and isolated rerun, and retained both outcomes rather than changing the assertion or inferring a fixed cause. The Node22/Linux result does not certify Windows/native Safari or Docker; prior Phase4 reference/platform stops remain active.
 
 See `phase23-uq-retirement-verification-receipt.json` for source/fixture/log hashes, exact command outcomes, failed attempt and residual scope. U20 calibrated-interval work and all outstanding Phase2/3 package gates remain open. No commit/push performed.
+
+## Thermal scalar-origin containment continuation (same branch)
+
+U02/U07a shared waterfall previously labeled any supplied signed annual thermal-loss scalar as a synthetic8760sample profile. ADR-032 and `PHASE-2-THERMAL-ORIGIN-PLAN.md` record the repair: neutral bilingual descriptions, additive versioned screening-only basis metadata, unknown legacy state and UI/report JSON disclosure. No numerical formula, adapter slot, annual model selector or financial ledger change. Actual-base report compatibility and existing signed-thermal independent references are required alongside broad regressions. Verification is in `phase2-thermal-origin-verification.json`. Origin/sample/chronological/applicability/adoption remain unestablished from a scalar. This does not close U02/U07 or substitute for Phase3's external hourly/model applicability work.
+
+## U05 explicit reference UI continuation
+
+ADR-033 adds a temporary opt-in I–V metrics selector consuming the existing ADR-025 bounded reference API; legacy stays default and no fitting/catalog/persistence/annual-energy/finance adoption is introduced. See `PHASE-3-DIODE-CONSUMER-{PLAN,REVIEWS}.md` and `phase3-diode-consumer-verification.json`. Full U05 still requires fitting/constraints/applicability and other-consumer migration evidence, not merely a selected UI. Phase2 remains INCOMPLETE, Phase3 PARTIAL, release BLOCKED.

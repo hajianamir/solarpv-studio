@@ -2,6 +2,8 @@
 
 Task date: 2026-11-03. Accepted for a bounded, opt-in arithmetic comparison; U19 and Phase2/3 remain partial, release blocked.
 
+Persistence update: ADR-031 supersedes the temporary-input/remount-reset decision below only; the physical model, independent fixtures and no-adoption/feasibility limits are unchanged.
+
 ## Problem and scope decision
 
 Legacy `calculateSolarPump` derives runtime from0.9×PSH, rounds friction/head before power, chooses a motor from an assumed HP series, derives VFD/PV nameplates with1.25/1.35 multipliers and emits a synthetic monthly profile. These steps do not establish motor electrical input, a matched pump operating point, VFD continuous/overload duty, morning startup or worst-month water delivery. Earlier Phase3 research retained27hydraulic comparisons and already identified those limits. The old UI also incorrectly called1.25a motor service factor although the code multiplies the rounded motor kW to form a drive heuristic.

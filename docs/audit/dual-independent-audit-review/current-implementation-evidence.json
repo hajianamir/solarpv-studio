@@ -277,7 +277,7 @@
           "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/waterfallLossEngine.ts",
           "referenceVersion": "base 0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb; unchanged screening policy",
           "referenceLocator": "Sequential stage energy E_next=E_previous*(1+pct/100), zero tilt => zero transposition gain; first-year kWh, kWp, PSH, percentage points. Independent Decimal arithmetic only, not physical-model validation.",
-          "fixtureSha256": "076564aa28dd55dc431c64039774f1c1106e3a30a3b89aa31bf4bdbe6e9f6948"
+          "fixtureSha256": "4119820beba9a2a92500d363fd1a474540d83e9cf19bb9885d73cabed052e9cc"
         }
       ],
       "applicability": "Component references only; units, tolerances and tested domain are defined in each linked fixture. Not blanket coverage.",
@@ -1300,23 +1300,23 @@
     },
     {
       "path": "src/engine/core/projectMigration.ts",
-      "sourceSha256": "a6f5b0b05c8ce9f03a20408036095b2181073d1d8730edb6ec278d776352dda5",
+      "sourceSha256": "a61b6723bfaf9b9b8c1abee828a188846fbcf647e3ad1a68c9e01a64a3b487fb",
       "inputsAndTypes": [
         {
           "name": "AdvancedFeatureFlags",
-          "line": 21
+          "line": 22
         },
         {
           "name": "ProjectDataV3",
-          "line": 439
-        },
-        {
-          "name": "MigrationSafetyStatus",
           "line": 441
         },
         {
-          "name": "MigrationResult",
+          "name": "MigrationSafetyStatus",
           "line": 443
+        },
+        {
+          "name": "MigrationResult",
+          "line": 445
         }
       ],
       "wholeModelConformity": null,
@@ -4783,7 +4783,7 @@
           "referenceUrl": "https://github.com/hajianamir/solarpv-studio/blob/0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb/src/engine/roof3dShadingEngine.ts",
           "referenceVersion": "base 0d41fd38c8038fb5a2c4f1da8082dc2fbcd2f8fb; unchanged local screening policy",
           "referenceLocator": "Empty scene: zero table energy/loss; equatorial day1 hours7..17 above 1 degree, weighted PSH integral; sequential Decimal retained-stage composition at zero tilt, NOCT45 and ambient -6.25C giving cell25C. Not whole-model geometry/weather validation.",
-          "fixtureSha256": "9d33d597283ac87db581b025465fc07d4bf0fddfbb253b9a6d28a474f82b8c2f"
+          "fixtureSha256": "706d244d3c613024301938580fc4a524f3f186061827222a6dd18cbe95215b22"
         }
       ],
       "applicability": "Component references only; units, tolerances and tested domain are defined in each linked fixture. Not blanket coverage.",
@@ -5450,7 +5450,7 @@
           "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/_modules/pvlib/snow.html",
           "referenceVersion": "pvlib-python 0.13.1",
           "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation",
-          "fixtureSha256": "ded6a8dd71602853ae8275c984eb1d81683e8edca8ad89d804a20b51d210c105"
+          "fixtureSha256": "0c46a6ce776fe3ebb6fea98f657b15a09921a8c6bb3f96af8eefec934b3b03ad"
         },
         {
           "formulaId": "src/engine/waterfallArgs.ts#withReferenceLossMetadata#4dc3d0d9e0f1",
@@ -5468,15 +5468,15 @@
     },
     {
       "path": "src/engine/waterfallLossEngine.ts",
-      "sourceSha256": "95df7dc0dabdd65fa3d85eb36435a5b27c3be90547909777cdb3f3ef47a8dca8",
+      "sourceSha256": "02881ed88e508447ac769a378970b63f5d6bc53a9a75d7e95540d69f0a579bff",
       "inputsAndTypes": [
         {
           "name": "LossStage",
-          "line": 15
+          "line": 16
         },
         {
           "name": "WaterfallLossReport",
-          "line": 27
+          "line": 28
         }
       ],
       "wholeModelConformity": null,
@@ -6839,6 +6839,22 @@
       "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."
     },
     {
+      "path": "src/contracts/pumpDutySettings.ts",
+      "sourceSha256": "bee344992c110468190235042552cde73fe35bec428e365b745c03b054f85084",
+      "inputsAndTypes": [
+        {
+          "name": "PumpDutySettings",
+          "line": 25
+        }
+      ],
+      "wholeModelConformity": null,
+      "implementationClassification": "current_source_not_independently_validated_as_a_whole",
+      "independentlyValidatedWholeModelDomain": null,
+      "evidence": [],
+      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",
+      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."
+    },
+    {
       "path": "src/contracts/referenceDiode.ts",
       "sourceSha256": "8734e0b4f402df8cd52157af5f1919845455879ed5d65c09b81ebc24bd22fad5",
       "inputsAndTypes": [
@@ -6892,6 +6908,26 @@
         {
           "name": "SimpleLcoeAssessment",
           "line": 19
+        }
+      ],
+      "wholeModelConformity": null,
+      "implementationClassification": "current_source_not_independently_validated_as_a_whole",
+      "independentlyValidatedWholeModelDomain": null,
+      "evidence": [],
+      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",
+      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."
+    },
+    {
+      "path": "src/contracts/thermalOrigin.ts",
+      "sourceSha256": "1a16982dcf593dbc21006cc37555974ed035f8d85168a8fc5121dc6b618e15bb",
+      "inputsAndTypes": [
+        {
+          "name": "ThermalInputBasis",
+          "line": 2
+        },
+        {
+          "name": "ThermalInputQualification",
+          "line": 3
         }
       ],
       "wholeModelConformity": null,

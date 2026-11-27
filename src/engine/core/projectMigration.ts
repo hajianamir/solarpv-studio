@@ -1,3 +1,4 @@
+import {PumpDutySettingsSchema,createDefaultPumpDutySettings} from '../../contracts/pumpDutySettings';
 import {IranianScreenSettingsSchema,createDefaultIranianScreenSettings} from '../../contracts/iranianEconomicPolicy';
 import {MpptRatingEvidenceSchema} from '../../contracts/electricalReadiness';
 // ============================================================================
@@ -419,6 +420,7 @@ export const ProjectDataV3Schema = z.object({
   selectedInverter: InverterSpecsSchema,
   userPricing: UserFinancialPricingSchema,
   iranianScreenSettings: IranianScreenSettingsSchema.default(createDefaultIranianScreenSettings),
+  pumpDutySettings: PumpDutySettingsSchema.default(createDefaultPumpDutySettings),
 
   // Feature Flags
   featureFlags: FeatureFlagsSchema.default(DEFAULT_FEATURE_FLAGS),
@@ -862,6 +864,7 @@ export function migrateProjectToV3(rawInput: unknown): MigrationResult {
       ? { ...raw.selectedInverter, origin: raw.selectedInverter.id ? (raw.selectedInverter.origin ?? 'legacy') : 'legacy' }
       : { ...getFallbackInverter(), origin: 'legacy' },
     iranianScreenSettings: raw.iranianScreenSettings,
+    pumpDutySettings: raw.pumpDutySettings,
     userPricing: normalizeLegacyPricing(raw.userPricing), // P1.2: defaults applied here, never in schema
 
     featureFlags,
@@ -988,6 +991,7 @@ export function createDefaultProjectV3(traceId?: string): ProjectDataV3 {
     loads: [],
     cableFeederInputs: {},
     iranianScreenSettings: createDefaultIranianScreenSettings(),
+    pumpDutySettings: createDefaultPumpDutySettings(),
     selectedModule: getFallbackModule(),
     selectedInverter: getFallbackInverter(),
     userPricing: { ...DEFAULT_FINANCIAL_PRICING } as ProjectDataV3['userPricing'] & import('../financialEngine').UserFinancialPricing as any,

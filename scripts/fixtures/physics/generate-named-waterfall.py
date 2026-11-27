@@ -29,7 +29,7 @@ def result(cap,psh,loss):
         energy=nominal*compound
         stages.append(dict(text,nominalEnergyKwh=rounded(before),percentageLoss=float(p),percentageLossRaw=float(p),stageOutputKwh=rounded(energy)))
     final=rounded(energy)
-    report=dict(installedCapacityKwp=cap,rawGhiEnergyKwh=rounded(nominal),effectivePoaEnergyKwh=rounded(nominal),stages=stages,netAnnualEnergyExportMwh=rounded(energy/1000,1) if cap>0 else 0,specificAnnualYieldKwhPerKwp=rounded(energy/D(cap)) if cap>0 else 0,performanceRatioPct=rounded(compound*100,1) if nominal>0 else 0,finalEnergyKwh=final,compoundPerformanceRatioPct=rounded(compound*100,4),arithmeticSumLossPct=rounded(sum(pct),2))
+    report=dict(thermalInputQualification=json.loads((OUT/'thermal-origin-text-contract.json').read_text()),installedCapacityKwp=cap,rawGhiEnergyKwh=rounded(nominal),effectivePoaEnergyKwh=rounded(nominal),stages=stages,netAnnualEnergyExportMwh=rounded(energy/1000,1) if cap>0 else 0,specificAnnualYieldKwhPerKwp=rounded(energy/D(cap)) if cap>0 else 0,performanceRatioPct=rounded(compound*100,1) if nominal>0 else 0,finalEnergyKwh=final,compoundPerformanceRatioPct=rounded(compound*100,4),arithmeticSumLossPct=rounded(sum(pct),2))
     return dict(annualYieldKwh=final,netAnnualEnergyExportMwh=report['netAnnualEnergyExportMwh'],specificYieldKwhPerKwp=report['specificAnnualYieldKwhPerKwp'],effectiveYieldFactor=rounded(D(str(final))/nominal,6) if nominal>0 else 0,performanceRatioPct=report['performanceRatioPct'],compoundPerformanceRatioPct=report['compoundPerformanceRatioPct'],thermalDeratePctUsed=loss,clippingLossPctUsed=.2,waterfallReport=report)
 cases=[]
 for cap,psh,loss in [(100,5,-10),(1,2,0),(1000,6,10),(0,5,0),(100,0,0)]:

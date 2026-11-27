@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 build
+> vite build
+
+sh: 1: vite: not found

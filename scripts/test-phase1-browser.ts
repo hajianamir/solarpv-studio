@@ -52,11 +52,21 @@ try {
  await page.getByTestId('pump-duty-unavailable').waitFor();assert.equal(await pumpResult.count(),0);
  await page.locator('#pump-duty-enable').uncheck();assert.equal(await pumpResult.count(),0);
  await tab('iran_regulations');assert.equal(await page.getByTestId('iranian-equity-npv').getAttribute('data-value'),pumpingNpvBefore,'Duty comparison must not mutate finance');
- await tab('solar_pumping');assert.equal(await page.locator('#pump-duty-enable').isChecked(),false,'Temporary comparison is not persisted as selected project policy');
+ await tab('solar_pumping');assert.equal(await page.locator('#pump-duty-enable').isChecked(),false,'Disabled settings survive tab remount');
+
+ await page.locator('#pump-duty-enable').check();
+ assert.equal(await page.locator('#pump-duty-dailyWaterVolumeM3').inputValue(),'0','Zero survives remount');
+ assert.equal(await page.locator('#pump-duty-pumpHydraulicEfficiency').inputValue(),'','Invalid efficiency is stored as null');
+ await page.locator('#pump-duty-pumpHydraulicEfficiency').fill('0.6');
+ await tab('iran_regulations');await tab('solar_pumping');
+ assert.equal(await page.locator('#pump-duty-enable').isChecked(),true,'Enabled state survives remount');
+ assert.equal(await page.locator('#pump-duty-totalDynamicHeadM').inputValue(),'50');
+ await page.getByTestId('pump-duty-result').waitFor();
 
  async function check() {
   await tab('waterfall_loss');
   assert.match(await page.getByTestId('scalar-transposition-policy').innerText(),/legacy_latitude_tilt_screen_v1/);
+  assert.equal(await page.getByTestId('thermal-input-qualification').getAttribute('data-basis'),'supplied_signed_annual_loss_unknown_origin');
   const annual=Number(await page.getByTestId('waterfall-annual-mwh').getAttribute('data-annual-mwh'));
   const pr=Number((await page.getByTestId('waterfall-pr-value').innerText()).replace('%',''));
   assert.equal(await page.getByTestId('summary-waterfall-pr').innerText(),pr.toFixed(1)+'%');
@@ -135,6 +145,8 @@ try {
  await page.keyboard.press('Control+s');
  const localSettings=await page.evaluate(()=>JSON.parse(localStorage.getItem('solarpv_project_save')??'{}').iranianScreenSettings);
  assert.deepEqual(localSettings,screenSettings,'Local save retains the active economics, not prior tab defaults');
+ const savedDuty=await page.evaluate(()=>JSON.parse(localStorage.getItem('solarpv_project_save')??'{}').pumpDutySettings);
+ assert.equal(savedDuty.enabled,true);assert.equal(savedDuty.inputs.dailyWaterVolumeM3,0);
  const screenDc=Number(await page.getByTestId('iranian-input-summary').getAttribute('data-dc-kwp'));
  const screenMwh=Number(await page.getByTestId('iranian-input-summary').getAttribute('data-annual-mwh'));
  const expectedIranian=runIranianRegulationFinancialModel(screenDc,screenMwh,'article_16',5000,35,0,6,25,screenSettings.economicPolicy);
@@ -179,6 +191,10 @@ try {
  const jsonPath=await(await jsonPromise).path();assert.ok(jsonPath);
  const envelope=JSON.parse(await readFile(jsonPath,'utf8'));
  assert.deepEqual(envelope.projectData.iranianScreenSettings,screenSettings,'Actual project export preserves economics and all screen settings');
+ assert.deepEqual(envelope.projectData.pumpDutySettings,savedDuty,'Report project file uses the canonical duty snapshot');
+ const thermalOrigin=envelope.projectData.reportSnapshot.waterfallReport.thermalInputQualification;
+ assert.equal(thermalOrigin.basis,'supplied_signed_annual_loss_unknown_origin');
+ assert.equal(thermalOrigin.timeSeriesSampleCount,null);assert.equal(thermalOrigin.financialAdoptionEligible,false);
  const thermalSnapshot=envelope.projectData.reportSnapshot.annualThermalProfile;
  assert.equal(thermalSnapshot.seasonalTemperaturePolicy,'hemisphere_cosine_equator_flat_v1');
  assert.equal(thermalSnapshot.energyAvailability,'positive_reference_irradiation');
@@ -191,10 +207,13 @@ try {
  assert.match(envelope.projectData.cableFeederInputs['ac-output'].impedanceSource,/60 Hz/);
  const ratingEvidence={basis:'factored_array_isc',scope:'per_mppt',source:'SYNTHETIC browser persistence fixture, not manufacturer evidence',sourceDate:null,conditions:'Persistence only; not assessed',requiredMultiplier:1.25,operatingCurrentAmps:envelope.projectData.selectedInverter.imppMaxAmpsPerMppt,shortCircuitCurrentAmps:envelope.projectData.selectedInverter.iscMaxAmpsPerMppt};
  envelope.projectData.selectedInverter.mpptRatingEvidence=ratingEvidence;
+ envelope.projectData.pumpDutySettings.inputs.dailyWaterVolumeM3=120;
  envelope.projectData.iranianScreenSettings.loanInterestPct=2;
  envelope.projectData.iranianScreenSettings.economicPolicy.discountRatePct=7;
  page.on('dialog',dialog=>dialog.accept());
  await page.locator('#report-restore-file-input').setInputFiles({name:'phase1-evidence.solarpv.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(envelope))});
+ await tab('solar_pumping');
+ assert.equal(await page.locator('#pump-duty-dailyWaterVolumeM3').inputValue(),'120','Restore replaces current controlled inputs');
  await tab('array');assert.match(await page.getByTestId('electrical-readiness').innerText(),/unassessed/);
  await tab('iran_regulations');
  assert.equal(await page.locator('#iran-reg-interest-rate').inputValue(),'2');
@@ -206,6 +225,16 @@ try {
  assert.deepEqual(restored.projectData.selectedInverter.mpptRatingEvidence,ratingEvidence);
  assert.deepEqual(restored.projectData.iranianScreenSettings,envelope.projectData.iranianScreenSettings,'Actual import then re-export retains explicit economic policy');
  assert.deepEqual(restored.projectData.cableFeederInputs['ac-output'],envelope.projectData.cableFeederInputs['ac-output']);
+ assert.deepEqual(restored.projectData.pumpDutySettings,envelope.projectData.pumpDutySettings);
+ const malformed=structuredClone(restored);malformed.projectData.pumpDutySettings.inputs.motorEfficiency=2;
+ await page.locator('#report-restore-file-input').setInputFiles({name:'bad-duty.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(malformed))});
+ await page.getByRole('status').filter({hasText:/Import blocked/}).waitFor();
+ await page.locator('#report-modal-close-btn').click();
+ await tab('solar_pumping');assert.equal(await page.locator('#pump-duty-dailyWaterVolumeM3').inputValue(),'120','Blocked import leaves prior project intact');
+ await page.locator('input[type="file"]').first().setInputFiles({name:'legacy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...restored,projectData:{...restored.projectData,pumpDutySettings:undefined}}))});
+ await page.waitForFunction(()=>!(document.querySelector('#pump-duty-enable') as HTMLInputElement)?.checked);
+ assert.equal(await page.locator('#pump-duty-enable').isChecked(),false,'Legacy project resets enabled state');
+ await page.locator('#pump-duty-enable').check();assert.equal(await page.locator('#pump-duty-dailyWaterVolumeM3').inputValue(),'','Legacy does not inherit prior inputs');
  assert.deepEqual(errors,[]);
  console.log('PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence and custom Iranian policy/zero-interest/project-vs-equity NPV import/export. External providers blocked; not field validation.');
 } finally {await browser?.close();await new Promise<void>((resolve,reject)=>server.httpServer.close(e=>e?reject(e):resolve()));}

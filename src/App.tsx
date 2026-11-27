@@ -1,3 +1,4 @@
+import {createDefaultPumpDutySettings,type PumpDutySettings} from './contracts/pumpDutySettings';
 import {createDefaultIranianScreenSettings,type IranianScreenSettings} from './contracts/iranianEconomicPolicy';
 import {ECONOMIC_ASSUMPTIONS, BIFACIAL_READINESS} from './presentation/phase1Evidence';
 import {buildDesignSummary} from './presentation/designSummary';
@@ -452,6 +453,7 @@ export const App: React.FC = () => {
   const shadingLoss3dPct = isShadingStale ? null : (appliedShadingRecord?.lossPct ?? null);
   
   const [iranianScreenSettings,setIranianScreenSettings] = useState<IranianScreenSettings>(createDefaultIranianScreenSettings);
+  const [pumpDutySettings,setPumpDutySettings] = useState<PumpDutySettings>(createDefaultPumpDutySettings);
 
   // Custom User Financial Pricing
   const [userPricing, setUserPricing] = useState<UserFinancialPricing>(DEFAULT_FINANCIAL_PRICING);
@@ -593,6 +595,7 @@ export const App: React.FC = () => {
     enableDieselGenerator,
     userPricing,
     iranianScreenSettings,
+    pumpDutySettings,
     trackerConfig,
     metadata: reportMetadata,
     operationalStudyId: operationalEnergy?.studyId??operationalStudyId,
@@ -1373,6 +1376,7 @@ export const App: React.FC = () => {
       if (clean.targetPowerplantCapacityKw !== undefined) setTargetPowerplantCapacityKw(clean.targetPowerplantCapacityKw);
       if (clean.enableDieselGenerator !== undefined) setEnableDieselGenerator(Boolean(clean.enableDieselGenerator));
       setIranianScreenSettings(clean.iranianScreenSettings ?? createDefaultIranianScreenSettings());
+      setPumpDutySettings(clean.pumpDutySettings ?? createDefaultPumpDutySettings());
       if (clean.userPricing) setUserPricing(clean.userPricing as unknown as UserFinancialPricing);
       if (clean.selectedChemistry) setSelectedChemistry(clean.selectedChemistry as BatteryChemistry);
       if (clean.autonomyDays !== undefined) setAutonomyDays(clean.autonomyDays);
@@ -3133,7 +3137,7 @@ export const App: React.FC = () => {
 
           {/* SOLAR WATER PUMPING TAB */}
           {activeTab === 'solar_pumping' && (
-            <SolarPumpingTab peakSunHours={city.peakSunHours} lang={lang} />
+            <SolarPumpingTab peakSunHours={city.peakSunHours} lang={lang} dutySettings={pumpDutySettings} onDutySettingsChange={setPumpDutySettings} />
           )}
 
           {/* IRANIAN PPA REGULATIONS TAB */}

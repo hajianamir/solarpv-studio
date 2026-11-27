@@ -1,3 +1,6 @@
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {ReferenceDiodePanel} from '../src/components/ReferenceDiodePanel';
 import assert from 'node:assert/strict';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -33,6 +36,7 @@ for(const c of reference.cases){
  maxima.impAmps=Math.max(maxima.impAmps,Math.abs(result.imp-c.expected.imp));
  maxima.pmpWatts=Math.max(maxima.pmpWatts,Math.abs(result.pmp-c.expected.pmp));
 }
+for(const lang of ['en','fa'] as const){const html=renderToStaticMarkup(React.createElement(ReferenceDiodePanel,{lang}));assert.match(html,/desoto_reference_bounded_v1/);assert.match(html,/financialAdoptionEligible: false/);assert.doesNotMatch(html,/data-testid="reference-diode-result"/);assert.match(html,/maxLength="32768"/);}
 const base=structuredClone(reference.cases[0].inputs[0]);
 const noBudget=JSON.parse(JSON.stringify(base));delete noBudget.iterationLimit;
 assert.deepEqual(publicEvaluate(noBudget),publicEvaluate(base),'Absent iteration budget defaults only in the validated schema');
@@ -76,7 +80,7 @@ const units=extractFormulaUnits(owner,readFileSync(owner,'utf8'));
 const witnesses=records.filter(r=>r.formulaId.startsWith(owner+'#'));
 assert.equal(units.length,66);assert.deepEqual(witnesses.map(r=>r.formulaId).sort(),units.map(r=>r.formulaId).sort());
 for(const r of witnesses)await executeReferenceFixture(r);
-const report={schemaVersion:1,scope:'Explicit reference De Soto translation and bounded continuous single-diode metrics only; no fitting/operational adoption',oracleSha256:createHash('sha256').update(readFileSync(file)).digest('hex'),cases:72,componentAndPolicyComparisons:comparisons,invalidCases,executedSensitiveExpressions:witnesses.length,maxima,legacyWitness:{legacyVoc:bad.voc,boundedVoc:resolved.voltage,boundedResidualAmps:resolved.current,legacyApiUnchanged:true},limitations:['No arbitrary datasheet fitting or beta/gamma constraint','No field/manufacturer/whole-model applicability approval','No current App/catalog/persistence/HTTP/annual-energy/financial selection','Legacy solver and its defect remain unchanged; new API is explicit only']};
+const report={schemaVersion:1,scope:'Explicit reference De Soto translation and bounded continuous single-diode metrics only; no fitting/operational adoption',oracleSha256:createHash('sha256').update(readFileSync(file)).digest('hex'),cases:72,componentAndPolicyComparisons:comparisons,invalidCases,executedSensitiveExpressions:witnesses.length,maxima,legacyWitness:{legacyVoc:bad.voc,boundedVoc:resolved.voltage,boundedResidualAmps:resolved.current,legacyApiUnchanged:true},limitations:['No arbitrary datasheet fitting or beta/gamma constraint','No field/manufacturer/whole-model applicability approval','Only temporary explicit I-V metrics UI selection; no catalog/persistence/HTTP/annual-energy/financial adoption','Legacy solver and its defect remain unchanged; new API is explicit only']};
 const out='docs/audit/dual-independent-audit-review/phase3-bounded-diode-comparison.json';
 if(process.argv.includes('--write'))writeFileSync(out,JSON.stringify(report,null,2)+'\n');else assert.deepEqual(JSON.parse(readFileSync(out,'utf8')),report,'Investigate reference/result drift before explicit receipt regeneration');
 console.log(`PASS bounded reference diode:72 external cases,${comparisons} independent component/policy vectors,${invalidCases} invalid contracts,66 executed mutation-sensitive expressions; dark/exhaustion/domain failure and legacy-witness repair through explicit kernel only.`);
