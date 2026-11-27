@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "scope": "Explicit reference De Soto translation and bounded continuous single-diode metrics only; no fitting/operational adoption",
+  "oracleSha256": "9f03dff4dde99c8cd63f92fd698a070f3ed7eafea8e1dc24af6902fe23c13c47",
+  "cases": 72,
+  "componentAndPolicyComparisons": 862,
+  "invalidCases": 51,
+  "executedSensitiveExpressions": 66,
+  "maxima": {
+    "vocVolts": 2.407432475592941e-8,
+    "iscAmps": 4.906297590423492e-12,
+    "vmpVolts": 7.713151717325673e-8,
+    "impAmps": 6.6082139760226255e-12,
+    "pmpWatts": 3.5288394428789616e-10
+  },
+  "legacyWitness": {
+    "legacyVoc": 188.23,
+    "boundedVoc": 45.00065763179139,
+    "boundedResidualAmps": 3.552097505021834e-11,
+    "legacyApiUnchanged": true
+  },
+  "limitations": [
+    "No arbitrary datasheet fitting or beta/gamma constraint",
+    "No field/manufacturer/whole-model applicability approval",
+    "No current App/catalog/persistence/HTTP/annual-energy/financial selection",
+    "Legacy solver and its defect remain unchanged; new API is explicit only"
+  ]
+}

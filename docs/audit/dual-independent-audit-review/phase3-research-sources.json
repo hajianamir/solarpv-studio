@@ -1,0 +1,260 @@
+{
+  "schemaVersion": "phase3-research-sources-v1",
+  "acquisitionDate": "2026-11-03",
+  "transport": "GitHub contents API raw bytes at immutable commit",
+  "qualification": "Acquired source is not project applicability, upstream test execution, manufacturer verification or standards conformity. Review upstream licenses before redistribution; full source/data remains in ignored cache.",
+  "sources": [
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "LICENSE",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/LICENSE",
+      "sha256": "a02e12ddaada3cf0d5dbdd8affdd577c2eec640758a95842a304f7513b8c0be4",
+      "bytes": 1622,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/LICENSE"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/pvsystem.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/pvsystem.py",
+      "sha256": "9ebc0b98b678e1053184f642824139dc8c1ee9340b86aeda073f1c112478490c",
+      "bytes": 112435,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/pvsystem.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/singlediode.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/singlediode.py",
+      "sha256": "6f38b581bddea9fb344afa34af344751dde120bf0f22d3d698655752287899e7",
+      "bytes": 35413,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/singlediode.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/ivtools/sdm/desoto.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/ivtools/sdm/desoto.py",
+      "sha256": "ac639516839ce58a08a8f3eb842625dccda52916d64ecae89a76f8dc2eaecb37",
+      "bytes": 15111,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/ivtools/sdm/desoto.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/temperature.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/temperature.py",
+      "sha256": "484f06b2e8fcb8aa7e0b1000fca26332cbb89b65d4ea89b56092705c7ae152b9",
+      "bytes": 60725,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/temperature.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/iam.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/iam.py",
+      "sha256": "ccbd18cce68c0364f06e5d09274cb99f1a318e668e6fd390187fd9d4c546708c",
+      "bytes": 44224,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/iam.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/inverter.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/inverter.py",
+      "sha256": "3f6e33c0a6821d96f0f6775f2360b1121c0985c44f4462aa4949354fb60c51da",
+      "bytes": 19406,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/inverter.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/tracking.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/tracking.py",
+      "sha256": "ed80ae2aa5dd15f265dc04155808801adbd6bbfb15fa3b96c2acb937adc95120",
+      "bytes": 16303,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/tracking.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/bifacial/infinite_sheds.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/bifacial/infinite_sheds.py",
+      "sha256": "9f944ddef1e95207baefe8e9d0287007181df3274a2d2efb305b85cdd321a939",
+      "bytes": 22970,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/bifacial/infinite_sheds.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/bifacial/utils.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/bifacial/utils.py",
+      "sha256": "f7c0fb6eec65704f288a50b706a1eaa834fba428eb33e7401a162fa588ea6a55",
+      "bytes": 14558,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/bifacial/utils.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "tests/test_temperature.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/tests/test_temperature.py",
+      "sha256": "03f81956caca2fabd78aef8d57697d1601814b062cb45ed4bfb54cddff4bd17c",
+      "bytes": 19483,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/tests/test_temperature.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "tests/bifacial/test_infinite_sheds.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/tests/bifacial/test_infinite_sheds.py",
+      "sha256": "d566558e58dd40fbb0ea67cf2455b8f220415370c7616f9151aa13b3acee8ff6",
+      "bytes": 13723,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/tests/bifacial/test_infinite_sheds.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "tests/test_iam.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/tests/test_iam.py",
+      "sha256": "8dd9c462b50474dfb81aa2121997da78bd3172dd8c4a708d370791ce5222c72a",
+      "bytes": 18815,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/tests/test_iam.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "tests/test_inverter.py",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/tests/test_inverter.py",
+      "sha256": "67e6d7f9247f7355faa98b84e4c3f5c334214263b5b1f192d8900100f3a409fa",
+      "bytes": 7458,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/tests/test_inverter.py"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/data/sam-library-cec-modules-2019-03-05.csv",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/data/sam-library-cec-modules-2019-03-05.csv",
+      "sha256": "a7c3b1ad3dabb5425368615c16322f2e35185fc416380b471c4e48dd545b1920",
+      "bytes": 5446588,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/data/sam-library-cec-modules-2019-03-05.csv"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/data/sam-library-cec-inverters-2019-03-05.csv",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/data/sam-library-cec-inverters-2019-03-05.csv",
+      "sha256": "c192252f0d61204df58fb0df95514a2aa529d88b45a236db7f16737661d616d8",
+      "bytes": 568421,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/data/sam-library-cec-inverters-2019-03-05.csv"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "pvlib/data/703165TY.csv",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/data/703165TY.csv",
+      "sha256": "f0333a68a116f5ae92f1285a2ab8784d8e00e52a367445658ac88d72d93d8ca4",
+      "bytes": 1760582,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/pvlib/data/703165TY.csv"
+    },
+    {
+      "repository": "pvlib/pvlib-python",
+      "commit": "6b9476b90892bd05726b237d9098f7536568a43a",
+      "path": "tests/data/NLD_Amsterdam062400_IWEC.epw",
+      "url": "https://github.com/pvlib/pvlib-python/blob/6b9476b90892bd05726b237d9098f7536568a43a/tests/data/NLD_Amsterdam062400_IWEC.epw",
+      "sha256": "3f013af88b8b4ee6ff9d969108385417929eb489ef4421c6b5e6bb21e5de2505",
+      "bytes": 1543474,
+      "cachePath": ".cache/phase3-research/sources/pvlib/pvlib-python/6b9476b90892bd05726b237d9098f7536568a43a/tests/data/NLD_Amsterdam062400_IWEC.epw"
+    },
+    {
+      "repository": "NREL/EnergyPlus",
+      "commit": "e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190",
+      "path": "LICENSE.txt",
+      "url": "https://github.com/NREL/EnergyPlus/blob/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/LICENSE.txt",
+      "sha256": "7c199d0a33091409f1b5a7a3f4eb0e11f6fefd100bf57e49f6eaf1ce3c7f1bc9",
+      "bytes": 3167,
+      "cachePath": ".cache/phase3-research/sources/NREL/EnergyPlus/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/LICENSE.txt"
+    },
+    {
+      "repository": "NREL/EnergyPlus",
+      "commit": "e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190",
+      "path": "src/EnergyPlus/PhotovoltaicThermalCollectors.cc",
+      "url": "https://github.com/NREL/EnergyPlus/blob/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/src/EnergyPlus/PhotovoltaicThermalCollectors.cc",
+      "sha256": "b239b6a38ee117d09cf1d0370eac23ae8a598b725666a4d6ffd5417ccb15653b",
+      "bytes": 111448,
+      "cachePath": ".cache/phase3-research/sources/NREL/EnergyPlus/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/src/EnergyPlus/PhotovoltaicThermalCollectors.cc"
+    },
+    {
+      "repository": "NREL/EnergyPlus",
+      "commit": "e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190",
+      "path": "tst/EnergyPlus/unit/PhotovoltaicThermalCollectors.unit.cc",
+      "url": "https://github.com/NREL/EnergyPlus/blob/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/tst/EnergyPlus/unit/PhotovoltaicThermalCollectors.unit.cc",
+      "sha256": "781c7a2445e7341f0ff4d451d13085667ef7a5e1bdaa58ae5a4d6f9e6f56842d",
+      "bytes": 27945,
+      "cachePath": ".cache/phase3-research/sources/NREL/EnergyPlus/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/tst/EnergyPlus/unit/PhotovoltaicThermalCollectors.unit.cc"
+    },
+    {
+      "repository": "NREL/EnergyPlus",
+      "commit": "e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190",
+      "path": "weather/USA_AZ_Phoenix-Sky.Harbor.Intl.AP.722780_TMY3.epw",
+      "url": "https://github.com/NREL/EnergyPlus/blob/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/weather/USA_AZ_Phoenix-Sky.Harbor.Intl.AP.722780_TMY3.epw",
+      "sha256": "aa7edb5eb1adb620c703932f8b9457a092ba232a31ec47e185803b132aff2906",
+      "bytes": 1634911,
+      "cachePath": ".cache/phase3-research/sources/NREL/EnergyPlus/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/weather/USA_AZ_Phoenix-Sky.Harbor.Intl.AP.722780_TMY3.epw"
+    },
+    {
+      "repository": "NREL/EnergyPlus",
+      "commit": "e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190",
+      "path": "weather/USA_NJ_Newark.Intl.AP.725020_TMY3.epw",
+      "url": "https://github.com/NREL/EnergyPlus/blob/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/weather/USA_NJ_Newark.Intl.AP.725020_TMY3.epw",
+      "sha256": "1fcab9e91ce15c686f86bb64d753f03c4581a2ef9ec9b623d12f9097c432e8af",
+      "bytes": 1632356,
+      "cachePath": ".cache/phase3-research/sources/NREL/EnergyPlus/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/weather/USA_NJ_Newark.Intl.AP.725020_TMY3.epw"
+    },
+    {
+      "repository": "NREL/EnergyPlus",
+      "commit": "e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190",
+      "path": "doc/engineering-reference/src/on-site-generation/photovoltaic-arrays.tex",
+      "url": "https://github.com/NREL/EnergyPlus/blob/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/doc/engineering-reference/src/on-site-generation/photovoltaic-arrays.tex",
+      "sha256": "ca807acc382f9954e58199a9b4283861ce9241502f326cbd753e946eb2f16792",
+      "bytes": 35246,
+      "cachePath": ".cache/phase3-research/sources/NREL/EnergyPlus/e7ecb2d53b6b2f4666bf5a56fc9b3ba35cf34190/doc/engineering-reference/src/on-site-generation/photovoltaic-arrays.tex"
+    },
+    {
+      "repository": "OpenWaterAnalytics/EPANET",
+      "commit": "4d8d82ddc260fce216af9321fc3d9a4646ac6827",
+      "path": "src/hydcoeffs.c",
+      "url": "https://github.com/OpenWaterAnalytics/EPANET/blob/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydcoeffs.c",
+      "sha256": "66ca5de7772cf0969f33011fbb49b3481826ba7f21fc39d9dbe949a73de19d2e",
+      "bytes": 33821,
+      "cachePath": ".cache/phase3-research/sources/OpenWaterAnalytics/EPANET/4d8d82ddc260fce216af9321fc3d9a4646ac6827/src/hydcoeffs.c"
+    },
+    {
+      "repository": "numpy/numpy-financial",
+      "commit": "247aa4e2ee4fa7db44915790d5a730b9776d10a7",
+      "path": "numpy_financial/_financial.py",
+      "url": "https://github.com/numpy/numpy-financial/blob/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py",
+      "sha256": "345a52c076648ba5530f826143fcabcf374b852cc25577f5671ce9f344914684",
+      "bytes": 26128,
+      "cachePath": ".cache/phase3-research/sources/numpy/numpy-financial/247aa4e2ee4fa7db44915790d5a730b9776d10a7/numpy_financial/_financial.py"
+    },
+    {
+      "repository": "scipy/scipy",
+      "commit": "e29dcb65a2040f04819b426a04b60d44a8f69c04",
+      "path": "scipy/stats/_multivariate.py",
+      "url": "https://github.com/scipy/scipy/blob/e29dcb65a2040f04819b426a04b60d44a8f69c04/scipy/stats/_multivariate.py",
+      "sha256": "57f02b7ef6a44ca1117617214b9be86f9d9f3a708f1ea2cc61c6d2d058b184e6",
+      "bytes": 249240,
+      "cachePath": ".cache/phase3-research/sources/scipy/scipy/e29dcb65a2040f04819b426a04b60d44a8f69c04/scipy/stats/_multivariate.py"
+    },
+    {
+      "repository": "scipy/scipy",
+      "commit": "e29dcb65a2040f04819b426a04b60d44a8f69c04",
+      "path": "scipy/stats/_continuous_distns.py",
+      "url": "https://github.com/scipy/scipy/blob/e29dcb65a2040f04819b426a04b60d44a8f69c04/scipy/stats/_continuous_distns.py",
+      "sha256": "4011a3b7e9308639b3537f9766d9e42525f2e0a0ba88893b0defe4dd364215fe",
+      "bytes": 407685,
+      "cachePath": ".cache/phase3-research/sources/scipy/scipy/e29dcb65a2040f04819b426a04b60d44a8f69c04/scipy/stats/_continuous_distns.py"
+    }
+  ]
+}

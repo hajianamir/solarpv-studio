@@ -1,0 +1,173 @@
+{
+  "date": "2026-11-03",
+  "branch": "arena/958d0027-solarpv-studio",
+  "base": "a5b2c5f8eac89b3be3a9148f786653e0ee11815a",
+  "scope": "First Phase3 U05 independent explicit-reference specialization and truthful I-V qualification; no production numerical replacement",
+  "implementation": "IMPLEMENTED within first evidence/qualification slice",
+  "verification": "VERIFIED_WITHIN_SCOPE for specified component/replay/UI acceptance; complete U05 PARTIAL",
+  "release": "BLOCKED; Phase2/Phase3 incomplete and solver-convergence defect unresolved",
+  "commands": [
+    {
+      "command": "npm run lint",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:smoke",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:coverage",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase1",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase2",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase3",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:accepted-audit",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:exports",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:engine-claims",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:help",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:physics-registry",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:physics-reference-gate",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:phase1-evidence",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:phase1:browser",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:browser",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:ui",
+      "exitCode": 0
+    }
+  ],
+  "additionalChecks": [
+    {
+      "command": ".venv/bin/python scripts/fixtures/generate-phase3-single-diode.py --check",
+      "exitCode": 0,
+      "result": "Byte-for-byte reference regeneration with network operations denied by generator audit hook"
+    },
+    {
+      "command": "npm run test:phase3 (post-documentation replay)",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run verify:phase1-evidence (final)",
+      "exitCode": 0
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "evidence": {
+    "externalReference": "pvlib0.13.1, numpy2.2.6, scipy1.15.3, Python3.11.2; upstream parameter/source locators and hashes stored in fixture",
+    "cases": 48,
+    "curvePoints": 3888,
+    "productionNumericalExpressions": "Unchanged against actual branch-base source; only engine comments modified",
+    "bilingualUI": "Static rendering plus actual production browser checks qualification, cosmetic shading copy and unchanged unshaded KPIs",
+    "genericUI": "81layout checks, dark/light/fa/en,320\u20131536px; scope per actual suite log",
+    "lint": "0errors,93existingwarnings",
+    "storedTarget": "Retired unverified bifacial target remains WARN, not waived",
+    "reviews": "Three substantive self-review/followup research rounds recorded in ADR-024; not independent human reviews",
+    "oracleIndependence": "Python generator executes external pvlib directly; no TypeScript import/production numerical targets; replay needs no Python/network"
+  },
+  "failedAttempts": [
+    {
+      "description": "Initial test assumed strong beta seed invariance; actual result188.23V instead of45V with identical translated parameters",
+      "disposition": "Confirmed unresolved Newton-convergence defect, not tolerance failure to hide; corrected test assumption and retained explicit failed-root/residual witness. No production numerical fix in this slice."
+    },
+    {
+      "description": "Replacing socket class with function broke SSL class initialization before oracle execution",
+      "disposition": "Instrumentation fixed to operation-level Python audit hook; oracle regenerates unchanged bytes offline."
+    }
+  ],
+  "prerequisitesRestored": [
+    "Locked Node dependencies via npm ci --ignore-scripts",
+    "Isolated Python environment from existing services/pvlib_study/requirements.txt",
+    "Exact historical Git objects0c4d7cad and0d41fd38 for pre-existing Phase1/Phase2 baseline tests; no branch change or baseline substitution"
+  ],
+  "stops": [
+    "No arbitrary-input solver-reliability or complete datasheet-fit claim",
+    "No manufacturer gamma inference or current catalog provenance claim",
+    "No automatic annual/financial/research adoption",
+    "No field/conformity/bankability or complete Phase2/Phase3/release claim"
+  ],
+  "next": "Versioned explicit-reference parameter contract and bounded/root-residual convergence/error result with independent formula and consumer evidence; separately assessed fitting constraints/residuals",
+  "sourceSha256": {
+    "src/engine/singleDiodeModel.ts": "5d3451c0a43b68a12dbd02365e4a6e8e74d1f2904b96481313168c590df11e03",
+    "src/components/IvCurveTracerTab.tsx": "371528eb97520c78d026d256d2e1e3befaeb2f4fee4229fa9e5376aaef86e5da",
+    "src/helpContent.ts": "cc538c701ea93200cc160c2db4ba69cef0deb80b5034cda82d9ed7a7795da0d5",
+    "scripts/test-phase3-single-diode.ts": "d2abe3c8597e5dbad9d8db006c2ab9ec5f0b951dd5d48f636076c2aa2e5f88a3",
+    "scripts/test-phase1-browser.ts": "9738c7ede71bd90100c4cf520cea01ffa298842c7d2049d2ad380169b80299fc",
+    "scripts/fixtures/generate-phase3-single-diode.py": "1a709346ff0a8ff621323c7405686b8e20227452f2cab46962bc956e249fe777",
+    "benchmarks/independent/phase3-single-diode.json": "d7f85e597d80ddc50f21b4882ed8a376a5d5e4edb2baf276dec109e6f984623b",
+    "docs/audit/dual-independent-audit-review/phase3-single-diode-comparison.json": "be41ea19efa8b8b85fe6e96d92832c6524da6e5d6f5d8acaa4720e908b2c55cc",
+    "docs/audit/dual-independent-audit-review/phase3-single-diode-evidence-card.md": "4fa479384ab4b12468eca617585a4f99b843b8620a4020786b3438bfe3ea5493",
+    "docs/audit/dual-independent-audit-review/PHASE-3-PLAN.md": "f9e0a1c4e6315f2db6784e66d8516a0812cc25a21f9de48552845a6d25c01576",
+    "docs/audit/dual-independent-audit-review/PHASE-3-STATUS.md": "b93633b84b3a0e56daeeafa338c8adcc4903400ad8aa947ee9391c44ba8bba2f",
+    "docs/adr/ADR-024-phase3-single-diode-reference-boundary.md": "9ab35123254ad1aa08f5a95fb2032952719a8f03fc16b16ba57679b750fe17a6",
+    "docs/guides/single-diode-validation.md": "30a7492ff61dcc0eae9ff0ae98d84c8d2c745314a21f3c65be6280d2a91c9582",
+    "package.json": "f380e90d848af06c77d39759db108b50f27d75d7822ae1df4e1004accb7ba52c"
+  },
+  "logSha256": {
+    "build.log": "96d2e0c8ad99c0cf5850b9111b6ef9ef02d86c15646e943d38ddd4713a9bc7ed",
+    "lint.log": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965",
+    "test-accepted-audit.log": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89",
+    "test-browser.log": "28f7d4c0d4443f6b39e02a3e8d9860de22ea20be974b593e5bea147caa69511e",
+    "test-coverage.log": "cb71c57832ab4e2f62451940d91bbda907f97b9ba829c5bc21bdbf5d1175d189",
+    "test-phase1-browser.log": "96d2fef3fa6090a4a1b7a821369dd6eb6c5a1455b5139cb0bb31f56e6d7724ea",
+    "test-phase1.log": "143e9e8f6cf323c31a95c942b192920b963b1ee9b345097ee137567cfe6860db",
+    "test-phase2.log": "8be9ade7d3a711d8d226ef09eff6d3ea13be4837453061bba9430713de8f9661",
+    "test-phase3.log": "40d9090333e3be22b0f9a578ea0d247ee42827a44013a7fa7e6e64e2e4dd4c82",
+    "test-smoke.log": "34db9f55fe169cb459b848b574335e751e124c5bf1d2bcdc6dce51585686bca4",
+    "test-ui.log": "e9acb65a451269b3510731560e4cb076dbc887a76b8dc97f870d289cff54db8a",
+    "test.log": "fdc9fb8bd44eb6ab25dd602027fd2ecacde75d76d31d03b5f6627bcc5ae4f969",
+    "verify-engine-claims.log": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122",
+    "verify-exports.log": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe",
+    "verify-help.log": "1153cb65ded24350037be66cddbac699826975db502e3510ab5844437a3a0ea0",
+    "verify-phase1-evidence.log": "cec18ae2090ffbeb9c6fe8edf71fd288ef71dc929e15a8edd24be7c415bed1ad",
+    "verify-physics-reference-gate.log": "74467dff1804c647408e03793c223e924e8997f88a9a2ad4c9916799c9992331",
+    "verify-physics-registry.log": "94e7288aaf1de9be1efb558f9643804634ef881dc23d8492fb6d056a173bf3c7"
+  },
+  "gitActions": "No commit, push or PR requested/performed; historical evidence objects fetched only"
+}

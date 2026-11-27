@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "phase3-research-verification-v1",
+  "date": "2026-11-03",
+  "baseCommit": "a5b2c5f8eac89b3be3a9148f786653e0ee11815a",
+  "branch": "arena/958d0027-solarpv-studio",
+  "revision": "uncommitted working tree; source and artifact hashes below",
+  "implementation": "bounded research acquisition/generation/replay implemented; production formulas unchanged",
+  "verification": "verified within recorded research scope, not model acceptance",
+  "release": "BLOCKED",
+  "artifacts": {
+    "scripts/fixtures/acquire-phase3-research.py": "637aba93545a415ba95d110e8eeada40f19c71996dde663c7239ff5ee5bd6ad6",
+    "scripts/fixtures/generate-phase3-research.py": "5a62d81c9edccf2c7d2b41ea80a47e05915ad5cb47330eeca6a88aa83271bfbf",
+    "scripts/test-phase3-research.ts": "4f0d01d25b23369c4215213c9e40d500964ee4aff5517e14153b38960cdc318b",
+    "scripts/fixtures/physics/phase3-research-reference.json": "12fb67e35e1f803edfad6507814840f4c2ca7f286a948f52d4cc3ae59b4c6ebb",
+    "docs/audit/dual-independent-audit-review/phase3-research-sources.json": "3862a5b9a82373e21a09a2b5db07c4b582d0a0c2f32bf8639a7ded1d9b6a824f",
+    "docs/audit/dual-independent-audit-review/phase3-research-comparison.json": "ef3521478f381f054df676e1c1be04578d5675e6bc7c911f939be2cd3447aeed"
+  },
+  "logs": {
+    ".cache/phase3-research/verification/build.log": "7714efdb1d1248298ff900556da41ba32f81ac412f8ac11588d1497661fda311",
+    ".cache/phase3-research/verification/final-test_phase3.log": "8fcdd3df228a5e7f052ef44c00a9ed6af34bd0eb8cfefc4ff487a89ef904ef23",
+    ".cache/phase3-research/verification/offline-reference.log": "b3d8190c0597fb074106c8da55f2d3ba78814852a8cf8ce67dce54c082bdb17e",
+    ".cache/phase3-research/verification/offline-sources.log": "4bd35a6fafa2c9f1932c9038b9aba8d2cf4da41ac7d5032f78b36f193a0dd3d6",
+    ".cache/phase3-research/verification/test.log": "f6e44f8c263dc961a7059d478e9d75c41f8420cdb4890d4e0126466837844b02",
+    ".cache/phase3-research/verification/test_coverage.log": "6e7b0bfc17ad178a9d7fc723b00be830a49c0d29337a8f79f0867ab4a12e99ab",
+    ".cache/phase3-research/verification/test_phase3.log": "8fcdd3df228a5e7f052ef44c00a9ed6af34bd0eb8cfefc4ff487a89ef904ef23",
+    ".cache/phase3-research/verification/test_smoke.log": "8fb4cc6f2691dfdcaf1c938e005b85be1e6edbb691ca17167662d28c9a3dbf3c",
+    ".cache/phase3-research/verification/verify_phase1-evidence.log": "d442a6ab71446a85012fee9fa34a34a928db1b5ee167390763180e55bc2c5bc4",
+    ".cache/phase3-research/verification/verify_physics-reference-gate.log": "6f31fda1eeebf8b743a5fa6c3228dc0d2f57f5e0b6267889eac34ce5078fec55",
+    ".cache/phase3-research/lint.log": "afd0da74de9fe4fe585721b0daa4c496220aef30386122a5ba6ded3a40e65965"
+  },
+  "passedCommands": [
+    "npm run lint (0 errors, 93 existing warnings)",
+    "npm run build",
+    "npm test",
+    "npm run test:smoke",
+    "npm run test:coverage",
+    "npm run test:phase3",
+    "npm run verify:physics-reference-gate",
+    "npm run verify:phase1-evidence",
+    ".venv/bin/python scripts/fixtures/acquire-phase3-research.py --check",
+    ".venv/bin/python scripts/fixtures/generate-phase3-research.py --check",
+    "git diff --check"
+  ],
+  "cases": {
+    "thermal": 60,
+    "iam": 16,
+    "bifacial": 96,
+    "annual": 30,
+    "pumpDuty": 27,
+    "finance": 6,
+    "studentTCdf": 20,
+    "cecTableFit": 1
+  },
+  "failedAttemptsAndCorrections": [
+    "Initial EPW experiment passed datetime fixed-offset tz to Location, causing ZoneInfoNotFoundError UTC-07:00. Corrected to numeric EPW TZ without changing source timestamps; exact reproduction now passes.",
+    "Default upstream De Soto fitting initial guess fails; retained as witness. Separate explicit CEC starting guess converges; not a production fallback.",
+    "Initial source tag lookups for USEPA EPANET/numpy-financial failed; resolved actual OpenWaterAnalytics EPANET v2.2 and numpy-financial v1.0.0 immutable commits.",
+    "GitHub southern-weather searches did not acquire a suitable authoritative file; northern references are not relabeled southern."
+  ],
+  "notExecuted": [
+    "Full upstream pvlib, SciPy, NumPy Financial or EnergyPlus test suites",
+    "EnergyPlus, SAM or PVsyst external whole-model executable/project validation",
+    "New browser/HTTP/persistence integration (none added in this research scope)",
+    "Manufacturer, utility, licensed normative or customer field validation"
+  ],
+  "stops": [
+    "Phase3 implementation/integration requirements remain incomplete",
+    "No automatic annual/financial research adoption",
+    "Missing site/manufacturer/normative evidence remains unknown",
+    "Legacy Student-t and screening-model discrepancies remain unresolved; component checks do not certify them"
+  ]
+}
