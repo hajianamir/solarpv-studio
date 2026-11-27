@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "branch": "arena/6a50ab5f-solarpv-studio",
+  "head": "0c4d7cadc7db6001459ea36fdf9a3d1403179a71",
+  "workingTree": "Prior dirty work preserved; no commit/push. Receipt hashes scoped files, not a claim that all cumulative changes were made in this follow-up.",
+  "phase2Status": "INCOMPLETE",
+  "releaseStatus": "BLOCKED for full-validation/conformity/design-approval claims",
+  "acceptance": {
+    "P2-C2": "PASS elementary drop owner/candidate checks, AC evidence containment, JSON/schema and actual browser input save/restore/export; not independent ampacity or site-impedance validation",
+    "P2-B2": "PASS unsupported Broms safety containment, 144 cases with 85 previous green-screen witnesses and structural/recommendation/sensitivity consumers; not a replacement soil model",
+    "P2-F2": "PASS unrounded Iranian million-Toman ledger, 18 independent Decimal scenarios; explicit financial-policy migration/other ledgers still open"
+  },
+  "independentFormulaGate": {
+    "result": "PASS",
+    "changedExpressions": 14,
+    "fixtureTypes": [
+      "pinned pvlib sign component (prior slice)",
+      "independent Decimal cable voltage-drop",
+      "independent Decimal pre-tax financial ledger"
+    ],
+    "directExecutionAndMutation": true,
+    "gateSourceChanged": false
+  },
+  "checks": {
+    "npm run lint": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/lint.log",
+      "sha256": "d75c19b0b925f43951cf36e539ba854b92f9910594a761f62731861343e9dfc7"
+    },
+    "npm run build": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/build.log",
+      "sha256": "81eb7961bf091b98760d78bebabc7015e1828322b2ee2550f361e1faf8697a4d"
+    },
+    "npm run test": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test.log",
+      "sha256": "22b6d3a439ab047cd56f1a39a9f530fd6d4706af2c8c574a200ad5f66eb73280"
+    },
+    "npm run test:smoke": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test-smoke.log",
+      "sha256": "b353c51080c705b822882e22f5cb9bc7df8fe4d05a1b2d93faf2f5983ed474b9"
+    },
+    "npm run test:coverage": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test-coverage.log",
+      "sha256": "df02d75e90b70b81d17f339fcc54acd091fe17a62ffc013d21ed597b8ba88d40"
+    },
+    "npm run test:phase2": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test-phase2.log",
+      "sha256": "fd6e7fdcd597c55b672a03352fb59973d8dd5f68797553606fa6c11e5c5dccc8"
+    },
+    "npm run test:phase1": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test-phase1.log",
+      "sha256": "e0b9a648aa830999c4352c837a7d6f7e6e2a1b950231823ea1d928966a486bfc"
+    },
+    "npm run test:phase1:browser": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test-phase1-browser.log",
+      "sha256": "f4b67a00ecc69248838bed5cb41df0b3800e6c47f9603ce55c94596fc77ce38d"
+    },
+    "npm run test:browser": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test-browser.log",
+      "sha256": "cfefc456f356086bb5f808c663f61cf524b749a4517d67f2ae2a862e9aec70f9"
+    },
+    "npm run test:accepted-audit": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test-accepted-audit.log",
+      "sha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89"
+    },
+    "npm run test:recovery": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/test-recovery.log",
+      "sha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d"
+    },
+    "npm run verify:exports": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/verify-exports.log",
+      "sha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe"
+    },
+    "npm run verify:engine-claims": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/verify-engine-claims.log",
+      "sha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122"
+    },
+    "npm run verify:physics-reference-gate": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/verify-physics-reference-gate.log",
+      "sha256": "d51b65f9bfce1a3e868f1ae378009eb04ca6b591ab1a9127db1ad19b6d2b526d"
+    },
+    "inventory-check": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/inventory-check.log",
+      "sha256": "631bd52137ee25af247d86d5e24e58849a481114814541b186ad1aec4a4596a1"
+    },
+    "oracle-reproducibility": {
+      "exitCode": 0,
+      "path": ".cache/phase2-next/oracle-reproducibility.log",
+      "sha256": "e51788b1bdcd8de64214bd27754295f242c73dd4403ece2cafb54874a4a9b99b"
+    },
+    "historical-reference": {
+      "exitCode": 1,
+      "path": ".cache/phase2-next/historical-reference.log",
+      "sha256": "20266efd23cf1f5d7784a3be823a6b012eec7703f3fe5f2d193a37f2cad70bd7",
+      "status": "Inherited CAD independent-reference deficit remains unwaived"
+    }
+  },
+  "sourceSha256": {
+    "src/contracts/cableAssessment.ts": "337e97b9ad19468e261ff4c4fc3609aa36ca0d8e5ba7ee21abe5bd9a2c9e629f",
+    "src/engine/core/cableVoltageDrop.ts": "4c71c6dcf2837c7976c066b1849ad1cae02c4c93d80e6088a32c5ee40c4223e9",
+    "src/engine/core/projectMigration.ts": "3ef474202fee4e5bdef1a042ae662e185be063d722e79959b25f082205899327",
+    "src/engine/protectionBomEngine.ts": "b99303a5564d88ff5bc6a51c34967f17e67503e975d0b64369a1664123d85a87",
+    "src/components/ProtectionBomTab.tsx": "9ccb8f4ebfc25b1a4a5896911ebc59752232fcc681afa47fcb86294e552f3d74",
+    "src/engine/geotech/bromsMethod.ts": "ccec32e89f237b094c061a41659e73e581a7fca51ed7c9be83f66481e401a735",
+    "src/engine/structuralEngine.ts": "a52f8c5cee1f66cca5bd01dd1951ef649ea2554036bb030117ff3de048a57fec",
+    "src/engine/structureRecommendationEngine.ts": "aa8138bb98d60b3c757ef9428499cd60c8a003fdbbc649ca316dbe6b10d40455",
+    "src/components/StructuralFoundationTab.tsx": "e6a023822be49b18f01b675890ba058e7f59cae75e467b28d9ed70cda510dea0",
+    "src/engine/iranianRegulationsFinancial.ts": "c360f8e813a427d54eab1d690e1c5c7bf5a5569362dba7a53ae2f544af58c2ff",
+    "src/engine/core/benchmarks/unitTestsCore.ts": "51e0e53bc03b942379fa97a8d7d212138cbd587cade9c1b51781ed5c36e6a80e",
+    "scripts/test-phase2-cable.ts": "eafe54034d74020044acb1b2d87bde3fb000defcc7038f9f06129a6e78cdee4f",
+    "scripts/test-phase2-broms.ts": "ea8e17dcb63732a607fbc46eacedb337b434dc5f2bb2d3662f05ebe5c2ed5469",
+    "scripts/test-phase2-finance.ts": "0724cc9d67373ed8077658127a66ce43cc76ca57cc5a3dcace314a28ae2132c6",
+    "scripts/test-phase2-uplift.ts": "9d3d33ada0bcb24425a66f3201350fa9408f0e93f5dff9f27b99f08b6116ca45",
+    "scripts/test-phase1-browser.ts": "9b3d282a644efdb85a8d0d219e52ead4f902d92442be04be00016680cbdd7837",
+    "scripts/physics-reference-evidence.json": "e53a414a321aea20b20c11cec7690e90a4b595484e86a94c8ef78dbcd00a6f21",
+    "scripts/fixtures/physics/generate-cable-drop.py": "af5d5f6b01fb196cc85ea486b86432bc654b4757956d376bbbc7e234f9eb0da1",
+    "scripts/fixtures/physics/generate-iranian-precision.py": "547597387de8db1f9f0040e3730c3f9cca2b3849f78cf318929f502ff647d460",
+    "docs/adr/ADR-014-phase2-cable-search-pile-containment-and-ledger-precision.md": "b4c2dec2b7628874c53a5f01600e58bda532cc82f906d8b17405614e606846ba",
+    "docs/audit/dual-independent-audit-review/PHASE-2-STATUS.md": "8b908e0315fc4fd204e56a98fba5183aeee1ded0a1733952f5bfe53b6f94215a",
+    "docs/audit/dual-independent-audit-review/PHASE-2-RESEARCH-AND-REVIEW.md": "418b4f5a7f55a80dc3297fa6b6ef81552597c25ac9511fbde5bd35f159a6173b",
+    "docs/audit/dual-independent-audit-review/current-implementation-evidence.json": "466fabca86429fbdd558439929ef282245eebe594b50e8cdb96d8adea82878c8",
+    "docs/audit/dual-independent-audit-review/current-finding-dispositions.json": "9175cf13de6c2cc45e4a71e74569aa8dc94dc851fb3e64d93e1c9bfb52832e07",
+    "scripts/fixtures/physics/cable-drop-decimal.json": "157a04778c6c43607a922d80ba5d42d7262124b20eef57c06fad1d7e7d8b53b3",
+    "scripts/fixtures/physics/cable-drop-1a9ba7aef2e8.json": "ae6b1433617a3772755476fc98d396e67eb6a28324346bdcfd847964bf822e5a",
+    "scripts/fixtures/physics/cable-drop-1d7521ca31e8.json": "b61554360fa4eb9be4b3779e93b0d90a26e524d8c05c9bd3f89c2b153b7dc405",
+    "scripts/fixtures/physics/cable-drop-415cf24efccc.json": "77d60e09aa70187618a3bc8507921fe11ad11a3e9733c4aae0764359c2132741",
+    "scripts/fixtures/physics/cable-drop-81afbda05730.json": "5d68537d7e13ecb97e6508c85660699fe547b5317db5cc0cacf62203e5162569",
+    "scripts/fixtures/physics/cable-drop-a8c5cc43e447.json": "193564402829a5e8abdee07cbc7f5e4dd6ab408839cddacc5db5aaca30646aba",
+    "scripts/fixtures/physics/cable-drop-d4888039b524.json": "58a9eee759955de3a6986f06ff39d96c91befbcb0968bace88481070b8ce8367",
+    "scripts/fixtures/physics/cable-drop-d5350617b721.json": "b430853fe5c230528c68a78d3b1c2bac48e89d4a53018a6e679d42ad3c9c0554",
+    "scripts/fixtures/physics/iranian-precision-decimal.json": "95b0fd713eb382e1bbca1e01d84cd55d664a39d70d8b8ba2753b20eb9e43044b",
+    "scripts/fixtures/physics/iranian-precision-041b52bf8c76.json": "b312671bc9ab861c4796b9f2ebcc3ca5638ef75559818964c243bf2ce80bba27",
+    "scripts/fixtures/physics/iranian-precision-68d77e63ef1d.json": "762666fa3df07c7b2a62e3a95f1ff78159aaaeeeef5fc182abad55efb7d87f6b",
+    "scripts/fixtures/physics/iranian-precision-69f23343a515.json": "35b8331a5e0a937fe86f16ded7da1abc52a115ae86df874ab1ca553f5555ad9f",
+    "scripts/fixtures/physics/iranian-precision-6e630b8ca162.json": "095972d1549664334053e008ce5709f3d46a29a0e9c84038720f682317fb49cc",
+    "scripts/fixtures/physics/iranian-precision-754601d564d7.json": "f12bb9415922a19a545251ffa1f9b46a2b3ea0ed269508e069945e2ea791e97d",
+    "scripts/fixtures/physics/iranian-precision-bd40df4c4c9a.json": "934f8edfb1c229f25064a955a57b222c3ee74e8935fa041944599d80211db21e"
+  },
+  "failedAttempts": [
+    "Mixed R/X oracle witness replaced initial PF=0 witness that could not expose R mutations.",
+    "Corrected cable regression use of existing isVoltageDropCompliant field.",
+    "New assessed-AC tests declare synthetic impedance rather than implicitly assuming old defaults.",
+    "Broms actual structural consumer test exposed incomplete containment placement; applied safety stop to rammed/screw/grouted outputs and then passed.",
+    "Exact binary-vs-Decimal row assertion corrected to declared oracle tolerance; full-value numerical comparison retained.",
+    "Report comparison labels created unreferenced predicate expressions; removed the unsupported PASS/FAIL report judgments altogether, retained diagnostic values and UNASSESSED. Gate then passed unchanged."
+  ],
+  "remaining": [
+    "U01b wind SI/edition/default/domain mapping",
+    "Full U02 thermal ownership/hemisphere/profile and all consumer reconciliation",
+    "U09b rating-specific manufacturer rules and evidence",
+    "U07a scalar consolidation and policy migration",
+    "Complete U16b assumptions/migration, wider ledger and scenario coverage",
+    "Inherited independent CAD reference deficit"
+  ],
+  "notClaimed": [
+    "All Phase 2 packages complete",
+    "Normative compliance or manufacturer/site evidence validation",
+    "Whole-model physical accuracy or bankability",
+    "Native Windows/Safari/container/deployment/field validation"
+  ]
+}

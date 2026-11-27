@@ -6,6 +6,8 @@
  * Leaf/core module in `src/engine/core/`: NO circular dependencies.
  */
 
+import { legacyClippingScreen } from './legacyClippingScreen';
+import { signedThermalLossFromStage } from './signedThermalStage';
 import {
   calculateThermalDerate,
   calculateAnnualThermalDerate,
@@ -66,6 +68,8 @@ export interface CanonicalAnnualYieldInput {
   peakSunHours: number;
   ambientTempMaxC: number;
   ambientTempMeanC?: number;
+  /** Explicit signed annual loss; negative is gain. Same optional waterfall contract as App. */
+  annualThermalDerateOverridePct?: number;
   soilingLossPct?: number;
   dcAcRatio?: number;
   hasTracker?: boolean;
@@ -88,13 +92,15 @@ export interface CanonicalAnnualYieldResult {
   effectiveYieldFactor: number;
   performanceRatioPct: number;
   compoundPerformanceRatioPct: number;
+  /** Signed loss: negative means cold-temperature gain; inverse of waterfall stage. */
   thermalDeratePctUsed: number;
   clippingLossPctUsed: number;
   waterfallReport: WaterfallLossReport;
 }
 
 /**
- * Calculates continuous inverter clipping loss strictly clamped to physical bounds [-85.0, -0.2].
+ * Deprecated-name compatibility adapter for the unvalidated legacy clipping screen.
+ * The bounds [-85.0, -0.2] are local policy, not validated physical limits.
  * Linear clipping model: -0.2% baseline for ILR <= 1.3, then grows with slope 6.5%/unit ILR above 1.3.
  */
 export function calculatePhysicalClippingLossPct(dcAcRatio: number): {
@@ -102,8 +108,7 @@ export function calculatePhysicalClippingLossPct(dcAcRatio: number): {
   rawClippingLossPct: number;
 } {
   const safeIlr = Math.max(0.1, Number.isFinite(dcAcRatio) ? dcAcRatio : 1.25);
-  const rawClipping = -0.2 - 6.5 * Math.max(0, safeIlr - 1.3);
-  const clamped = Math.max(-85.0, Math.min(-0.2, rawClipping));
+  const {rawClippingPct: rawClipping, clippingPct: clamped} = legacyClippingScreen(safeIlr);
   return {
     clippingLossPct: Number(clamped.toFixed(4)),
     rawClippingLossPct: Number(rawClipping.toFixed(4)),
@@ -156,6 +161,7 @@ export function computeCanonicalAnnualYield(
       : input.ambientTempMaxC;
 
   const waterfallInput: WaterfallArgsInput = {
+    annualThermalDerateOverridePct: input.annualThermalDerateOverridePct,
     annualReferenceLosses: input.annualReferenceLosses,
     referenceSite: input.referenceSite,
     installedCapacityKwp: input.installedCapacityKwp,
@@ -190,9 +196,7 @@ export function computeCanonicalAnnualYield(
     waterfallReport.compoundPerformanceRatioPct ?? waterfallReport.performanceRatioPct;
 
   const thermalStage = waterfallReport.stages.find((s) => s.id === 'thermal');
-  const thermalDeratePctUsed = thermalStage
-    ? Math.abs(thermalStage.percentageLossRaw ?? thermalStage.percentageLoss)
-    : 0;
+  const thermalDeratePctUsed = signedThermalLossFromStage(thermalStage?.percentageLossRaw ?? thermalStage?.percentageLoss);
 
   const clippingStage = waterfallReport.stages.find((s) => s.id === 'clipping');
   const clippingLossPctUsed = clippingStage

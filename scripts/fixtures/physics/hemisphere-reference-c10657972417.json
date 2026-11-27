@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "signedThermalLossFromStage",
+  "referenceSource": {
+    "title": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+    "version": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+    "locator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+  },
+  "independentCalculation": "Inverse of PVWatts signed power change: a +10 percent stage power gain corresponds to -10 percent loss. Only sign convention is tested, not full annual-weather applicability.",
+  "tolerances": {
+    "absolute": 1e-09,
+    "relative": 1e-11
+  },
+  "cases": [],
+  "previousNorthernOnlyPolicySouthDeratePct": -0.39691153733727447,
+  "formulaId": "src/engine/core/signedThermalStage.ts#signedThermalLossFromStage#c10657972417",
+  "inputs": [],
+  "expected": 0
+}

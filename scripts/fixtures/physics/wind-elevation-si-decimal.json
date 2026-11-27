@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "calculateWindElevationFactor",
+  "inputs": [
+    1000
+  ],
+  "expected": 0.8880152131602708,
+  "cases": [
+    {
+      "inputs": [
+        -100
+      ],
+      "expected": 1.0
+    },
+    {
+      "inputs": [
+        0
+      ],
+      "expected": 1.0
+    },
+    {
+      "inputs": [
+        91.44
+      ],
+      "expected": 0.9891987569076404
+    },
+    {
+      "inputs": [
+        115.5192
+      ],
+      "expected": 0.9863738875086451
+    },
+    {
+      "inputs": [
+        500
+      ],
+      "expected": 0.942345591150227
+    },
+    {
+      "inputs": [
+        1000
+      ],
+      "expected": 0.8880152131602708
+    },
+    {
+      "inputs": [
+        1190
+      ],
+      "expected": 0.8682010028751281
+    },
+    {
+      "inputs": [
+        1620
+      ],
+      "expected": 0.8249755125849743
+    },
+    {
+      "inputs": [
+        2000
+      ],
+      "expected": 0.7885710188040812
+    }
+  ],
+  "independentCalculation": "Independent 50-digit Decimal conversion of published per-foot Ke exponent.\nNCSEA 2024 school wind/tornado examples: site379 ft yields Ke approximately .986.\nThe exact conversion is .3048 m/ft; the published .0000362 exponent is per foot.\nOnly this altitude component is compared. Combined caller fixture explicitly sets\nlegacy C coefficients alpha9.5, zg274.32m, minimum4.57m, default3m; Kzt=1, Kd=.85, V=120 km/h; those are local test policy, not verified\nASCE 7-22 exposure/pressure-chain applicability. Below-sea-level Ke=1 is preserved\nlegacy no-reduction policy, not a physical density validation.\n",
+  "tolerances": {
+    "absolute": 1e-12,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "NCSEA Wind Engineering Committee school examples",
+    "url": "https://www.ncsea.com/app/uploads/2024/02/Wind-Problems.pdf",
+    "version": "February 2024",
+    "locator": "School site379 feet: Ke=exp(-.0000362*z_e) approximately .986; site1200 ft approximately .96. Component-only SI conversion; exact 0.3048 metre per foot. Not whole pressure-chain validation."
+  }
+}

@@ -1,0 +1,1007 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "simulateAnnualHourlyThermalDerate",
+  "referenceSource": {
+    "title": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+    "version": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+    "locator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+  },
+  "independentCalculation": "Independent numpy annual-profile reconstruction and pvlib DC integration.\n\nThis verifies execution of a DECLARED synthetic policy, not climate accuracy.\nNASA/JPL Space Place 'What Causes the Seasons?' (updated 2025-07-29) supports\nopposite seasonal timing, NOT the day-200 peak, amplitude, equator policy or\nmount offsets. Those remain explicitly local screening assumptions.\nNOCT Eq1: DOI10.3390/app10030914. PVWatts DC: pvlib0.13.1.\nNo TypeScript imports, production outputs or network access.\n",
+  "tolerances": {
+    "absolute": 1e-09,
+    "relative": 1e-11
+  },
+  "cases": [
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 1.9240003562165153,
+        "temperatureSensitivityRangePct": {
+          "low": 0.4240003562165362,
+          "high": 3.4240003562165278
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -1.9240003562165153,
+        "temperatureSensitivityRangePct": {
+          "low": -3.4240003562165278,
+          "high": -0.4240003562165029
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 6.513645726052175,
+        "temperatureSensitivityRangePct": {
+          "low": 5.013645726052173,
+          "high": 8.013645726052177
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -6.513645726052175,
+        "temperatureSensitivityRangePct": {
+          "low": -8.013645726052165,
+          "high": -5.013645726052185
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 4.848113780805652,
+        "temperatureSensitivityRangePct": {
+          "low": 3.3481137808056505,
+          "high": 6.348113780805642
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -4.84811378080563,
+        "temperatureSensitivityRangePct": {
+          "low": -6.348113780805642,
+          "high": -3.3481137808056394
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 1.203760035693402,
+        "temperatureSensitivityRangePct": {
+          "low": -0.2962399643065883,
+          "high": 2.7037600356934144
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -1.203760035693402,
+        "temperatureSensitivityRangePct": {
+          "low": -2.7037600356934144,
+          "high": 0.2962399643065883
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 5.810155496619618,
+        "temperatureSensitivityRangePct": {
+          "low": 4.310155496619639,
+          "high": 7.310155496619641
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -5.810155496619651,
+        "temperatureSensitivityRangePct": {
+          "low": -7.310155496619641,
+          "high": -4.310155496619639
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 4.169748688008978,
+        "temperatureSensitivityRangePct": {
+          "low": 2.669748688008966,
+          "high": 5.66974868800898
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -4.16974868800899,
+        "temperatureSensitivityRangePct": {
+          "low": -5.669748688009002,
+          "high": -2.669748688008977
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 0,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 0.1969824610231652,
+        "temperatureSensitivityRangePct": {
+          "low": -1.3030175389768361,
+          "high": 1.6969824610231776
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 0,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -0.1969824610231763,
+        "temperatureSensitivityRangePct": {
+          "low": -1.6969824610231665,
+          "high": 1.303017538976814
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 0,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 4.780864650922634,
+        "temperatureSensitivityRangePct": {
+          "low": 3.2808646509226325,
+          "high": 6.280864650922635
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 0,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -4.780864650922645,
+        "temperatureSensitivityRangePct": {
+          "low": -6.280864650922613,
+          "high": -3.2808646509226325
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 0,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 3.1066879357718014,
+        "temperatureSensitivityRangePct": {
+          "low": 1.6066879357718111,
+          "high": 4.606687935771814
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 0,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -3.1066879357718014,
+        "temperatureSensitivityRangePct": {
+          "low": -4.606687935771814,
+          "high": -1.6066879357718111
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 1.2037610347816474,
+        "temperatureSensitivityRangePct": {
+          "low": -0.2962389652183317,
+          "high": 2.7037610347816488
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -1.2037610347816585,
+        "temperatureSensitivityRangePct": {
+          "low": -2.703761034781671,
+          "high": 0.2962389652183539
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 5.810156495707874,
+        "temperatureSensitivityRangePct": {
+          "low": 4.310156495707895,
+          "high": 7.310156495707886
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -5.810156495707908,
+        "temperatureSensitivityRangePct": {
+          "low": -7.310156495707898,
+          "high": -4.310156495707895
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 4.169749687097224,
+        "temperatureSensitivityRangePct": {
+          "low": 2.669749687097245,
+          "high": 5.669749687097225
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 35,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -4.169749687097246,
+        "temperatureSensitivityRangePct": {
+          "low": -5.669749687097236,
+          "high": -2.6697496870972337
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 1.924021115656993,
+        "temperatureSensitivityRangePct": {
+          "low": 0.42402111565699174,
+          "high": 3.4240211156570055
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 40,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "ground_mount"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -1.9240211156570153,
+        "temperatureSensitivityRangePct": {
+          "low": -3.4240211156570055,
+          "high": -0.42402111565700285
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 6.513666485492642,
+        "temperatureSensitivityRangePct": {
+          "low": 5.0136664854926405,
+          "high": 8.013666485492655
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 42,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "industrial_shed"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -6.513666485492653,
+        "temperatureSensitivityRangePct": {
+          "low": -8.013666485492642,
+          "high": -5.0136664854926405
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": -0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": 4.848134540246107,
+        "temperatureSensitivityRangePct": {
+          "low": 3.348134540246106,
+          "high": 6.348134540246109
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": 90,
+          "peakSunHours": 5,
+          "ambientTempMinC": -20,
+          "ambientTempMaxC": 40,
+          "ambientTempMeanC": 10,
+          "noctC": 45,
+          "tempCoeffPmpPct": 0.3,
+          "installationEnvironment": "rooftop_flat_concrete"
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -4.8481345402461296,
+        "temperatureSensitivityRangePct": {
+          "low": -6.348134540246142,
+          "high": -3.348134540246117
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": 10,
+        "ambientMeanSource": "supplied_annual_mean",
+        "irradianceAnnualKwhM2": 1825,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -35,
+          "peakSunHours": 0,
+          "ambientTempMinC": -30,
+          "ambientTempMaxC": 0,
+          "noctC": 45,
+          "tempCoeffPmpPct": -0.3
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "zero_reference_irradiation",
+        "annualThermalDeratePct": 0.0,
+        "temperatureSensitivityRangePct": {
+          "low": 0.0,
+          "high": 0.0
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": -15.0,
+        "ambientMeanSource": "derived_from_design_extremes",
+        "irradianceAnnualKwhM2": 0,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    },
+    {
+      "inputs": [
+        {
+          "latitudeDeg": -35,
+          "peakSunHours": 2,
+          "ambientTempMinC": -30,
+          "ambientTempMaxC": 0,
+          "noctC": 45,
+          "tempCoeffPmpPct": -0.3
+        }
+      ],
+      "expected": {
+        "hourlySamples": 8760,
+        "seasonalTemperaturePolicy": "hemisphere_cosine_equator_flat_v1",
+        "energyAvailability": "positive_reference_irradiation",
+        "annualThermalDeratePct": -9.108103192827532,
+        "temperatureSensitivityRangePct": {
+          "low": -10.608103192827523,
+          "high": -7.608103192827542
+        },
+        "temperatureSensitivityAllowanceC": 5,
+        "ambientMeanUsedC": -15.0,
+        "ambientMeanSource": "derived_from_design_extremes",
+        "irradianceAnnualKwhM2": 730,
+        "weatherProfileSource": "Synthetic clear-sky-shaped 8760 profile normalized to annual PSH; no hourly provider weather was supplied",
+        "isMeasuredHourlyWeather": false,
+        "methodologyNote": "Temperature-weighted hourly Pmp correction using the module temperature coefficient and NOCT. Ambient seasonal/diurnal profiles are synthetic: the northern day-200 annual cosine is reversed in the south and absent at the equator. Zero irradiation reports a neutral zero-loss budget, not an evaluated thermal yield. The \u00b1temperature band is a sensitivity to an explicit \u00b15\u00b0C bias (or configured amount), not a probability interval or bound on total forecast error."
+      }
+    }
+  ],
+  "previousNorthernOnlyPolicySouthDeratePct": -0.39691153733727447
+}

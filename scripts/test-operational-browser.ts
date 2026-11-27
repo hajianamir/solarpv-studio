@@ -206,6 +206,9 @@ try {
   await report
     .getByRole("button", { name: "Close operational report", exact: true })
     .click();
+  await tab("iran_regulations");
+  await page.getByTestId("iranian-operational-blocked").waitFor();
+  assert.equal(await page.getByTestId("iranian-financial-screen").count(), 0);
   await tab("financial");
   await page.getByTestId("financial-analysis").waitFor();
   assert.equal(

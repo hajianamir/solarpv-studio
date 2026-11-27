@@ -1,0 +1,75 @@
+# Phase 2 research, scoped acceptance and three-pass review
+
+Review date: 2026-11-03. Baseline: `0c4d7cadc7db6001459ea36fdf9a3d1403179a71`. Preserve previous dirty work. This record supersedes the earlier *queue descriptions* only where it explicitly records implemented changes; it does not replace the four-phase plan or its exit gate.
+
+## Finance and electrical boundary continuation
+
+ADR-018/019 and `PHASE-2-FINANCE-CONTRACT-PLAN.md` record the next supported work and three review/research passes. The simple-LCOE path now has an explicit availability envelope, one discounted arithmetic owner, preserved deprecated adapter, unrounded scenario values, currency/rate/energy labels, and no automatic financial-adoption eligibility. Forty-two independent Decimal cases and real HTTP/bilingual/customer-mode checks cover the implemented scope. HTTP degradation is consumed; unsupported tax/inflation/debt schedules reject. Refreshed SAM help explicitly distinguishes model-specific linear and compounded degradation; this geometric specialization is not misrepresented as SAM/PVWatts parity.
+
+Electrical review additionally reproduced a rounding-before-comparison false pass at adjacent-float operating and legacy short-circuit limits. Shared unrounded predicates now govern direct/array/central-facade paths. Forty independent exact Decimal comparisons and consumer witnesses verify the correction; preserved two-decimal display is not granted as capacity tolerance. The Enphase table was refreshed only to distinguish product rating bases, not to authorize a universal factor. Factor-specific manufacturer evidence remains a U09b stop.
+
+These do not close remaining common annual/transposition policy, global model/economic-policy migration, manufacturer conversion or full-ledger acceptance work. New receipt: `phase2-finance-verification-receipt.json`. Historical receipts remain historical.
+
+## Additional unchanged scalar extraction
+
+ADR-017 records the clipping portion of U07a: one raw owner with unchanged coefficients, preserving each adapter's defaults/precision and the pre-clamp raw annual field. Fourteen independent Decimal arithmetic cases and two exact-node mutation fixtures verify extraction only. Refreshed pvlib inverter PVWatts documentation requires power/efficiency/time-context absent from this annual heuristic, so no physical-model claim or new coefficients are adopted. Transposition policy and complete17-slot migration remain open; scalar consolidation is not falsely marked finished.
+
+## Continuation — hemisphere, zero irradiation and artifact contract
+
+ADR-016 records three review passes and targeted follow-up research. Supported changes: hemisphere-aware synthetic temperature policy, equator harmonic convention, neutral zero-PSH thermal budget, required-input rejection, honest supplied-mean provenance, signed canonical metadata and profile/policy artifact propagation. The 32 Python/numpy/pvlib integration cases reconstruct a declared policy; they do **not** externally validate the synthetic climate, roof offsets or annual forecast. Five more exact expressions have executed independent mutation-sensitive fixtures; the reference gate itself is unchanged.
+
+NASA/JPL seasons supports opposite hemispheric timing, not day200/equator weather. pvlib0.13.1 documents signed PVWatts DC response and the additional inputs needed by SAM NOCT. The Applied Sciences2020 paper warns simple NOCT is not generally appropriate for roof-integrated systems. The inherited23.44°/zero-based-day solar proxy is not rebranded as a validated Cooper implementation. Refreshed Enphase and SAM finance sources do not justify universal manufacturer factors or a discount≥debt rule. Alternate NASA/SMA/SAM URLs that failed were not used as evidence. Detailed references, limits, original-defect witness, acceptance and rollback are in ADR-016 and the guide.
+
+Full Phase2 remains incomplete. Remaining U07a and financial policy work are implementation obligations, not falsely characterized as entirely blocked on source acquisition. The thermal fixes do not waive those or the historical CAD debt.
+
+## Latest owner and wind-component review
+
+ADR-015 records the next supported changes: correct the per-foot Ke exponent when inputs are metres, unify omitted/explicit3m wind height, reject invalid height/exposure/factors without silent clamps, share the MPPT hot-cell fallback, and retain signed scalar annual thermal loss. Relevant NCSEA, Bentley, pvlib0.13.1 and Applied Sciences2020 Eq1 sections were fetched. New independent fixtures cover24 thermal component conditions,9 elevation conditions, a complete synthetic MPPT result and a declared-policy combined-pressure result. The whole pressure chain/exposure table, roof offsets, hourly weather and manufacturer coefficient applicability are **not** independently validated by those components.
+
+Earlier claims of unchanged numerical ASTs are historical snapshots. Current guards precisely enumerate the reviewed owner-expression replacements; the independent numerical gate itself is unchanged. The latest verification/hash receipt is `phase2-owner-verification-receipt.json`. Overall Phase2 is still incomplete for the open packages and model-policy migration, not merely waiting on a final documentation label.
+
+## Subsequent implementation / research follow-up
+
+ADR-014 supersedes the earlier U10/U13/U16b queue descriptions below. The HTTPS Schneider chapter fetch subsequently succeeded: §3.2/G21 fig G27 gives the single-/three-phase steady-state equations; G27 fig G36 footnote states the parallel R versus X distinction, and identifies 0.08/0.096 mΩ/m as 50/60 Hz fallback values. The new API takes explicitly sourced **equivalent** X; it does not universally divide X by N. The candidate search/report share an evaluator, and unknown AC evidence or exhausted search cannot pass. A 144-case independent Decimal component oracle plus 81 candidate cases executes; all seven new voltage-drop formula units have direct-export mutation-sensitive fixtures.
+
+Unsupported Broms inputs now produce `assessmentStatus=unassessed` and cannot assert pile safety, including recommendation/sensitivity UI/Markdown. A 144-case containment matrix includes 85 prior green-screen witnesses. Numeric diagnostics remain unchanged; this is not a validated replacement soil model.
+
+The Iranian financial ledger no longer rounds million-Toman amounts before downstream NPV/IRR. Eighteen independent 50-digit Decimal ledgers cover .5/1/5/10/50/1000 kWp and no debt/zero-interest/interest-bearing debt. Six changed expressions have executed direct-export and mutation fixtures. NREL SAM [NPV help](https://samrepo.nlr.gov/help/mtf_npv.html) was fetched; the independent oracle explicitly states local pre-tax policy assumptions and does not represent Iranian policy values as SAM defaults or legal evidence. Invalid/zero-energy LCOE remains null in this model; broader financial assumptions/migration work remains open.
+
+The latest detailed acceptance, three review passes, compatibility and rollback are in ADR-014; latest outcomes/hashes are in `phase2-next-verification-receipt.json`. Earlier snapshots below remain historical and do not establish current full completion. Remaining U01b, complete U02/U09b, U07a and complete U16b are **not silently closed**.
+
+## Research disposition
+
+| Source / locator | Observation | Permitted consequence / limitation |
+|---|---|---|
+| [pvlib 0.13.1 PVWatts DC](https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html), power equation, parameters | Linear signed temperature correction relative to 25 °C, gamma in 1/°C. Cold conditions can increase power. | Preserve negative signed loss through the thermal waterfall transfer. Executed pinned pvlib oracle in `scripts/fixtures/physics/generate-signed-thermal-stage.py`, 15 conditions. Does not validate synthetic hourly annual weather or mounting offsets. |
+| [nVent handbook E907W-WWEN](https://www.nvent.com/sites/default/files/acquiadam/assets/E907W-WWEN.pdf), introduction; §9.3; §12.2, tables 28/29 | Handbook expressly summarizes standards current as of 2009 and requires full standards for final verification. Protection-angle method depends on height above protected surface and is limited by rolling-sphere radius. Count alone does not establish current-sharing kc; detailed topology matters. | Do not substitute a guessed angle table or universally assume `kc=1/n`. Return null/unassessed angle and separation from current geometry-free API; retain historical numbers only as explicitly named diagnostics. Not a current-edition IEC implementation claim. |
+| [OBO guide](https://www.obo-bettermann.com/out/media/Blitzschutz-Leitfaden_en.pdf), table 2.2 and separation example | Public search extraction reports height-specific angle examples and a separation example using ki=.04, kc=.44, km=.5, L=10 m. | Corroboration of geometry/topology dependency only; no table interpolation or exact coefficient replacement implemented. PDF table extraction can lose assumptions. |
+| [Schneider Electrical Installation Guide 2010, chapter G](http://www.electrical-installation.org/enw/images/0/0a/G-Sizing-and-protection-of-conductors.pdf), voltage-drop section and parallel-conductor footnote; worked example | Search extraction explicitly says parallel resistance divides by number of conductors while reactance remains practically unchanged in that guide's arrangement. Examples use 0.08 mΩ/m for the combined reactance. Direct wiki page fetch failed; this is search-extracted evidence, not full-source/current-edition verification. | Reject a blanket `X/N` patch. U10 still needs declared arrangement, applicability, candidate evaluator and independently executed fixtures. No cable formula was changed based on a snippet. |
+| [University of Newcastle foundation-engineering OER §6.25](https://newcastle.pressbooks.pub/fundamentals-of-foundation-engineering/chapter/6-25-25-broms-method-piles-in-drained-soil/), equations 6.116–6.123 | Short free-head drained-soil collapse capacity uses denominator `e+L`. Maximum bending uses a separate depth f; high groundwater requires submerged unit weight. Short and long regimes must both be checked against section yield moment. Full relevant section fetched; page includes 2026 revisions. | Reject proposed `L-e` substitution. Current Broms API lacks head-condition/regime/groundwater evidence and section validation; forwarding it consistently does not establish validity. No equilibrium/moment/FoS equation replaced. |
+
+Sources are evidence at the stated level only. Licensed normative provisions, actual site investigation and manufacturer conditions were not acquired by citing public summaries.
+
+## Acceptance and actual changes
+
+1. **P2-T1 signed transfer:** explicit negative annual loss produces a positive thermal stage; 0/positive/100% loss work; nonfinite and >100% overrides reject. Named/legacy/canonical APIs agree for the same configured model. Fifteen external pvlib component conditions compare within 1e-10 percentage points. Direct-export gate executes and mutation-probes the new expression. Annual hemisphere, weather validation and the scalar effective-derating consumer remain outside this acceptance slice.
+2. **P2-S1 ownership:** shared uplift, compression, lateral, moment, capacity and FoS diagnostics are propagated, not independently reconstructed. Wind perturbation uses complete shared inputs; display rounding is explicitly tested. Matrix includes 108 synthetic cases and 72 witnesses to the previous uplift defect. Underlying shared reaction/model ASTs unchanged. Browser opens actual generated recommendation, using its serialized input to compare the shared reaction. This is contract verification, not independent soil/wind validation.
+3. **P2-L1 unsupported geometry:** angle/separation always null and `assessmentStatus=unassessed` from the current API. Forty-eight reachable input combinations test unavailable outputs and JSON round-trip. Real browser checks English unavailable label. Bilingual installation guidance no longer prescribes the legacy separation. Legacy diagnostics remain clearly isolated; rolling sphere, risk class and SPD values are only preliminary assumptions.
+
+## Three review passes and follow-up investigation
+
+### 1 — ownership and boundary review
+
+Traced signed loss from named builder to slot 17, waterfall stage, and canonical API. Found that canonical API did not expose the override, and that waterfall clamped away all gains; both repaired. Reviewed shared recommendation return fields and found separate hard-coded-clearance moment/capacity reconstruction; now forward shared diagnostics. Follow-up: pinned pvlib equation and implementation used to generate independent component conditions. Remaining: complete App/HTTP weather-profile ownership and effective-derating scalar reconciliation are not established by these tests.
+
+### 2 — safety and independent evidence review
+
+Challenged suggested Broms denominator and cable reactance substitutions rather than treating audit proposals as authoritative. Follow-up research supports `e+L` for a specific Broms regime and contradicts universally applying `X/N` for coupled cables. Identified LPS API's inability to represent required height/topology, so unsupported angle/separation are now unavailable rather than silently approved. Remaining: U13 and U01b legacy screens still require broader containment/implementation and evidence; a disclaimer alone is not closure.
+
+### 3 — runtime, compatibility and artifacts
+
+Checked 17-slot signature preservation, absent versus invalid overrides, JSON null transport, actual LPS rendering and recommendation/report propagation. First browser attempt timed out because the test had not selected the nested Lightning tab; second used an incorrect accessible name. Corrected navigation, then actual production browser passed. First reference-gate attempt failed on deterministic registry ordering; reran the existing ledger generator to restore its required ordering, without changing the gate or existing numeric targets. Initial sensitivity assertion compared a displayed two-decimal quantity to unrounded shared input; corrected the assertion to documented display semantics, not a wider physical tolerance. Final checks and hashes are in `phase2-scoped-verification-receipt.json`.
+
+## Completion boundary
+
+**Phase 2 remains incomplete.** U02 is a supported partial implementation; U12 is the plan-permitted unavailable alternative for unsupported geometry; U14's wrapper reconstruction defects are removed, but project-wide physical validation is not established. U01b, U09b, U10, U13, U16b and U07a remain open, as do the rest of U02 and cross-consumer validation. No claim that unsupported Broms/wind/cable/finance work is disabled everywhere is made. Their release/design-approval claims remain prohibited. Existing historical CAD-reference failures are not waived.

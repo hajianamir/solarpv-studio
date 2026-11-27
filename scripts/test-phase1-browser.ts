@@ -1,0 +1,119 @@
+import {recommendSharedFoundation} from '../src/engine/geotech/foundationRecommendation';
+import {getDocument} from 'pdfjs-dist/legacy/build/pdf.mjs';
+import {readFile} from 'node:fs/promises';
+import {unzipSync} from 'fflate';
+import ExcelJS from 'exceljs';
+import assert from 'node:assert/strict';
+import {preview} from 'vite';
+import {chromium} from 'playwright-core';
+import {selectLoadMode} from './research-browser-navigation';
+const server=await preview({preview:{host:'127.0.0.1',port:0,strictPort:true}});
+let browser:Awaited<ReturnType<typeof chromium.launch>>|undefined;
+try {
+ let executablePath:string|undefined;
+ if(process.platform==='linux'){process.env.AWS_EXECUTION_ENV??='AWS_Lambda_nodejs20.x';executablePath=await(await import('@sparticuz/chromium')).default.executablePath();}
+ browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
+ const page=await browser.newPage({viewport:{width:1536,height:1024},serviceWorkers:'block'});
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('https://**/*',r=>r.abort());
+ const address=server.httpServer.address();assert.ok(address&&typeof address==='object');
+ await page.goto(`http://127.0.0.1:${address.port}`);
+ const tab=async(id:string)=>page.getByTestId(`workflow-tab-${id}`).locator(':visible').first().click();
+ async function check() {
+  await tab('waterfall_loss');
+  const annual=Number(await page.getByTestId('waterfall-annual-mwh').getAttribute('data-annual-mwh'));
+  const pr=Number((await page.getByTestId('waterfall-pr-value').innerText()).replace('%',''));
+  assert.equal(await page.getByTestId('summary-waterfall-pr').innerText(),pr.toFixed(1)+'%');
+  await tab('sld');
+  const dc=Number(await page.getByTestId('sld-dc-capacity').getAttribute('data-dc-kwp'));
+  assert.ok(dc>0);
+  const downloadPromise=page.waitForEvent('download');await page.getByTestId('sld-export-svg').click();
+  const downloaded=await downloadPromise;const file=await downloaded.path();assert.ok(file);
+  const svg=await readFile(file,'utf8');
+  const parsed=await page.evaluate(text=>{
+   const doc=new DOMParser().parseFromString(text,'image/svg+xml');
+   return {invalid:!!doc.querySelector('parsererror'),dc:doc.querySelector('[data-testid="sld-dc-capacity"]')?.getAttribute('data-dc-kwp'),note:doc.querySelector('desc')?.textContent};
+  },svg);
+  const pdf=await page.pdf({printBackground:true});
+  const pdfDocument=await getDocument({data:new Uint8Array(pdf),useSystemFonts:false,isEvalSupported:false}).promise;
+  let pdfText='';for(let i=1;i<=pdfDocument.numPages;i++){const content=await(await pdfDocument.getPage(i)).getTextContent();pdfText+=content.items.map(item=>'str' in item?item.str:'').join(' ');}
+  assert.ok(pdfText.replace(/\s+/g,'').includes(`ActualDC:${dc.toFixed(2)}kWp`),pdfText.slice(pdfText.indexOf('Preliminary'),pdfText.indexOf('Preliminary')+700));assert.match(pdfText,/not construction design/);
+  await pdfDocument.destroy();
+  assert.equal(parsed.invalid,false);assert.equal(Number(parsed.dc),dc);assert.match(parsed.note??'',/not construction design/);
+
+  await tab('iran_regulations');
+  assert.equal(Number(await page.getByTestId('iranian-input-summary').getAttribute('data-dc-kwp')),dc);
+  assert.equal(Number(await page.getByTestId('iranian-input-summary').getAttribute('data-annual-mwh')),annual);
+  return dc;
+ }
+ await tab('electrical_requirements');await page.locator('#target-plant-capacity-input').fill('1100');
+ const dc=await check();assert.notEqual(dc,1100,'actual module DC must not be the requested AC target');
+ for(const mode of ['ongrid','offgrid'] as const){
+  await selectLoadMode(page,mode);await check();await tab('scenarios');
+  const lcoe=page.getByTestId('scenario-lcoe-optimized_lifepo4');
+  assert.equal(await lcoe.getAttribute('data-assessment'),'available');
+  const raw=Number(await lcoe.getAttribute('data-raw-lcoe'));
+  assert.ok(raw>0);assert.equal(await lcoe.innerText(),`$${raw.toFixed(4)}/kWh`);
+  await page.getByTestId('scenario-lcoe-method').waitFor();
+ }
+
+ await page.getByRole('button',{name:'EN',exact:true}).click();
+ await tab('cables_bom');
+ await page.getByTestId('feeder-ac-output-parallelArrangement').selectOption('equal_length_equal_sharing');
+ await page.getByTestId('feeder-ac-output-equivalentReactanceOhmPerM').fill('0.000096');
+ await page.getByTestId('feeder-ac-output-impedanceSource').fill('SYNTHETIC browser roundtrip at 60 Hz incl coupling; not site evidence');
+ await page.getByRole('button',{name:/Lightning \(IEC 62305\)/}).click();
+ assert.match(await page.getByTestId('lightning-separation-assessment').innerText(),/UNASSESSED/);
+ await tab('structural');
+ await page.getByRole('button',{name:/6-Section|6.Section|گزارش.*۶|گزارش.*6/}).click();
+ const foundationReport=page.getByTestId('foundation-recommendation-report');await foundationReport.waitFor();
+ const foundationInput=JSON.parse((await foundationReport.getAttribute('data-input'))!);
+ const sharedFoundation=recommendSharedFoundation(foundationInput);
+ const expectedReaction=sharedFoundation.upliftPerPostKn;
+ const reportText=await foundationReport.innerText();
+ assert.ok(reportText.includes(`**Net Uplift Demand ($T_u$ per post):** ${expectedReaction} kN`));
+ assert.match(reportText,/applicability\/conformity UNASSESSED/);
+ await page.getByRole('button',{name:'✕ Close',exact:true}).click();
+ await page.keyboard.press('Control+e');
+ await page.getByTestId('report-phase1-readiness').waitFor();
+ assert.match(await page.getByTestId('report-phase1-readiness').innerText(),/unsupported|UNSUPPORTED/);
+ const wordPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Word (.docx)',exact:true}).click();
+ const wordPath=await (await wordPromise).path();assert.ok(wordPath);
+ const xml=new TextDecoder().decode(unzipSync(await readFile(wordPath))['word/document.xml']);
+ assert.match(xml,/ILLUSTRATIVE ASSUMPTIONS/);assert.match(xml,/Electrical readiness/);assert.match(xml,/UNSUPPORTED/);
+ const excelPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Excel (.xlsx)',exact:true}).click();
+ const excelPath=await (await excelPromise).path();assert.ok(excelPath);
+ const workbook=new ExcelJS.Workbook();await workbook.xlsx.readFile(excelPath);
+ let contents='';workbook.eachSheet(sheet=>sheet.eachRow(row=>{contents+=JSON.stringify(row.values);}));
+ assert.match(contents,/hemisphere_cosine_equator_flat_v1/);
+ assert.match(contents,/positive_reference_irradiation/);
+ assert.match(await page.getByTestId('report-thermal-policy').innerText(),/hemisphere_cosine_equator_flat_v1/);
+ assert.match(contents,/ILLUSTRATIVE ASSUMPTIONS/);assert.match(contents,/Electrical rating readiness/);assert.match(contents,/unsupported_sensitivity/);
+
+ const jsonPromise=page.waitForEvent('download');await page.getByTitle('Save Project File to Local Machine',{exact:true}).click();
+ const jsonPath=await(await jsonPromise).path();assert.ok(jsonPath);
+ const envelope=JSON.parse(await readFile(jsonPath,'utf8'));
+ const thermalSnapshot=envelope.projectData.reportSnapshot.annualThermalProfile;
+ assert.equal(thermalSnapshot.seasonalTemperaturePolicy,'hemisphere_cosine_equator_flat_v1');
+ assert.equal(thermalSnapshot.energyAvailability,'positive_reference_irradiation');
+ assert.equal(thermalSnapshot.isMeasuredHourlyWeather,false);
+ assert.ok(Math.abs(thermalSnapshot.annualThermalDeratePct+envelope.projectData.reportSnapshot.waterfallReport.stages.find((s:{id:string})=>s.id==='thermal').percentageLossRaw)<1e-10);
+ assert.equal(envelope.projectData.reportSnapshot.phase1Evidence.bifacial.bankabilityEligible,false);
+ assert.equal(envelope.projectData.reportSnapshot.phase1Evidence.economicAssumptions[0].effectiveDate,null);
+ assert.equal(envelope.projectData.cableFeederInputs['ac-output'].parallelArrangement,'equal_length_equal_sharing');
+ assert.equal(envelope.projectData.cableFeederInputs['ac-output'].equivalentReactanceOhmPerM,.000096);
+ assert.match(envelope.projectData.cableFeederInputs['ac-output'].impedanceSource,/60 Hz/);
+ const ratingEvidence={basis:'factored_array_isc',scope:'per_mppt',source:'SYNTHETIC browser persistence fixture, not manufacturer evidence',sourceDate:null,conditions:'Persistence only; not assessed',requiredMultiplier:1.25,operatingCurrentAmps:envelope.projectData.selectedInverter.imppMaxAmpsPerMppt,shortCircuitCurrentAmps:envelope.projectData.selectedInverter.iscMaxAmpsPerMppt};
+ envelope.projectData.selectedInverter.mpptRatingEvidence=ratingEvidence;
+ page.on('dialog',dialog=>dialog.accept());
+ await page.locator('#report-restore-file-input').setInputFiles({name:'phase1-evidence.solarpv.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(envelope))});
+ await tab('array');assert.match(await page.getByTestId('electrical-readiness').innerText(),/unassessed/);
+ await page.keyboard.press('Control+e');
+ const savedPromise=page.waitForEvent('download');await page.getByTitle('Save Project File to Local Machine',{exact:true}).click();
+ const savedPath=await(await savedPromise).path();assert.ok(savedPath);
+ const restored=JSON.parse(await readFile(savedPath,'utf8'));
+ assert.deepEqual(restored.projectData.selectedInverter.mpptRatingEvidence,ratingEvidence);
+ assert.deepEqual(restored.projectData.cableFeederInputs['ac-output'],envelope.projectData.cableFeederInputs['ac-output']);
+ assert.deepEqual(errors,[]);
+ console.log('PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence import/export. External providers blocked; not field validation.');
+} finally {await browser?.close();await new Promise<void>((resolve,reject)=>server.httpServer.close(e=>e?reject(e):resolve()));}

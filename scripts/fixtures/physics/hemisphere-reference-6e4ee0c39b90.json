@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "annualEnergyFactor",
+  "referenceSource": {
+    "title": "pvlib PVWatts DC; NASA opposite hemisphere seasons; declared synthetic policy",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+    "version": "pvlib 0.13.1; local hemisphere_cosine_equator_flat_v1",
+    "locator": "PVWatts DC temperature equation; NASA https://spaceplace.nasa.gov/seasons/en/ opposite timing only. Synthetic phase/amplitudes/normalization/mount offsets are policies, NOT independent weather validation."
+  },
+  "independentCalculation": "Independent numpy annual-profile reconstruction and pvlib DC integration.\n\nThis verifies execution of a DECLARED synthetic policy, not climate accuracy.\nNASA/JPL Space Place 'What Causes the Seasons?' (updated 2025-07-29) supports\nopposite seasonal timing, NOT the day-200 peak, amplitude, equator policy or\nmount offsets. Those remain explicitly local screening assumptions.\nNOCT Eq1: DOI10.3390/app10030914. PVWatts DC: pvlib0.13.1.\nNo TypeScript imports, production outputs or network access.\n",
+  "tolerances": {
+    "absolute": 1e-09,
+    "relative": 1e-11
+  },
+  "cases": [],
+  "previousNorthernOnlyPolicySouthDeratePct": -0.39691153733727447,
+  "formulaId": "src/engine/core/hourlyThermalEngine.ts#annualEnergyFactor#6e4ee0c39b90",
+  "inputs": [
+    {
+      "latitudeDeg": -35,
+      "peakSunHours": 5,
+      "ambientTempMinC": -20,
+      "ambientTempMaxC": 40,
+      "ambientTempMeanC": 10,
+      "noctC": 40,
+      "tempCoeffPmpPct": -0.3,
+      "installationEnvironment": "ground_mount"
+    },
+    0,
+    10
+  ],
+  "expected": 0.987962399643066
+}

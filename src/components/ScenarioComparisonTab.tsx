@@ -29,6 +29,12 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
         </p>
       </div>
 
+      <div role="note" data-testid="scenario-lcoe-method" className="studio-card text-xs text-slate-400">
+        {isFa
+          ? 'LCOE سناریو یک غربالگری بدون مالیات و بدهی با هزینه‌های دلاری و مبنای اسمی ثابت است؛ ذخیرهٔ ارزش فعلی تعویض باتری در CAPEX منظور شده است. انرژی، تقریب تولید است نه انرژی تحویلی یا تأمین‌شدهٔ تأییدشده. مقدار ناموجود با صفرِ هزینه یکسان نیست. گرد کردن فقط برای نمایش است؛ انطباق مفروضات و صلاحیت مالی تأیید نشده است.'
+          : 'Scenario LCOE is a pre-tax, unlevered USD screening estimate under a flat nominal-cost assumption; a present-value battery replacement reserve is included in CAPEX. Energy is an illustrative generation proxy, not assessed delivered/served energy. Unavailable is distinct from genuinely zero cost. Rounding is display-only; assumption applicability and financial eligibility are not established.'}
+      </div>
+
       {/* Unsizable Banner if pvCapacityKwp === 0 */}
       {isUnsizable && (
         <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-lg text-amber-300 text-xs flex items-center gap-2">
@@ -115,10 +121,10 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
 
                   <div className="flex justify-between">
                     <span className="text-slate-400">{isFa ? 'بهای تمام‌شده انرژی (LCOE):' : 'LCOE:'}</span>
-                    <strong className="text-industrial-warning font-mono">
-                      {sc.pvCapacityKwp > 0 && sc.lcoeUsdPerKwh > 0
+                    <strong data-testid={`scenario-lcoe-${sc.id}`} data-assessment={sc.lcoeAssessment.status} data-raw-lcoe={sc.lcoeUsdPerKwh ?? 'unavailable'} className="text-industrial-warning font-mono">
+                      {sc.lcoeAssessment.status === 'available' && sc.lcoeUsdPerKwh !== null
                         ? `$${sc.lcoeUsdPerKwh.toFixed(4)}/kWh`
-                        : (isFa ? 'تعریف‌نشده (تولید صفر)' : 'N/A (Unsizable)')}
+                        : (isFa ? 'در دسترس نیست (ورودی نامعتبر یا تولید صفر)' : 'Unavailable (invalid or zero generation)')}
                     </strong>
                   </div>
                 </div>

@@ -1,3 +1,4 @@
+import {ECONOMIC_DISCLOSURE, BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import React, { useState, useEffect, useRef } from 'react';
 import { FinancialEnergyQuantiles } from './FinancialEnergyQuantiles';
 import { FinancialMetricQuantiles } from './FinancialMetricQuantiles';
@@ -200,6 +201,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
   return (
     <div className="space-y-6" data-testid="financial-analysis" data-annual-energy-kwh={financial.annualEnergyYieldKwh}>
+      <div role="note" data-testid="economic-evidence">{ECONOMIC_DISCLOSURE}<p>{BIFACIAL_READINESS.warning}</p></div>
       {(financial.annualGridImportKwh??0)>0&&<p data-testid="financial-grid-import">خرید برق سالانه: {financial.annualGridImportKwh?.toLocaleString()} kWh — هزینهٔ سال اول: {financial.annualGridImportCostToman?.toLocaleString()} تومان؛ در OPEX/NPV منظور شده، با نرخ رشد تعرفه.</p>}
       {/* Title */}
       <div className="studio-card">

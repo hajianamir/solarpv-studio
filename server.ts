@@ -1,3 +1,5 @@
+import { assessSimpleLcoe } from './src/engine/core/simpleLcoe';
+import {resolvePoaAzimuthRequest} from './src/presentation/poaAzimuthRequest';
 try {
   // @ts-ignore
   await import('dotenv/config');
@@ -19,7 +21,6 @@ import {
   calculatePoaIrradiance,
   calculateStringSizing,
   calculateVoltageDropDc,
-  calculateLcoe,
   calculateNpv,
   calculateIrr,
   calculateIrrDetailed,
@@ -33,8 +34,6 @@ import {
 import { calculateThermalDerate } from './src/engine/core/thermalDerate.js';
 import {
   normalizeUtcTimestampSeconds,
-  southToNorthAzimuth,
-  asNorthAzimuthDeg,
 } from './src/engine/core/solarGeometryContract.js';
 import { ExternalDataGateway } from './src/engine/dataGateway/externalDataGateway.js';
 import { GeocodingError } from './src/engine/dataGateway/climateDataProvider.js';
@@ -415,29 +414,9 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
     const dhi = Number(body.dhi ?? body.dhiWm2);
     const tiltDeg = Number(body.tiltDeg ?? body.surfaceTiltDeg);
     const sunZenithDeg = Number(body.sunZenithDeg ?? body.zenithDeg);
-    const sunAzimuthDeg = Number(body.sunAzimuthDeg ?? body.solarAzimuthDeg ?? 180);
-
-    const rawAzimuth = body.azimuthDeg !== undefined
-      ? Number(body.azimuthDeg)
-      : (body.surfaceAzimuthDeg !== undefined ? Number(body.surfaceAzimuthDeg) : 0);
-
-    if (body.surfaceAzimuthConvention !== undefined && !['north_clockwise', 'south_zero'].includes(body.surfaceAzimuthConvention)) {
-      return res.status(400).json({ error: 'Unknown surfaceAzimuthConvention' });
-    }
-    let effectiveSurfaceAzimuthNorth: number;
-    if (body.surfaceAzimuthNorthDeg !== undefined) {
-      effectiveSurfaceAzimuthNorth = asNorthAzimuthDeg(Number(body.surfaceAzimuthNorthDeg));
-    } else if (body.surfaceAzimuthConvention === 'north_clockwise') {
-      const az = Number(body.azimuthDeg ?? body.surfaceAzimuthDeg ?? 180);
-      effectiveSurfaceAzimuthNorth = asNorthAzimuthDeg(az);
-    } else if (body.surfaceAzimuthSouthDeg !== undefined) {
-      effectiveSurfaceAzimuthNorth = southToNorthAzimuth(Number(body.surfaceAzimuthSouthDeg));
-    } else if (body.surfaceAzimuthConvention === 'south_zero') {
-      effectiveSurfaceAzimuthNorth = southToNorthAzimuth(rawAzimuth);
-    } else {
-      // Legacy default is always south-zero, independent of the sun angle.
-      effectiveSurfaceAzimuthNorth = southToNorthAzimuth(rawAzimuth);
-    }
+    const azimuthRequest = resolvePoaAzimuthRequest(body);
+    const sunAzimuthDeg = azimuthRequest.sunAzimuthNorthDeg;
+    const effectiveSurfaceAzimuthNorth = azimuthRequest.surfaceAzimuthNorthDeg;
 
     if (
       !Number.isFinite(ghi) || ghi < 0 ||
@@ -467,7 +446,8 @@ app.post('/api/v1/solar/poa', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'POA calculation resulted in an invalid non-finite value' });
     }
 
-    res.json({ poaIrradiance: result });
+    res.json({ poaIrradiance: result, azimuth: azimuthRequest,
+      deprecation: azimuthRequest.legacyDefaultUsed ? 'Implicit south_zero is retained in v1. Send surfaceAzimuthNorthDeg or surfaceAzimuthConvention explicitly.' : null });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
@@ -612,34 +592,11 @@ app.post('/api/v1/electrical/voltage-drop', (req: Request, res: Response) => {
 // 3. Financial calculations
 app.post('/api/v1/finance/lcoe', (req: Request, res: Response) => {
   try {
-    const { capex, opexAnnual, energyAnnual, discountRate = 0.05, lifetimeYears = 25 } = req.body;
-    const c = Number(capex);
-    const o = Number(opexAnnual);
-    const energy = Number(energyAnnual);
-    const d = Number(discountRate);
-    const lt = Number(lifetimeYears);
-
-    if (!Number.isFinite(c) || c < 0) {
-      return res.status(400).json({ error: `CAPEX must be a non-negative finite number, got ${capex}` });
-    }
-    if (!Number.isFinite(o) || o < 0) {
-      return res.status(400).json({ error: `Annual OPEX must be a non-negative finite number, got ${opexAnnual}` });
-    }
-    if (!Number.isFinite(energy) || energy <= 0) {
-      return res.status(400).json({ error: `Annual energy must be a positive non-zero finite number, got ${energyAnnual}` });
-    }
-    if (!Number.isFinite(d) || d < 0) {
-      return res.status(400).json({ error: `Discount rate must be a non-negative finite number, got ${discountRate}` });
-    }
-    if (!Number.isFinite(lt) || lt < 1 || lt > 100) {
-      return res.status(400).json({ error: `Lifetime years must be between 1 and 100 years, got ${lifetimeYears}` });
-    }
-
-    const val = calculateLcoe(c, o, energy, d, lt);
-    if (!Number.isFinite(val) || val <= 0) {
-      return res.status(400).json({ error: 'LCOE calculation resulted in an invalid non-positive or non-finite value' });
-    }
-    res.json({ lcoeValue: val });
+    const {capex,opexAnnual,energyAnnual,discountRate=0.05,lifetimeYears=25,degradationPct=0,energyBasis='unspecified',currency='unspecified',rateBasis='unspecified',...unsupported}=req.body;
+    if(Object.keys(unsupported).length) return res.status(400).json({error:'Unsupported simple-LCOE fields; taxes/debt/escalation/replacement/salvage are not implemented by this endpoint.',fields:Object.keys(unsupported)});
+    const assessment=assessSimpleLcoe({capex,opexAnnual,energyAnnual,discountRate,lifetimeYears,degradationPct,energyBasis,currency,rateBasis});
+    if(assessment.status==='unavailable')return res.status(400).json({error:'LCOE unavailable',...assessment});
+    res.json(assessment);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

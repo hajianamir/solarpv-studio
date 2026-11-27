@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "formulaId": "src/engine/core/signedThermalStage.ts#thermalStagePercentage#4d62ea984c25",
+  "independentOfImplementation": true,
+  "productionExport": "thermalStagePercentage",
+  "inputs": [
+    -9.000000000000007
+  ],
+  "expected": 9.000000000000007,
+  "cases": [
+    {
+      "cellTempC": -20,
+      "gammaPerC": -0.002,
+      "lossPct": -9.000000000000007,
+      "expectedStagePct": 9.000000000000007
+    },
+    {
+      "cellTempC": -20,
+      "gammaPerC": -0.004,
+      "lossPct": -17.999999999999993,
+      "expectedStagePct": 17.999999999999993
+    },
+    {
+      "cellTempC": -20,
+      "gammaPerC": -0.005,
+      "lossPct": -22.500000000000007,
+      "expectedStagePct": 22.500000000000007
+    },
+    {
+      "cellTempC": 0,
+      "gammaPerC": -0.002,
+      "lossPct": -5.000000000000004,
+      "expectedStagePct": 5.000000000000004
+    },
+    {
+      "cellTempC": 0,
+      "gammaPerC": -0.004,
+      "lossPct": -10.000000000000009,
+      "expectedStagePct": 10.000000000000009
+    },
+    {
+      "cellTempC": 0,
+      "gammaPerC": -0.005,
+      "lossPct": -12.5,
+      "expectedStagePct": 12.5
+    },
+    {
+      "cellTempC": 25,
+      "gammaPerC": -0.002,
+      "lossPct": -0.0,
+      "expectedStagePct": 0.0
+    },
+    {
+      "cellTempC": 25,
+      "gammaPerC": -0.004,
+      "lossPct": -0.0,
+      "expectedStagePct": 0.0
+    },
+    {
+      "cellTempC": 25,
+      "gammaPerC": -0.005,
+      "lossPct": -0.0,
+      "expectedStagePct": 0.0
+    },
+    {
+      "cellTempC": 50,
+      "gammaPerC": -0.002,
+      "lossPct": 5.000000000000004,
+      "expectedStagePct": -5.000000000000004
+    },
+    {
+      "cellTempC": 50,
+      "gammaPerC": -0.004,
+      "lossPct": 9.999999999999998,
+      "expectedStagePct": -9.999999999999998
+    },
+    {
+      "cellTempC": 50,
+      "gammaPerC": -0.005,
+      "lossPct": 12.5,
+      "expectedStagePct": -12.5
+    },
+    {
+      "cellTempC": 80,
+      "gammaPerC": -0.002,
+      "lossPct": 10.999999999999998,
+      "expectedStagePct": -10.999999999999998
+    },
+    {
+      "cellTempC": 80,
+      "gammaPerC": -0.004,
+      "lossPct": 21.999999999999996,
+      "expectedStagePct": -21.999999999999996
+    },
+    {
+      "cellTempC": 80,
+      "gammaPerC": -0.005,
+      "lossPct": 27.500000000000004,
+      "expectedStagePct": -27.500000000000004
+    }
+  ],
+  "independentCalculation": "Execute pvlib 0.13.1 PVWatts DC at 1000 W/m2 and reference power 1 W for independently specified cell temperatures and gamma. Expected stage percent is 100*(external Pdc/Pref - 1); input signed loss is its negative by the loss-budget definition. No production TypeScript values or annual-climate predictions are used. This verifies the sign-conversion component only, not NOCT, mounting offsets, seasonal weather, bifacial or whole-model yield.",
+  "tolerances": {
+    "absolute": 1e-10,
+    "relative": 0
+  },
+  "referenceSource": {
+    "title": "PVWatts DC temperature correction, pvlib",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+    "version": "0.13.1",
+    "locator": "PVWatts DC power equation: gamma*(Tcell-Tref); Tref=25 C; G=1000 W/m2, Pdc0=1 W"
+  }
+}

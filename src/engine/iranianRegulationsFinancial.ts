@@ -1,4 +1,6 @@
-// Iranian Renewable Energy Regulations, SATBA PPA, Article 16 & IRENEX Green Board Financial Engine
+// Iranian tariff/financing screening model; illustrative assumptions, not verified statutory rates.
+// Ledger base unit: MILLION TOMAN, retained as full-precision floating-point amounts.
+// Round only in UI/export formatting; never feed displayed amounts back to NPV/IRR.
 
 export type IranianRegulationFramework =
   | 'article_16'     // ماده ۱۶ قانون جهش تولید دانش‌بنیان
@@ -84,8 +86,8 @@ export function runIranianRegulationFinancialModel(
 
   // 2. CAPEX benchmark in Million Toman
   // Utility / C&I rate: ~$350/kWp = ~31.5 Million Toman per kWp
-  const totalCapexMillionToman = Math.round((capacityKwp * 31.5));
-  const bankLoanMillionToman = Math.round((totalCapexMillionToman * loanSharePct) / 100.0);
+  const totalCapexMillionToman = (capacityKwp * 31.5);
+  const bankLoanMillionToman = (totalCapexMillionToman * loanSharePct) / 100.0;
   const equityContributionMillionToman = totalCapexMillionToman - bankLoanMillionToman;
 
   // Annual loan annuity payment (Equal Installments)
@@ -130,11 +132,11 @@ export function runIranianRegulationFinancialModel(
 
     // Tariff and OPEX escalation with inflation indexing
     const escalatedTariff = tariffPerKwhToman * Math.pow(1.0 + tariffEscalationRate, yr - 1);
-    const revenueMillion = Math.round((genMwh * 1000 * escalatedTariff) / 1e6);
+    const revenueMillion = (genMwh * 1000 * escalatedTariff) / 1e6;
 
-    const opexMillion = Math.round(initialOpex * Math.pow(1.0 + opexEscalationRate, yr - 1));
-    const roundedBaseAnnuity = Math.round(annualLoanAnnuity);
-    const totalExpectedRoundedDebt = Math.round(annualLoanAnnuity * loanTermYears);
+    const opexMillion = initialOpex * Math.pow(1.0 + opexEscalationRate, yr - 1);
+    const roundedBaseAnnuity = annualLoanAnnuity; // Deprecated local name, full precision.
+    const totalExpectedRoundedDebt = annualLoanAnnuity * loanTermYears;
     const debtService =
       yr < loanTermYears
         ? roundedBaseAnnuity
@@ -143,7 +145,7 @@ export function runIranianRegulationFinancialModel(
         : 0;
 
     const netOperatingIncome = revenueMillion - opexMillion;
-    const dscr = debtService > 0 ? Math.round((netOperatingIncome / debtService) * 100) / 100 : null;
+    const dscr = debtService > 0 ? netOperatingIncome / debtService : null;
 
     const netCashFlow = netOperatingIncome - debtService;
     cumulativeCash += netCashFlow;
@@ -164,12 +166,12 @@ export function runIranianRegulationFinancialModel(
 
     cashFlows.push({
       year: yr,
-      generationMwh: Math.round(genMwh),
+      generationMwh: genMwh,
       revenueMillionToman: revenueMillion,
       opexMillionToman: opexMillion,
       debtServiceMillionToman: debtService,
       netCashFlowMillionToman: netCashFlow,
-      cumulativeCashFlowMillionToman: Math.round(cumulativeCash),
+      cumulativeCashFlowMillionToman: cumulativeCash,
       dscr,
     });
   }
@@ -244,9 +246,7 @@ export function runIranianRegulationFinancialModel(
   const projectIrrPct = calcIrr(projectCashFlowSeries);
 
   // NPV calculation at 20% discount
-  const npvMillionToman = Math.round(
-    equityCashFlowSeries.reduce((acc, val, t) => acc + val / Math.pow(1.0 + discountRate, t), 0)
-  );
+  const npvMillionToman = equityCashFlowSeries.reduce((acc, val, t) => acc + val / Math.pow(1.0 + discountRate, t), 0);
 
   // Article 16 penalty avoidance (typically ~4,000 Toman/kWh penalty for deficit)
   const article16PenaltyAvoidedMillionToman = Math.round((annualGenerationMwh * 1000 * 4200) / 1e6);
@@ -262,8 +262,7 @@ export function runIranianRegulationFinancialModel(
     let discountedLifetimeEnergyKwh = 0;
     for (const cf of cashFlows) {
       discountedLifetimeCostMillion += cf.opexMillionToman / Math.pow(1.0 + discountRate, cf.year);
-      // The cash-flow table retains its historical whole-MWh presentation.
-      // LCOE must use the unrounded modeled generation, not that displayed row.
+      // Ledger and denominator retain unrounded modeled generation.
       const rawGenerationMwh = annualGenerationMwh * Math.pow(1.0 - degradationRate, cf.year - 1);
       discountedLifetimeEnergyKwh += (rawGenerationMwh * 1000) / Math.pow(1.0 + discountRate, cf.year);
     }

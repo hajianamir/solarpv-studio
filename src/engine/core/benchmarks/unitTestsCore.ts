@@ -1131,18 +1131,20 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
   });
 
   const allRecommendationsValid =
-    recBoulder.recommendedPileSizing.isFosSafe &&
+    recBoulder.recommendedPileSizing.assessmentStatus === 'unassessed' &&
+    !recBoulder.recommendedPileSizing.isFosSafe &&
+    recBoulder.recommendedPileSizing.legacyScreenPassed &&
     recBoulder.recommendedPileSizing.embedmentDepthM >= 1.90 && // frostDepth 90cm + 1.0m
     recMunich.recommendedPileSizing.embedmentDepthM >= 1.80 && // frostDepth 80cm + 1.0m
-    recPhoenix.recommendedPileSizing.isFosSafe &&
-    recSingapore.recommendedPileSizing.isFosSafe &&
-    recTehran.recommendedPileSizing.isFosSafe;
+    recPhoenix.recommendedPileSizing.legacyScreenPassed &&
+    recSingapore.recommendedPileSizing.legacyScreenPassed &&
+    recTehran.recommendedPileSizing.legacyScreenPassed;
 
   assert(
     'FoundationEngine',
     'Multi-Scenario 5-Climate Foundation Recommendations',
     allRecommendationsValid,
-    `Validated 5 global project locations: Boulder (L=${recBoulder.recommendedPileSizing.embedmentDepthM}m >= 1.90m frost requirement), Munich (L=${recMunich.recommendedPileSizing.embedmentDepthM}m), Phoenix (${recPhoenix.primaryRecommendation}), Singapore (${recSingapore.primaryRecommendation}), Tehran (${recTehran.primaryRecommendation}).`
+    `Legacy diagnostics at 5 synthetic project locations (safety UNASSESSED): Boulder (L=${recBoulder.recommendedPileSizing.embedmentDepthM}m >= 1.90m frost requirement), Munich (L=${recMunich.recommendedPileSizing.embedmentDepthM}m), Phoenix (${recPhoenix.primaryRecommendation}), Singapore (${recSingapore.primaryRecommendation}), Tehran (${recTehran.primaryRecommendation}).`
   );
 
   // 13.9b P2-2: Shared-module delegation — test embedment depth === UI embedment depth (5 sites)
@@ -2470,9 +2472,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     assert(
       'E5-STRUCT-1',
-      'ASCE wind pressure qz is identical across engines (single source)',
-      Math.abs(wp.qzKnM2 - 0.598) < 0.005 && Math.abs(wp.vMs - 36.111) < 0.01,
-      `qz=${wp.qzKnM2.toFixed(4)} kN/m2 (expect 0.598), v=${wp.vMs.toFixed(2)} m/s`
+      'Legacy combined wind pressure uses declared 3 m default (independent Decimal characterization)',
+      Math.abs(wp.qzKnM2 - 0.5768578321759259) < 1e-12 && Math.abs(wp.vMs - 36.111) < 0.01,
+      `qz=${wp.qzKnM2.toFixed(4)} kN/m2 (Decimal default-height reference 0.576857832), v=${wp.vMs.toFixed(2)} m/s`
     );
   }
 
@@ -2603,7 +2605,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
   }
 
-  // [E6-STRUCT-1] ASCE 7-22 §26.10.1 Ke elevation factor in qz.
+  // [E6-STRUCT-1] Per-foot Ke exponent converted to SI; independent Decimal references.
   {
     const { calculateWindPressureQz } = await import('../../structuralEngine');
 
@@ -2616,12 +2618,12 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     assert(
       'E6-STRUCT-1',
-      'Ke elevation factor: qz drops 4.2% at 1190 m, 5.7% at 1620 m',
-      Math.abs(ratioTehran - 0.958) < 0.005 &&
-      Math.abs(ratioBoulder - 0.943) < 0.005 &&
+      'Ke SI conversion: published exponent is per foot, not per metre',
+      Math.abs(ratioTehran - 0.8682010028751281) < 1e-9 &&
+      Math.abs(ratioBoulder - 0.8249755125849743) < 1e-9 &&
       sea.ke === 1.0,
-      `Tehran ratio=${ratioTehran.toFixed(4)} (expect 0.958), ` +
-      `Boulder ratio=${ratioBoulder.toFixed(4)} (expect 0.943), ` +
+      `Tehran ratio=${ratioTehran.toFixed(4)} (independent Decimal reference 0.868201003), ` +
+      `Boulder ratio=${ratioBoulder.toFixed(4)} (independent Decimal reference 0.824975513), ` +
       `sea ke=${sea.ke}`
     );
   }
@@ -3045,6 +3047,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     const { calculateAdvancedCableRun, isVoltageDropWithinLimit } = await import('../../protectionBomEngine');
 
     const acRun = calculateAdvancedCableRun({
+      equivalentReactanceOhmPerM: 0.00008,
+      parallelArrangement: 'equal_length_equal_sharing',
+      impedanceSource: 'Synthetic equivalent-circuit test at 50 Hz; not project evidence',
       id: 'ac-test',
       sectionNameFa: 'کابل AC خروجی اینورتر سه فاز',
       sectionNameEn: '3-Phase Inverter AC Output',
@@ -3089,6 +3094,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     );
 
     const singlePhaseConfig = {
+      equivalentReactanceOhmPerM: 0.00008,
+      parallelArrangement: 'equal_length_equal_sharing' as const,
+      impedanceSource: 'Synthetic equivalent-circuit test at 50 Hz; not project evidence',
       id: 'single-phase-ac-test',
       sectionNameFa: 'کابل AC تک‌فاز آزمون',
       sectionNameEn: 'Single-phase AC test run',
@@ -3194,7 +3202,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       sub.earthing.isStepSafe === null &&
       sub.earthing.isCompliant === null &&
       sub.auxiliaryTransformer.ratedKva > 0 &&
-      lps.separationDistanceCm > 0 &&
+      lps.separationDistanceCm === null &&
+      lps.protectionAngleDeg === null &&
+      lps.assessmentStatus === 'unassessed' &&
       earthing.resistanceScreenPassed &&
       earthing.isResistanceCompliant === null;
 
@@ -3459,6 +3469,9 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     // Test 1: Sizing under severe short-circuit withstand constraint
     const scHeavyRun = calculateAdvancedCableRun({
+      equivalentReactanceOhmPerM: 0.00008,
+      parallelArrangement: 'equal_length_equal_sharing',
+      impedanceSource: 'Synthetic equivalent at 50 Hz; not field evidence',
       id: 'sc-test',
       sectionNameFa: 'تست اتصال کوتاه سنگین',
       sectionNameEn: 'Heavy Short-Circuit Run',
@@ -5884,7 +5897,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     // 2. Z-02: Scenario dynamic LCOE without legacy magic constant fallback
     const zeroScenarios = generateScenarios(0, 0, 1.5, 18.0, 5.0);
-    const z02ScenariosOk = zeroScenarios.every(s => s.lcoeUsdPerKwh === 0.0);
+    const z02ScenariosOk = zeroScenarios.every(s => s.lcoeUsdPerKwh === null && s.lcoeAssessment.status === 'unavailable');
 
     // 3. Z-03: Quick sizing optional persistence
     const testDb = new InMemorySolarDatabase();
@@ -5913,7 +5926,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
     assert(
       'E27-ZERO-AUDIT-REMEDIATION-Z01-TO-Z06',
-      'Engine input validation, negative tariff clamping, scenario zero-fallback, ephemeral sizing, and provenance preservation verified',
+      'Engine input validation, negative tariff clamping, scenario unavailable/null state, ephemeral sizing, and provenance preservation verified',
       z01DemandThrew && z01ModuleThrew && z01PmpThrew && z01FinOk && z01LcoeOk && z02ScenariosOk && z03NoPersistOk && z06ProvenanceOk,
       `z01Demand=${z01DemandThrew}, z01Module=${z01ModuleThrew}, z01Fin=${z01FinOk}, z02Scenarios=${z02ScenariosOk}, z03Ephemeral=${z03NoPersistOk}, z06Prov=${z06ProvenanceOk}`
     );
@@ -5960,7 +5973,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
       && thermalYear.annualThermalDeratePct >= 0
       && thermalYear.temperatureSensitivityRangePct.high > thermalYear.temperatureSensitivityRangePct.low
       && !thermalYear.isMeasuredHourlyWeather
-      && thermalYear.ambientMeanSource === 'provider_annual_mean';
+      && thermalYear.ambientMeanSource === 'supplied_annual_mean';
     assert(
       'E28-CENTRAL-SIZING-HOURLY-THERMAL-AND-UNCERTAINTY',
       'Live App sizing can route through the central facade; generic utility MPPT substitutions are explicitly unassessed; 8760 synthetic thermal samples conserve PSH and expose ±5°C sensitivity, not forecast confidence',

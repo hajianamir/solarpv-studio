@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "branch": "arena/6a50ab5f-solarpv-studio",
+  "baseCommit": "0c4d7cadc7db6001459ea36fdf9a3d1403179a71",
+  "dirtyTreePreserved": true,
+  "commitOrPushPerformed": false,
+  "decisions": {
+    "implementation": "PARTIAL (overall Phase2); P2-T5/T6/T7/S1 implemented",
+    "verification": "VERIFIED_WITHIN_SCOPE (implemented continuation slice only)",
+    "release": "BLOCKED (full Phase2 and model adoption not approved)"
+  },
+  "acceptance": {
+    "P2-T5": "32 independently vectorized numpy/pvlib declared-policy integration cases; southern old-policy defect witness; no measured-weather validation",
+    "P2-T6": "Required/missing/nonfinite/range checks; zero-PSH neutral loss budget; supplied vs derived annual mean qualification",
+    "P2-T7": "12 mount/override canonical/named waterfall signed-loss checks, JSON readback; actual production browser reads XLSX and project JSON thermal metadata",
+    "P2-S1": "14 independent Decimal arithmetic cases; pre-clamp and clamped fields, rounding/raw precision and historical nonfinite behavior preserved; NOT external physical clipping validation"
+  },
+  "referenceGate": {
+    "changedFormulaExpressionsExecutedAndMutationChecked": 26,
+    "newContinuationExpressionRecords": 7,
+    "scopeLimitation": "Thermal fixtures independently execute pvlib DC response on a reconstructed local synthetic policy. Clipping fixtures characterize unchanged historical arithmetic with Decimal, not independent physical model quality. No gate code changed/waived."
+  },
+  "checks": [
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "a2fa29de63953018086d39bd95049329ceb891650426c560f277f1a574e5c9d9",
+      "tail": [
+        "",
+        "✖ 93 problems (0 errors, 93 warnings)",
+        ""
+      ]
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "7e2a3ea423914b5719948d32d77869cf1be83c289fc2c4435cde4b40f833e267",
+      "tail": [
+        "dist/assets/vendor-spreadsheet-mhZc_zmi.js                        939.78 kB │ gzip: 271.10 kB",
+        "dist/assets/index-Ndmk_nHc.js                                     988.24 kB │ gzip: 295.95 kB",
+        "✓ built in 22.41s"
+      ]
+    },
+    {
+      "command": "npm run test",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "edc3109522f20c0baa1ef9023fc6cb2b6b02bd9bd9d7e22df98b8af137f877df",
+      "tail": [
+        "================================================================================",
+        " SUMMARY: EXECUTABLE REGRESSIONS & BIPV/T CHECKS PASS; STORED-TARGET REPORT WARN (RETIRED UNVERIFIED BIFACIAL TARGET)",
+        "================================================================================"
+      ]
+    },
+    {
+      "command": "npm run test:smoke",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "8c8720e610a77bbb77dd034c0f56f9da1a003a2b1ee0e8117cc85365dffdff0c",
+      "tail": [
+        "================================================================================",
+        " SMOKE TEST RESULT: 5/5 IN-MEMORY INTEGRATION SCENARIOS PASSED (NOT BROWSER E2E)",
+        "================================================================================"
+      ]
+    },
+    {
+      "command": "npm run test:coverage",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "578030603e8eff5499056c963105eeaaf96d8469c8df5d63eb3ded27d93edded",
+      "tail": [
+        "  trackerFixtures.ts           |     100 |      100 |     100 |     100 |                           ",
+        "  unitTestsCore.ts             |   99.83 |    59.29 |     100 |   99.83 | ...30,1978,2022,5751-5753 ",
+        "-------------------------------|---------|----------|---------|---------|---------------------------"
+      ]
+    },
+    {
+      "command": "npm run test:phase1",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "941f66b2f5603af273e639b7ca853909c71922804824865b17fbf082602ed0ff",
+      "tail": [
+        "PASS ratio/nameplate, invalid input, unknown 65/90A and screening PR denominator/gain regressions.",
+        "PASS numerical AST parity outside the explicitly fixture-gated ADR-015 MPPT hot-temperature ownership replacement.",
+        "PASS catalog evidence preserves unknowns and rejects malformed rating metadata."
+      ]
+    },
+    {
+      "command": "npm run test:phase2",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "65d51937b902a4fb9688f6fa4107fec0560a69f229d3a1ce617983c62150d138",
+      "tail": [
+        "PASS thermal owner: 24 external pvlib conditions, independent MPPT hot-window witness, 9 ground/shed/roof parity cases and explicit override authority; 9 independent SI Ke conditions and pressure propagation/Kd-once checks. Not whole-model validation.",
+        "PASS hemisphere thermal: 32 independent numpy/pvlib policy-integration cases; ±latitude/equator/polar, zero PSH, invalid input and signed canonical/waterfall JSON parity. Synthetic policy verification, NOT measured-weather validation.",
+        "PASS unchanged clipping consolidation: 14 independent Decimal arithmetic characterizations, annual/waterfall precision adapters and historical nonfinite boundaries. NOT external physical clipping validation."
+      ]
+    },
+    {
+      "command": "npm run test:phase1:browser",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "f4b67a00ecc69248838bed5cb41df0b3800e6c47f9603ce55c94596fc77ce38d",
+      "tail": [
+        "> tsx scripts/test-phase1-browser.ts",
+        "",
+        "PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence import/export. External providers blocked; not field validation."
+      ]
+    },
+    {
+      "command": "npm run test:accepted-audit",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "0cc18d903ad012d99c9a51675f8aa499335b2ae60966dd607833f94380073b89",
+      "tail": [
+        "> tsx scripts/test-accepted-vmp-audit.ts",
+        "",
+        "PASS accepted Vmp audit: synthetic hot/cold/STC windows, bias counterexample, three-engine validation, catalog adapter/selection guard, schema roundtrip, HTTP aliases/conflicts/legacy/infeasibility, guidance provenance. Not field or standards validation."
+      ]
+    },
+    {
+      "command": "npm run test:remaining",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "3069e0a5e6e792e81562a7c6b0439d6f226d263a56cffc22ee704bf5c8be9547",
+      "tail": [
+        "PASS shading lifecycle: two concurrent jobs, isolated cancellation, capacity, runtime/message/post errors, owned-worker cleanup, sync/cooperative parity, and live fallback timer cancellation. Fake Worker protocol tests; native browser tested separately by browser regression.",
+        "PASS real HTTP POA: deterministic legacy south-zero default, both explicit conventions continuous around 180°, unknown convention rejected.",
+        "PASS real Chromium: two native Workers, cancellation during progress isolated from concurrent completion; live no-Worker fallback processes timer cancellation. Vite module harness, not production bundle coverage."
+      ]
+    },
+    {
+      "command": "npm run test:recovery",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "21aedcf32d548cdcd76d395530bb6fae3fd425430f13a56a149c1824ddd9f95d",
+      "tail": [
+        "PASS io-error-directory",
+        "PASS dangling-symlink",
+        "PASS snapshot recovery: missing vs unreadable/invalid, no seed/partial import, direct-save and SIGINT/SIGTERM preservation, degraded health."
+      ]
+    },
+    {
+      "command": "npm run verify:exports",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "8befc270ea282ca775430522506b74b50af4c73ff9dda0f82039f06719dacbbe",
+      "tail": [
+        "[PASS] JSON envelope read-back preserves engineer/company/client sign-off metadata",
+        "[PASS] Re-import of the real serialized JSON restores site coordinates, PSH, and override scope",
+        "Export artifact read-back verification: all checks PASS (DOCX, XLSX, JSON + re-import)"
+      ]
+    },
+    {
+      "command": "npm run verify:engine-claims",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "28a883414c668999076555ee595b3f5562c901ac1868e2f5a2486dba75e6c122",
+      "tail": [
+        "Visible benchmark runner provenance guards and negative regressions passed.",
+        "Phase 1 surviving-claim containment guards passed.",
+        "PASS Phase 1 economic, bifacial, structural and artifact qualification presence guards (not exhaustive semantic claim verification)."
+      ]
+    },
+    {
+      "command": "npm run verify:physics-reference-gate",
+      "exitCode": 0,
+      "status": "PASS",
+      "logSha256": "a4b53214a4062f1a08aba1e84ae1340dd8a334d1ad19220bce0f1ad9dffd5484",
+      "tail": [
+        "Sensitivity witness: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee (expression result)",
+        "Independent fixture executed and sensitivity-checked at src/engine/financialEngine.ts#sanitizeFinancialPricing: src/engine/financialEngine.ts#sanitizeFinancialPricing#9c94a974a0ee",
+        "Independent physics reference gate passed: 26 changed formula expression(s) each have an executed independent fixture."
+      ]
+    }
+  ],
+  "priorAttempts": [
+    {
+      "issue": "Initial JSON-stage assertion required signed zero to survive JSON serialization",
+      "disposition": "Accept only JSON normalization of negative zero to zero; strict nonzero gain/loss signs preserved."
+    },
+    {
+      "issue": "Mean-source string rename exposed a stale core comparison in type checking",
+      "disposition": "Update the characterization to supplied_annual_mean, not a false provider attestation."
+    },
+    {
+      "issue": "Initial clipping extraction removed the still-consumed pre-clamp raw value; focused test raised ReferenceError",
+      "disposition": "Shared owner now returns raw and clamped values; independent Decimal fixture and adapter assertions verify both."
+    },
+    {
+      "issue": "Initial reference fixture for a default-parameter literal was outside function body and correctly rejected by exact-node gate",
+      "disposition": "Move default handling into the owned function body, register both default/sign expressions; gate unchanged."
+    }
+  ],
+  "environment": {
+    "node": "v22.22.3",
+    "pythonNumericalVersions": "3.11.2 pvlib=0.13.1 numpy=2.2.6",
+    "browser": "Production Vite preview / installed Chromium; external provider requests blocked; not native Safari/platform validation"
+  },
+  "remaining": [
+    "U01b normative wind applicability and complete global persisted model-policy migration",
+    "U02 common annual policy across historical quick-sizing HTTP, direct API and App pipelines",
+    "U09b rating-specific factors/manufacturer conditions across all sizing and persistence/HTTP paths",
+    "U07a named common transposition policy and complete 17-slot named-adapter migration",
+    "U16b explicit assumptions/valuation/currency migration, remaining ledger/debt/project accounting and LCOE compatibility",
+    "Inherited CAD reference debt, Docker/native Safari/deployment/field/conformity evidence not waived"
+  ],
+  "sha256": {
+    "src/contracts/hourlyThermalInput.ts": "5268e3138404cef20fde6a9180c97e844f963aa8677902d078265b4ceebac9bd",
+    "src/engine/core/hourlyThermalEngine.ts": "bb59b07f5bb1bbcf1053d3a67dbe0b7945e4f9ecd1cade1d154cb44207230be9",
+    "src/engine/core/signedThermalStage.ts": "b292335140d08c61d7c45d29cdabda158e306866a6f03c508d0132626e87cbf6",
+    "src/engine/core/annualYieldEngine.ts": "4c30688afe0ce9a723f5889d607a34b8fb769c675343ee33d601bdc5eec4d313",
+    "src/engine/core/legacyClippingScreen.ts": "15cbe6d719224f200463694bbb4dbf7d6e66482fa0f1f9a2eb0c2ebb3349b162",
+    "src/engine/waterfallLossEngine.ts": "ded954c25bfbb41ba240dbe06876245ac62096ba411aa10aa18941c6de46591a",
+    "src/components/OfficialReportModal.tsx": "2a3038d709504e6224de22131e3bf37b570c10c69f7f2cfa9be8498f4d4a2338",
+    "src/engine/core/benchmarks/unitTestsCore.ts": "bdd8d088b2d62488b32ec4c7795a428470c8c14fe912a8168f99d5537fa1fcdc",
+    "scripts/test-phase2-hemisphere.ts": "6855d7651c19148819dc4792e57d38449a00fe82d4d175de20a28a3da1acb463",
+    "scripts/test-phase2-clipping.ts": "06fd8045c5208807d541e91379bfed238a4748b998af0418aceda1e375a33da4",
+    "scripts/test-phase1-browser.ts": "2a01e36d128f99dc470b1c4e5926fc82ed6aa61b1b3121f856fdc475e9b95896",
+    "scripts/fixtures/physics/generate-hemisphere-thermal.py": "084c7c25bd01ab36c928f7e014e141e82935da69e836a1c33a7caec7f5970438",
+    "scripts/fixtures/physics/generate-legacy-clipping.py": "4237bd204f4d7ecabd8c1b280b1d1b261795dae34a679044b63ed2c57b88d4be",
+    "scripts/fixtures/physics/hemisphere-thermal-pvlib.json": "b5611a56efe9eefc6ced63556d3c9ac26d4ef590021b0e45292b3bd3a9bb69c2",
+    "scripts/fixtures/physics/legacy-clipping-decimal.json": "1e949b4762306bae0efa305651dd869c6decb25f17d4d0211740d9d769730d7d",
+    "scripts/physics-reference-evidence.json": "23f4320fdf70eab98f594b62d4a92444c823db4e750d2c78e1708253f920b843",
+    "package.json": "3baab60bc8ec67f01ee640ca41e4e8fbaf547543b7a12e8175e9f48c474c0802",
+    "docs/adr/ADR-016-phase2-hemisphere-and-signed-annual-metadata.md": "c9259ede42cb3ff5c25fd0d4dc41b938f39a827c9b98b08d8515d077701158d5",
+    "docs/adr/ADR-017-unchanged-clipping-screen-owner.md": "1f95ce3d351acd9fd6a0942e3bb6413435e6999988f65ef586ac5f213863d959",
+    "docs/guides/annual-thermal-screening.md": "8d39ffc841b8aceee0d97d45f383b2739dfc910567df9c4e43543209f68873cc",
+    "docs/audit/dual-independent-audit-review/PHASE-2-CONTINUATION-PLAN.md": "63412c57ebae79677c0c1070193178be0ab2b24b557c86dacf379702e92565f3",
+    "docs/audit/dual-independent-audit-review/PHASE-2-STATUS.md": "dee9d8bc2fb9ca7e1b603448800de74db12be09433f0e8d362e7c77180172cfa",
+    "CHANGELOG.md": "552e9518bc58294f31ddb925f80dc83fc0e55590d5657bb986eecd27ed18efe8"
+  }
+}

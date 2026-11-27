@@ -73,10 +73,20 @@ const CableFeederInputEditor: React.FC<{
     { key: 'protectiveDeviceBreakingCapacityKa', label: fa ? 'قدرت قطع حفاظت (kA)' : 'Protective breaking capacity (kA)', step: 0.1, min: 0.1 },
     { key: 'expectedIscKa', label: fa ? 'جریان اتصال کوتاه موجود (kA)' : 'Prospective fault current (kA)', step: 0.1, min: 0.1 },
     { key: 'faultClearingTimeSec', label: fa ? 'زمان قطع خطا (s)' : 'Fault clearing time (s)', step: 0.01, min: 0.001 },
-    ...(isDc ? [] : [{ key: 'powerFactor' as const, label: fa ? 'ضریب توان' : 'Power factor', step: 0.01, min: 0.01, max: 1 }]),
+    ...(isDc ? [] : [{key: 'equivalentReactanceOhmPerM' as const, label: fa ? 'راکتانس معادل مسیر با کوپلینگ (Ω/m)' : 'Equivalent circuit reactance incl. coupling (Ω/m)', step: 0.00001, min: 0}, { key: 'powerFactor' as const, label: fa ? 'ضریب توان' : 'Power factor', step: 0.01, min: 0.01, max: 1 }]),
   ];
   return <div className="rounded-lg border border-industrial-border bg-industrial-bg/50 p-3 space-y-2" data-testid={`feeder-editor-${id}`}>
     <h4 className="text-xs font-bold text-sky-300">{title} <span className="text-slate-500">({isDc ? 'DC' : 'AC'})</span></h4>
+    {!isDc && <div className="grid grid-cols-2 gap-2 text-xs">
+      <label>{fa ? 'آرایش مسیر؛ طول و تقسیم جریان برابر' : 'Arrangement — equal lengths and current sharing'}
+        <select data-testid={`feeder-${id}-parallelArrangement`} className="studio-input w-full" value={input.parallelArrangement ?? ''} onChange={e=>onChange('parallelArrangement',e.target.value ? 'equal_length_equal_sharing' : undefined)}>
+          <option value="">{fa ? 'نامشخص — بررسی‌نشده' : 'Unknown — unassessed'}</option><option value="equal_length_equal_sharing">{fa ? 'طول و تقسیم جریان برابر' : 'Equal-length / equal-sharing'}</option>
+        </select>
+      </label>
+      <label>{fa ? 'منبع امپدانس، آرایش، فرکانس' : 'Impedance source, arrangement and frequency'}
+        <input data-testid={`feeder-${id}-impedanceSource`} className="studio-input w-full" value={input.impedanceSource ?? ''} onChange={e=>onChange('impedanceSource',e.target.value || undefined)} />
+      </label>
+    </div>}
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-2">
       {numericFields.map(({ key, label, step, min, max }) => (
         <label key={key} className="text-[10px] text-slate-400">{label}
@@ -228,6 +238,9 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
         allowableDropPct: input.allowableDropPct ?? 0,
         isDc: base.isDc,
         isThreePhase: input.isThreePhase ?? base.isThreePhase,
+        equivalentReactanceOhmPerM: input.equivalentReactanceOhmPerM,
+        parallelArrangement: input.parallelArrangement,
+        impedanceSource: input.impedanceSource,
         powerFactor: input.powerFactor,
         ambientTempC: input.ambientTempC,
         installationMethod: input.installationMethod,
@@ -244,7 +257,12 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
       if (missing.length) {
         return createUnassessedCableRun(config, `Incomplete feeder inputs: ${missing.join(', ')}. No final/compliant cable result is issued.`);
       }
-      const result = calculateAdvancedCableRun(config);
+      let result: CableRunResult;
+      try { result = calculateAdvancedCableRun(config); }
+      catch (error) {
+        if (!(error instanceof RangeError)) throw error;
+        return createUnassessedCableRun(config, error.message);
+      }
       if (!base.isDc && input.motorStartingMethod !== 'not_applicable' && result.motorStartingVoltageDropPct === null) {
         return {
           ...result,
@@ -1014,7 +1032,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
               </div>
               <div className="p-3 bg-industrial-bg rounded-lg border border-industrial-border text-center">
                 <span className="text-slate-400 block text-[11px] mb-1">{lang === 'fa' ? 'فاصله جداسازی ایمن (s)' : 'Separation Distance'}</span>
-                <span className="text-lg font-bold font-mono text-purple-400">{lightningResult.separationDistanceCm} cm</span>
+                <span data-testid="lightning-separation-assessment" className="text-lg font-bold font-mono text-purple-400">{lightningResult.separationDistanceCm === null ? (lang === 'fa' ? 'بررسی‌نشده — هندسه/توپولوژی لازم است' : 'UNASSESSED — geometry/topology required') : `${lightningResult.separationDistanceCm} cm`}</span>
               </div>
             </div>
 
@@ -1059,7 +1077,7 @@ export const ProtectionBomTab: React.FC<ProtectionBomTabProps> = ({
                 {lang === 'fa' ? 'اصول طراحی و اجرای سیستم صاعقه‌گیر در مزارع خورشیدی و سقف‌ها:' : 'Solar Farm & Rooftop Lightning Protection Design Principles:'}
               </h4>
               <ul className="space-y-1.5 text-xs text-slate-300">
-                {lightningResult.installationGuidelinesFa.map((g, idx) => (
+                {(lang === 'fa' ? lightningResult.installationGuidelinesFa : (lightningResult.installationGuidelinesEn ?? [])).map((g, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <ArrowRight className="w-3.5 h-3.5 text-industrial-accent shrink-0 mt-0.5" />
                     <span>{g}</span>

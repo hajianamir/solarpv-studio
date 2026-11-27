@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "runIranianRegulationFinancialModel",
+  "inputs": [
+    0.5,
+    0.9,
+    "satba_fit_ppa",
+    4200,
+    70,
+    23,
+    6,
+    25
+  ],
+  "expected": {
+    "frameworkNameFa": "قرارداد خرید تضمینی ۲۰ ساله ساتبا (SATBA FIT PPA)",
+    "tariffPerKwhToman": 4200,
+    "totalCapexMillionToman": 15.75,
+    "equityContributionMillionToman": 4.725,
+    "bankLoanMillionToman": 11.025,
+    "projectIrrPct": 33.5,
+    "equityIrrPct": 39.4,
+    "npvMillionToman": 17.69699753815416,
+    "simplePaybackYears": 5.1,
+    "discountedPaybackYears": 7.0,
+    "paybackStatus": "achieved",
+    "lcoeTomanPerKwh": 4322.0,
+    "article16PenaltyAvoidedMillionToman": 4.0,
+    "summerBlackoutLossPreventedMillionToman": 4.0,
+    "cashFlow25Years": [
+      {
+        "year": 1,
+        "generationMwh": 0.9,
+        "revenueMillionToman": 3.78,
+        "opexMillionToman": 0.23625,
+        "debtServiceMillionToman": 3.5653598906528874,
+        "netCashFlowMillionToman": -0.021609890652887292,
+        "cumulativeCashFlowMillionToman": -4.746609890652887,
+        "dscr": 0.9939389314639622
+      },
+      {
+        "year": 2,
+        "generationMwh": 0.89595,
+        "revenueMillionToman": 4.2145488,
+        "opexMillionToman": 0.2716875,
+        "debtServiceMillionToman": 3.5653598906528874,
+        "netCashFlowMillionToman": 0.3775014093471127,
+        "cumulativeCashFlowMillionToman": -4.369108481305775,
+        "dscr": 1.1058803096811596
+      },
+      {
+        "year": 3,
+        "generationMwh": 0.891918225,
+        "revenueMillionToman": 4.699053330048,
+        "opexMillionToman": 0.312440625,
+        "debtServiceMillionToman": 3.5653598906528874,
+        "netCashFlowMillionToman": 0.8212528143951127,
+        "cumulativeCashFlowMillionToman": -3.547855666910662,
+        "dscr": 1.230342192536621
+      },
+      {
+        "year": 4,
+        "generationMwh": 0.8879045929875,
+        "revenueMillionToman": 5.239256500870318,
+        "opexMillionToman": 0.35930671875,
+        "debtServiceMillionToman": 3.5653598906528874,
+        "netCashFlowMillionToman": 1.3145898914674308,
+        "cumulativeCashFlowMillionToman": -2.2332657754432312,
+        "dscr": 1.3687116958133232
+      },
+      {
+        "year": 5,
+        "generationMwh": 0.8839090223190562,
+        "revenueMillionToman": 5.84156142821037,
+        "opexMillionToman": 0.4132027265625,
+        "debtServiceMillionToman": 3.5653598906528874,
+        "netCashFlowMillionToman": 1.8629988109949827,
+        "cumulativeCashFlowMillionToman": -0.3702669644482485,
+        "dscr": 1.5225275619101193
+      },
+      {
+        "year": 6,
+        "generationMwh": 0.8799314317186205,
+        "revenueMillionToman": 6.513107329997434,
+        "opexMillionToman": 0.475183135546875,
+        "debtServiceMillionToman": 3.5653598906528874,
+        "netCashFlowMillionToman": 2.4725643037976717,
+        "cumulativeCashFlowMillionToman": 2.1022973393494233,
+        "dscr": 1.6934964154053174
+      },
+      {
+        "year": 7,
+        "generationMwh": 0.8759717402758868,
+        "revenueMillionToman": 7.261854148653939,
+        "opexMillionToman": 0.5464606058789062,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 6.715393542775033,
+        "cumulativeCashFlowMillionToman": 8.817690882124456,
+        "dscr": null
+      },
+      {
+        "year": 8,
+        "generationMwh": 0.8720298674446452,
+        "revenueMillionToman": 8.096676901583196,
+        "opexMillionToman": 0.6284296967607422,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 7.468247204822454,
+        "cumulativeCashFlowMillionToman": 16.28593808694691,
+        "dscr": null
+      },
+      {
+        "year": 9,
+        "generationMwh": 0.8681057330411444,
+        "revenueMillionToman": 9.0274708781892,
+        "opexMillionToman": 0.7226941512748535,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 8.304776726914346,
+        "cumulativeCashFlowMillionToman": 24.590714813861258,
+        "dscr": null
+      },
+      {
+        "year": 10,
+        "generationMwh": 0.8641992572424592,
+        "revenueMillionToman": 10.06526893034583,
+        "opexMillionToman": 0.8310982739660815,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 9.23417065637975,
+        "cumulativeCashFlowMillionToman": 33.82488547024101,
+        "dscr": null
+      },
+      {
+        "year": 11,
+        "generationMwh": 0.8603103605848681,
+        "revenueMillionToman": 11.222372246578388,
+        "opexMillionToman": 0.9557630150609938,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 10.266609231517393,
+        "cumulativeCashFlowMillionToman": 44.0914947017584,
+        "dscr": null
+      },
+      {
+        "year": 12,
+        "generationMwh": 0.8564389639622362,
+        "revenueMillionToman": 12.512496160045039,
+        "opexMillionToman": 1.0991274673201428,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 11.413368692724896,
+        "cumulativeCashFlowMillionToman": 55.504863394483294,
+        "dscr": null
+      },
+      {
+        "year": 13,
+        "generationMwh": 0.8525849886244061,
+        "revenueMillionToman": 13.950932718603816,
+        "opexMillionToman": 1.2639965874181642,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 12.686936131185652,
+        "cumulativeCashFlowMillionToman": 68.19179952566894,
+        "dscr": null
+      },
+      {
+        "year": 14,
+        "generationMwh": 0.8487483561755963,
+        "revenueMillionToman": 15.554731943934511,
+        "opexMillionToman": 1.453596075530889,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 14.101135868403622,
+        "cumulativeCashFlowMillionToman": 82.29293539407257,
+        "dscr": null
+      },
+      {
+        "year": 15,
+        "generationMwh": 0.8449289885728061,
+        "revenueMillionToman": 17.34290392820922,
+        "opexMillionToman": 1.6716354868605223,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 15.6712684413487,
+        "cumulativeCashFlowMillionToman": 97.96420383542127,
+        "dscr": null
+      },
+      {
+        "year": 16,
+        "generationMwh": 0.8411268081242285,
+        "revenueMillionToman": 19.336644163796155,
+        "opexMillionToman": 1.9223808098896005,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 17.414263353906552,
+        "cumulativeCashFlowMillionToman": 115.37846718932782,
+        "dscr": null
+      },
+      {
+        "year": 17,
+        "generationMwh": 0.8373417374876695,
+        "revenueMillionToman": 21.55958477686616,
+        "opexMillionToman": 2.210737931373041,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 19.34884684549312,
+        "cumulativeCashFlowMillionToman": 134.72731403482095,
+        "dscr": null
+      },
+      {
+        "year": 18,
+        "generationMwh": 0.833573699668975,
+        "revenueMillionToman": 24.038074642814696,
+        "opexMillionToman": 2.5423486210789967,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 21.4957260217357,
+        "cumulativeCashFlowMillionToman": 156.22304005655664,
+        "dscr": null
+      },
+      {
+        "year": 19,
+        "generationMwh": 0.8298226180204645,
+        "revenueMillionToman": 26.80149170375267,
+        "opexMillionToman": 2.9237009142408463,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 23.877790789511824,
+        "cumulativeCashFlowMillionToman": 180.10083084606848,
+        "dscr": null
+      },
+      {
+        "year": 20,
+        "generationMwh": 0.8260884162393725,
+        "revenueMillionToman": 29.88259119001608,
+        "opexMillionToman": 3.3622560513769733,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 26.520335138639105,
+        "cumulativeCashFlowMillionToman": 206.62116598470757,
+        "dscr": null
+      },
+      {
+        "year": 21,
+        "generationMwh": 0.8223710183662953,
+        "revenueMillionToman": 33.31789387322033,
+        "opexMillionToman": 3.8665944590835193,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 29.45129941413681,
+        "cumulativeCashFlowMillionToman": 236.07246539884437,
+        "dscr": null
+      },
+      {
+        "year": 22,
+        "generationMwh": 0.818670348783647,
+        "revenueMillionToman": 37.14811895288574,
+        "opexMillionToman": 4.446583627946047,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 32.70153532493969,
+        "cumulativeCashFlowMillionToman": 268.77400072378407,
+        "dscr": null
+      },
+      {
+        "year": 23,
+        "generationMwh": 0.8149863322141205,
+        "revenueMillionToman": 41.41866670770948,
+        "opexMillionToman": 5.113571172137954,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 36.305095535571525,
+        "cumulativeCashFlowMillionToman": 305.0790962593556,
+        "dscr": null
+      },
+      {
+        "year": 24,
+        "generationMwh": 0.811318893719157,
+        "revenueMillionToman": 46.18015663242776,
+        "opexMillionToman": 5.8806068479586475,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 40.299549784469114,
+        "cumulativeCashFlowMillionToman": 345.3786460438247,
+        "dscr": null
+      },
+      {
+        "year": 25,
+        "generationMwh": 0.8076679586974208,
+        "revenueMillionToman": 51.489027438891654,
+        "opexMillionToman": 6.762697875152444,
+        "debtServiceMillionToman": 0.0,
+        "netCashFlowMillionToman": 44.72632956373921,
+        "cumulativeCashFlowMillionToman": 390.1049756075639,
+        "dscr": null
+      }
+    ]
+  },
+  "cases": [],
+  "independentCalculation": "Independent 50-digit Decimal ledger for unrounded million-Toman accounting.\nNPV discounting: NREL SAM help mtf_npv and Short et al. 1995 NREL/TP-462-5173.\nThis is PRE-TAX application-policy specialization, NOT SAM default finance/taxes,\nverified Iranian tariffs, or bankable assumptions. All policy values are explicit:\n31.5 million Toman/kWp capital, 1.5% OPEX, .45% degradation, discount20%,\ntariff/OPEX escalation=.48/.60 times inflation; 25 years; ordinary annual annuity.\nNo production code import, execution or copied numeric output. IRR independently\nsolved by Decimal bisection; rounded scalar display metrics reproduce legacy API\nformat, but ledger and NPV remain unrounded. No replacement/salvage model claimed.\n",
+  "tolerances": {
+    "absolute": 1e-07,
+    "relative": 1e-11
+  },
+  "referenceSource": {
+    "title": "NREL SAM NPV / independent Decimal pre-tax policy ledger",
+    "url": "https://samrepo.nlr.gov/help/mtf_npv.html",
+    "version": "Public help retrieved 2026-11-03; local explicit policy specialization v1",
+    "locator": "Discounted annual cash flows and year-zero equity; background Short et al. 1995 NREL/TP-462-5173. Local illustrative assumptions explicitly documented; not statutory/SAM parameter validation."
+  },
+  "formulaId": "src/engine/iranianRegulationsFinancial.ts#runIranianRegulationFinancialModel#6e630b8ca162"
+}

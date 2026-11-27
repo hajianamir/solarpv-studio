@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "evaluateMpptCompatibility",
+  "inputs": [
+    {
+      "mpptRatingEvidence": {
+        "basis": "factored_array_isc",
+        "scope": "per_mppt",
+        "source": "SYNTHETIC component fixture, not manufacturer evidence",
+        "sourceDate": "2026-01-01",
+        "conditions": "Synthetic voltage/one-channel evaluation only",
+        "requiredMultiplier": 1.25,
+        "operatingCurrentAmps": 20,
+        "shortCircuitCurrentAmps": 25
+      },
+      "moduleVoc": 50,
+      "moduleVmp": 40,
+      "moduleIsc": 10,
+      "moduleImp": 9,
+      "modulePmp": 400,
+      "tempCoeffVocPct": -0.2,
+      "tempCoeffVmpPct": -0.3,
+      "tempCoeffPmpPct": -0.3,
+      "modulesPerString": 10,
+      "parallelStrings": 1,
+      "inverterVdcMax": 1000,
+      "inverterVmpptMin": 100,
+      "inverterVmpptMax": 900,
+      "inverterImppMaxPerMppt": 20,
+      "inverterIscMaxPerMppt": 25,
+      "inverterMpptChannels": 1,
+      "inverterCount": 1,
+      "inverterPnomAcKw": 5,
+      "ambientTempMinC": 0,
+      "ambientTempMaxC": 40,
+      "noctC": 42,
+      "installationEnvironment": "ground_mount",
+      "stringsPerMpptAllocation": [
+        1
+      ]
+    }
+  ],
+  "expected": {
+    "electricalReadiness": {
+      "status": "screening_evidence_complete",
+      "conformity": null,
+      "legacyShortCircuitMultiplier": 1.25,
+      "reasons": []
+    },
+    "isVoltageFeasible": true,
+    "isCurrentFeasible": true,
+    "isCompliant": true,
+    "stringVocMaxColdV": 525,
+    "stringVmpMinHotV": 349.0,
+    "stringVmpMaxColdV": 430,
+    "effectiveMpptChannels": 1,
+    "stringsPerMppt": 1,
+    "stringsPerMpptAllocation": [
+      1
+    ],
+    "isMpptAllocationAssumed": false,
+    "operatingCurrentAmps": 9,
+    "shortCircuitCurrentAmps": 12.5,
+    "currentSafetyMarginPct": 55,
+    "dcAcRatio": 0.8,
+    "singleInverterDcAcRatio": 0.8,
+    "blockingErrors": [],
+    "warnings": []
+  },
+  "independentCalculation": "Independent pvlib/Decimal thermal and MPPT component conditions.\nNo production TS imported or numerical outputs copied. NOCT linear temperature:\nTcell=Tamb+(NOCT-20)*G/800, cited Applied Sciences 2020 10(3)914 Eq1.\nPVWatts DC temperature factor independently executed by pvlib 0.13.1.\nMPPT example uses explicitly synthetic measured voltage coefficient -.3 percent/C,\nlinear voltage windows and one physically specified channel. No manufacturer,\nmounting-offset, annual-weather or standards-conformity validation claimed.\n Independently specified NOCT42 and ambient40 at 1000 W/m2 imply Tcell67.5 C; hot string Vmp=10*40*(1-.003*(67.5-25))=349 V, versus old +25 C fallback352 V. Cold Voc525 V, cold Vmp430 V. One string: Imp9 A, factored Isc12.5 A. Four kW DC / five kW AC = .8. Evidence fields are synthetic test metadata, not a real product record.",
+  "tolerances": {
+    "absolute": 1e-09,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "NOCT linear temperature and pvlib PVWatts DC temperature correction",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+    "version": "pvlib 0.13.1; Applied Sciences 2020 10(3)914",
+    "locator": "PVWatts DC equation; NOCT linear temperature DOI 10.3390/app10030914 Eq1. Synthetic voltage-coefficient/component conditions, not climate or mounting validation."
+  },
+  "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#3f70ee8d8180",
+  "cases": []
+}

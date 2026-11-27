@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "calculateThermalDerate",
+  "inputs": [
+    {
+      "module": {
+        "noctC": 40,
+        "tempCoeffPmpPct": -0.3
+      },
+      "ambientTempMaxC": 40,
+      "ambientTempMeanC": -40,
+      "irradianceWm2": 1000,
+      "installationEnvironment": "ground_mount",
+      "evaluationMode": "annual_energy"
+    }
+  ],
+  "expected": {
+    "cellTempHotC": 65.0,
+    "cellTempAnnualMeanC": -15.0,
+    "annualMeanDeratePct": -12.00000000000001,
+    "deratePct": -12.00000000000001,
+    "derateFraction": -0.1200000000000001,
+    "mountingDeltaTC": 0,
+    "source": "NOCT_BASE_WITH_UNVALIDATED_MOUNTING_ASSUMPTIONS",
+    "evaluationMode": "annual_energy",
+    "effectiveAmbientTempC": -40
+  },
+  "cases": [],
+  "independentCalculation": "Independent pvlib/Decimal thermal and MPPT component conditions.\nNo production TS imported or numerical outputs copied. NOCT linear temperature:\nTcell=Tamb+(NOCT-20)*G/800, cited Applied Sciences 2020 10(3)914 Eq1.\nPVWatts DC temperature factor independently executed by pvlib 0.13.1.\nMPPT example uses explicitly synthetic measured voltage coefficient -.3 percent/C,\nlinear voltage windows and one physically specified channel. No manufacturer,\nmounting-offset, annual-weather or standards-conformity validation claimed.\n",
+  "tolerances": {
+    "absolute": 1e-10,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "NOCT linear temperature and pvlib PVWatts DC temperature correction",
+    "url": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.pvsystem.pvwatts_dc.html",
+    "version": "pvlib 0.13.1; Applied Sciences 2020 10(3)914",
+    "locator": "PVWatts DC equation; NOCT linear temperature DOI 10.3390/app10030914 Eq1. Synthetic voltage-coefficient/component conditions, not climate or mounting validation."
+  },
+  "formulaId": "src/engine/core/thermalDerate.ts#calculateThermalDerate#b108d5154aaa"
+}

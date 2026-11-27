@@ -1,3 +1,4 @@
+import type {MpptRatingEvidence} from '../contracts/electricalReadiness';
 // Comprehensive Equipment Catalog Database (>100 High-Tier 2024-2026 Components)
 
 export interface CatalogPvModule {
@@ -110,6 +111,9 @@ export function resolveBifacialParams(mod?: {
 }
 
 export interface CatalogInverter {
+  mpptRatingEvidence?: MpptRatingEvidence;
+  iscMaxAmpsPerMppt?: number;
+  imppMaxAmpsPerMppt?: number;
   id: string;
   manufacturer: string;
   modelName: string;

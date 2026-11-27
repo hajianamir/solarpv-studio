@@ -576,15 +576,15 @@ async function runAuditVerification() {
   const scenariosZeroPsh = generateScenarios(0, 200, 1.5, 90_000, 18.0, 0);
   assert(Array.isArray(scenariosZeroPsh) && scenariosZeroPsh.length > 0, 'generateScenarios handles PSH = 0 without NaN crash');
   assert(
-    scenariosZeroPsh[0].pvCapacityKwp === 0 && scenariosZeroPsh[0].lcoeUsdPerKwh === 0,
-    'Zero capacity / zero PSH yields 0 kWp and 0 LCOE'
+    scenariosZeroPsh[0].pvCapacityKwp === 0 && scenariosZeroPsh[0].lcoeUsdPerKwh === null && scenariosZeroPsh[0].lcoeAssessment.status === 'unavailable',
+    'Zero capacity / zero PSH yields 0 kWp and unavailable LCOE, not free energy'
   );
 
   // 7e2. Initial non-zero capacity (e.g. 100 kWp) with PSH = 0 yields unsizable (0 kWp, NOT fabricated 5.17 PSH)
   const scenariosNonZeroCapZeroPsh = generateScenarios(100, 200, 1.5, 90_000, 18.0, 0);
   assert(
-    scenariosNonZeroCapZeroPsh[0].pvCapacityKwp === 0 && scenariosNonZeroCapZeroPsh[0].lcoeUsdPerKwh === 0,
-    'generateScenarios with initial 100 kWp but PSH = 0 yields unsizable (0 kWp and 0 LCOE without || 5.17 fallback)'
+    scenariosNonZeroCapZeroPsh[0].pvCapacityKwp === 0 && scenariosNonZeroCapZeroPsh[0].lcoeUsdPerKwh === null && scenariosNonZeroCapZeroPsh[0].lcoeAssessment.status === 'unavailable',
+    'generateScenarios with initial 100 kWp but PSH = 0 yields unsizable (0 kWp and unavailable LCOE without || 5.17 fallback)'
   );
 
   // 7f. React regression test: Atomic candidate validation prevents Tmin >= Tmax on delayed telemetry

@@ -1,11 +1,74 @@
 # Changelog
 
+## Unreleased — strict simple LCOE and raw MPPT current acceptance
+
+- Add strict named LCOE availability: distinguish invalid/zero-generation/numerical failure (null) from genuine zero-cost energy (0). Centralize discounted cost/energy arithmetic, retain the deprecated numeric adapter's legacy compatibility, and keep full precision through scenario results.
+- The LCOE HTTP endpoint now consumes degradation, reports currency/valuation/energy basis and inputs, and rejects unsupported fields/coercions instead of silently ignoring them. Successful results remain numerical screening outputs with financial adoption disabled. Scenario UI distinguishes unavailable and valid-zero values in both languages.
+- Compare unrounded per-channel operating and legacy-factored short-circuit currents in direct MPPT, array sizing and central sizing; displayed two-decimal currents no longer grant capacity. Manufacturer rating evidence remains independently required.
+- Add 42 independent Decimal LCOE cases, 40 exact Decimal current boundaries, actual HTTP/bilingual rendering/customer-mode browser checks and mutation-sensitive expression fixtures. See ADR-018/019 and the simple-LCOE guide for compatibility, qualified scope and rollback. Overall Phase2 remains incomplete.
+
+
+## Unreleased — unchanged clipping-screen consolidation
+
+- Deduplicate the inherited clipping screen into one explicitly qualified owner, preserving the deprecated annual API's pre-clamp/raw and four-decimal fields and the waterfall's unrounded loss stage.
+- Add 14 independent Decimal arithmetic characterizations and exact-expression mutation fixtures. These verify unchanged extraction, not physical clipping accuracy. Transposition/17-slot policy consolidation remains open; see ADR-017.
+
+## Unreleased — Phase 2 hemisphere and signed annual metadata
+
+- Reverse the synthetic annual temperature harmonic in the southern hemisphere; explicitly use no hemispheric annual harmonic at the equator. Preserve annual PSH normalization and existing hot-design behavior. New results carry the named synthetic policy and zero/positive-irradiation state.
+- Zero PSH now returns a neutral thermal-loss budget instead of a spurious 100% loss; missing/nonfinite/inconsistent hourly thermal inputs reject. A supplied annual mean is no longer labeled verified provider data.
+- Preserve cold-gain sign in canonical annual metadata. Include the thermal profile in supplemental project-report JSON and policy/availability in visible reports and XLSX, with actual production-browser readback assertions.
+- Add 32 independently reconstructed numpy/pvlib integration cases and five exact-expression mutation-sensitive fixtures. These verify the declared synthetic policy, not measured-weather accuracy. See ADR-016 and `docs/guides/annual-thermal-screening.md` for compatibility/rollback and open Phase2 work.
+
+
+## Unreleased — Phase 2 wind SI and thermal ownership
+
+- Correct wind elevation exponent units (published per-foot coefficient now converts metre inputs), unify omitted and explicit3m default height, and reject invalid height/exposure/Kd/Kzt rather than silently clamping factors. Legacy wind screen remains qualified, not a code-conformity result.
+- MPPT fallback hot-cell temperature now comes from the shared NOCT/mounting owner; optional NOCT/environment inputs and explicit hot-cell override are supported. Scalar annual thermal loss preserves cold gains and coefficient sign; hot-design convention is unchanged.
+- Add independent pvlib/Decimal component fixtures and direct-export mutation checks; replace old regressions that encoded the metre-unit/.88-default defects. See ADR-015 for domains, rollback and remaining Phase2 work. No full-completion or release approval.
+
+
+## Unreleased — Phase 2 cable, pile and precision follow-up
+
+- Use the same steady-state voltage-drop evaluator for cable candidate selection and reported drop. Require explicit AC equivalent reactance, equal-sharing arrangement and source; unknown arrangement and exhausted searches cannot pass. Optional fields survive project parsing and have bilingual input controls. Invalid-temperature/PF/reactance UI results fail closed.
+- Unsupported Broms pile domains and their structural/sensitivity consumers cannot declare safety. Retain numeric legacy diagnostics, not an approved design; remove misleading recurrence-period and compliance labels.
+- Preserve full-precision million-Toman capital/debt/revenue/OPEX/generation/cumulative ledger values and NPV in the Iranian financial screen, with 18 independent Decimal ledgers. Economic assumptions remain illustrative; other U16b work remains open.
+- See ADR-014 for evidence, tested domains, compatibility, rollback and remaining Phase 2 blockers. No release/conformity approval.
+
+
+## Unreleased — Phase 2 scoped numerical-contract repairs
+
+- Preserve explicitly supplied negative annual thermal loss as gain in the waterfall; reject invalid explicit overrides and expose the same optional input in the canonical annual API. Pinned pvlib 0.13.1 component fixture and mutation-sensitive reference gate; not annual weather/model validation.
+- Forward shared foundation moment/capacity/FoS instead of reconstructing from a fixed clearance; evaluate diagnostic wind sensitivity through the same shared input path.
+- Withhold unsupported lightning protective angle/separation as null/unassessed; retain old quantities only as named diagnostics and replace imperative installation advice with bilingual limitations. UI and JSON regression coverage.
+- Preserve deprecated 17-slot waterfall interface; correct its arity documentation. See ADR-013 and Phase 2 research/status. **Phase 2 remains incomplete; no release/conformity approval.**
+
+
 All notable changes to SolarPV Studio are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Phase 1 exit review and Phase 2 start
+- Repair evidence-readiness edge cases: invalid supplied MPPT wiring is unassessed in both sizing consumers; impossible non-null manufacturer source dates reject while unknown dates remain null. No electrical/current multiplier changes.
+- Remove remaining structural recommendation header/report governing-code compliance wording and qualify legacy geometry/default/parity statements.
+- Start Phase 2 U14: forward the shared net uplift reaction to recommendation results/reports instead of recomputing with a fixed 1.15 pressure multiplier. Preserve existing shared reaction, wind and soil equations; add optional shared geometry/dead-load input typing.
+- Add 108 synthetic consumer-parity cases (72 expose the old duplicate expression), Markdown/input readback and actual production-browser recommendation-report assertions. These are consistency checks, not independent physical validation.
+- Phase 2 remains in progress; moment/capacity reconstruction, other kernels and blocked normative/manufacturer references are not claimed complete. See ADR-012 and the Phase 2 status for compatibility, rollback and executed gates.
+
+### Phase 1 audit contracts and evidence containment
+- Separate actual DC, installed AC and requested AC in the summary adapter; SLD uses actual DC, including its existing shared PDF input.
+- Iranian illustrative financial screening uses the eligible annual Financial screening basis, not representative-day ×365. It is intentionally unavailable for adopted operational energy because the scalar model cannot value dispatch/import costs.
+- HUD now labels/displays waterfall screening PR instead of a derating multiplier with a truthy fallback; retain legitimate zero and do not impose a universal 100% ceiling.
+- Qualify surviving electrical/Broms/structural conformity, official financial-baseline and unsourced PR-benchmark claims; disclose unverified illustrative Iranian assumptions and tariff floors.
+- POA v1 retains its legacy south-zero default with deprecation metadata; all explicit/generic surface and solar aliases must agree after normalization. Conflicts/unknown conventions reject rather than silently changing orientation.
+- Add backward-readable MPPT rating-basis/source/date/conditions metadata and explicit electrical evidence readiness. Unknown/generic current ratings, missing coefficients and assumed wiring remain unassessed; legacy 1.25 arithmetic and numerical aliases are preserved and qualified.
+- Register illustrative economic assumptions with unknown source/effective dates, mark bifacial sensitivity unsupported, and retain qualifications in financial/structural screens and report artifacts. Clarify historical tracker version attribution versus pinned component fixtures.
+- Add screening SLD SVG download; verify actual SVG and print/PDF capacity readback, DOCX/XLSX/JSON qualifications, evidence project round-trip and adopted-operational blocking in production-browser checks.
+- Complete Phase 1 contracts/containment dispositions, ADR-011, contract guide, hash-checked current TS/Python evidence inventory and all 56 finding dispositions. Normative/manufacturer model validation remains BLOCKED where evidence is missing; inherited 56-expression CAD reference debt remains unresolved. No full-release approval.
+- Compatibility: no project schema migration; corrected capacity/energy can change previous Iranian financial outputs. Re-review old exports. Rollback/stops and validation limitations: `docs/adr/ADR-011-phase1-contracts-and-evidence-containment.md`, `docs/audit/dual-independent-audit-review/PHASE-1-STATUS.md`.
 
 ### Final runtime validation follow-up
 - Final tested runtime revision `3222aab`: real-container health, Node 20/22/24, Windows operational validation, Linux/Windows pvlib study, independent CAD artifacts and foundation checks pass remotely. The independent formula-reference gate remains failed (56 records missing); no full-release PASS.

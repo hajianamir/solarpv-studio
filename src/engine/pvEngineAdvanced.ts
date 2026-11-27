@@ -1,3 +1,5 @@
+import {exceedsMpptOperatingLimit,exceedsLegacyMpptShortCircuitLimit} from './core/mpptCurrentComparison';
+import {assessElectricalReadiness, type ElectricalReadiness, type MpptRatingEvidence} from '../contracts/electricalReadiness';
 import { resolveVmpTemperatureCoefficient } from './core/vmpTemperatureCoefficient';
 // Advanced PV Array Engineering, String Sizing & Deratings (IEC 62548 / NEC 690.7)
 
@@ -31,6 +33,7 @@ export interface ModuleSpecs {
 }
 
 export interface InverterSpecs {
+  mpptRatingEvidence?: MpptRatingEvidence;
   /** Stable catalog identity; absent only for legacy/manual snapshots. */
   id?: string;
   origin?: 'builtin' | 'custom' | 'legacy' | 'user';
@@ -74,6 +77,7 @@ export interface PvArrayDesignOptions {
 }
 
 export interface PvArrayDesignResult {
+  electricalReadiness: ElectricalReadiness;
   totalPvCapacityKwp: number;
   totalModulesCount: number;
   modulesPerString: number;
@@ -85,6 +89,7 @@ export interface PvArrayDesignResult {
   maxMpptOperatingCurrentAmps: number;
   maxMpptShortCircuitCurrentAmps: number;
   /** Both per-MPPT operating and short-circuit current ratings must be supplied to assess compliance. */
+  /** Legacy finite-limit/allocation arithmetic flag, NOT manufacturer evidence readiness. See electricalReadiness. */
   isMpptCurrentAssessed: boolean;
   /** False when unassessed or when either current limit is exceeded; inspect isMpptCurrentAssessed to distinguish. */
   isMpptCurrentCompliant: boolean;
@@ -92,6 +97,7 @@ export interface PvArrayDesignResult {
   isMpptRatingEstimated?: boolean;
   mpptRatingAssessmentNote?: string;
   isVoltageFeasible: boolean;
+  /** Legacy numerical feasibility only; cannot approve a design when electricalReadiness is unassessed. */
   isDesignFeasible: boolean;
   dcAcRatio: number;
   effectiveDeratingFactor: number;
@@ -354,16 +360,16 @@ export function designPvArray(
     blockingErrors.push(msg);
   }
 
-  if (hasValidImppLimit && maxMpptOperatingCurrentAmps > inverter.imppMaxAmpsPerMppt) {
+  if (hasValidImppLimit && exceedsMpptOperatingLimit(stringsPerMppt,module.impAmps,inverter.imppMaxAmpsPerMppt)) {
     isMpptCurrentCompliant = false;
-    const msg = `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping).`;
+    const msg = `جریان کارکرد MPPT (${maxMpptOperatingCurrentAmps.toFixed(1)}A با ${stringsPerMppt} رشته/MPPT) از سقف مجاز اینورتر (${inverter.imppMaxAmpsPerMppt}A) فراتر است. خطر برش جریان (Clipping). Display rounded; unrounded per-channel comparison governs.`;
     warnings.push(msg);
     blockingErrors.push(msg);
   }
 
-  if (hasValidIscLimit && maxMpptShortCircuitCurrentAmps > inverter.iscMaxAmpsPerMppt) {
+  if (hasValidIscLimit && exceedsLegacyMpptShortCircuitLimit(stringsPerMppt,module.iscAmps,inverter.iscMaxAmpsPerMppt)) {
     isMpptCurrentCompliant = false;
-    const msg = `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر.`;
+    const msg = `جریان اتصال کوتاه MPPT (${maxMpptShortCircuitCurrentAmps.toFixed(1)}A با ضریب ۱.۲۵) از سقف اتصال کوتاه اینورتر (${inverter.iscMaxAmpsPerMppt}A) فراتر است! خطر آسیب به کلیدهای قدرت اینورتر. Display rounded; unrounded per-channel comparison governs.`;
     warnings.push(msg);
     blockingErrors.push(msg);
   }
@@ -410,7 +416,12 @@ export function designPvArray(
   const estimatedAnnualYieldKwh = Number((totalPvCapacityKwp * peakSunHours * effectiveDeratingFactor * 365.0).toFixed(2));
   const specificYieldKwhPerKwp = totalPvCapacityKwp > 0 ? Number((peakSunHours * effectiveDeratingFactor * 365.0).toFixed(2)) : 0;
 
+  const electricalReadiness = assessElectricalReadiness({evidence: inverter.mpptRatingEvidence,
+    measuredVmpPct: module.tempCoeffVmpPct, operatingLimit: inverter.imppMaxAmpsPerMppt,
+    shortCircuitLimit: inverter.iscMaxAmpsPerMppt, allocationAssumed: mpptAllocation.isAssumed, allocationValid: mpptAllocation.isValid});
+  warnings.push(...electricalReadiness.reasons);
   return {
+    electricalReadiness,
     totalPvCapacityKwp,
     totalModulesCount,
     modulesPerString: chosenModulesPerString,

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "calculateWindElevationFactor",
+  "inputs": [
+    1000
+  ],
+  "expected": 0.8880152131602708,
+  "cases": [],
+  "independentCalculation": "Independent 50-digit Decimal conversion of published per-foot Ke exponent.\nNCSEA 2024 school wind/tornado examples: site379 ft yields Ke approximately .986.\nThe exact conversion is .3048 m/ft; the published .0000362 exponent is per foot.\nOnly this altitude component is compared. Combined caller fixture explicitly sets\nlegacy C coefficients alpha9.5, zg274.32m, minimum4.57m, default3m; Kzt=1, Kd=.85, V=120 km/h; those are local test policy, not verified\nASCE 7-22 exposure/pressure-chain applicability. Below-sea-level Ke=1 is preserved\nlegacy no-reduction policy, not a physical density validation.\n",
+  "tolerances": {
+    "absolute": 1e-12,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "NCSEA Wind Engineering Committee school examples",
+    "url": "https://www.ncsea.com/app/uploads/2024/02/Wind-Problems.pdf",
+    "version": "February 2024",
+    "locator": "School site379 feet: Ke=exp(-.0000362*z_e) approximately .986; site1200 ft approximately .96. Component-only SI conversion; exact 0.3048 metre per foot. Not whole pressure-chain validation."
+  },
+  "formulaId": "src/engine/core/windElevationFactor.ts#calculateWindElevationFactor#c0bfa54bd753"
+}

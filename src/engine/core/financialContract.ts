@@ -79,8 +79,8 @@ export const COUNTRY_FINANCIAL_PROFILES: Record<CountryFinancialProfileId, Count
     ppaTariffTomanPerKwh: 2800,
     gridTariffTomanPerKwh: 3800,
     usdToTomanRate: 90000,
-    descriptionEn: 'Official SATBA commercial baseline under nominal inflationary accounting (18% nominal discount, 15% tariff escalation, 8% OPEX indexation).',
-    descriptionFa: 'خط مبنای تجاری قرارداد ساتبا با حسابداری تورم اسمی (۱۸٪ نرخ تنزیل اسمی، ۱۵٪ شاخص‌بندی تعرفه، ۸٪ رشد OPEX).',
+    descriptionEn: 'Illustrative, unverified SATBA scenario under nominal inflationary accounting (18% nominal discount, 15% tariff escalation, 8% OPEX indexation).',
+    descriptionFa: 'سناریوی نمونه و تأییدنشدهٔ ساتبا با حسابداری تورم اسمی (۱۸٪ نرخ تنزیل اسمی، ۱۵٪ شاخص‌بندی تعرفه، ۸٪ رشد OPEX).',
   },
   IR_FISHER_REAL_CONSTANT: {
     id: 'IR_FISHER_REAL_CONSTANT',
@@ -109,8 +109,8 @@ export const COUNTRY_FINANCIAL_PROFILES: Record<CountryFinancialProfileId, Count
     ppaTariffTomanPerKwh: 4950, // $0.055/kWh * 90,000
     gridTariffTomanPerKwh: 10800, // $0.120/kWh * 90,000
     usdToTomanRate: 90000,
-    descriptionEn: 'International benchmark for utility-scale solar projects ($0.055/kWh PPA, 7.5% discount rate, 2.0% escalation).',
-    descriptionFa: 'شاخص استاندارد بین‌المللی نیروگاه‌های خورشیدی بزرگ‌مقیاس (تعرفه ۵.۵ سنت دلار بر کیلووات‌ساعت، تنزیل ۷.۵٪، رشد ۲.۰٪).',
+    descriptionEn: 'Illustrative, unsourced international utility-scale solar scenario ($0.055/kWh PPA, 7.5% discount rate, 2.0% escalation).',
+    descriptionFa: 'سناریوی نمونه و بدون منبع بین‌المللی نیروگاه‌های خورشیدی بزرگ‌مقیاس (تعرفه ۵.۵ سنت دلار بر کیلووات‌ساعت، تنزیل ۷.۵٪، رشد ۲.۰٪).',
   },
 };
 

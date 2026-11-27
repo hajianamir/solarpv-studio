@@ -1,5 +1,8 @@
 // Single-Axis Tracker with Slope-Aware Backtracking — PR-2a-7
-// Faithful TypeScript port of pvlib 0.16.1:
+// Historical attribution claimed pvlib 0.16.1; that provenance is not verified.
+// Independently stored component geometry fixtures use pvlib 0.13.1 via
+// scripts/fixtures/generate-remaining-geometry.py; not annual-yield validation.
+// Background algorithm references (not a faithful whole-model port claim):
 //   - pvlib.tracking.singleaxis (Marion & Dobos, NREL/TP-6A20-58891, Eq. 14-16)
 //   - pvlib.shading.projected_solar_zenith_angle (Anderson & Mikofski, NREL/TP-5K00-76626, Eq. 4-5)
 //   - pvlib.tracking.calc_surface_orientation / _unit_normal (R = Rz(-az) Rx(-tilt) Ry(theta))

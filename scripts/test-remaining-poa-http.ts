@@ -16,5 +16,22 @@ try{
  }
  assert.deepEqual(results.implicit,results.south_zero);assert.ok(Math.abs(results.implicit[1]-25)<1e-8);assert.equal(results.north_clockwise[1],1025);
  assert.equal((await post({...base,sunAzimuthDeg:180,surfaceAzimuthConvention:'guess'})).status,400);
+ for (const north of [0,90,180,270]) {
+  const south=((north-180+540)%360)-180;
+  const response=await post({...base,sunAzimuthDeg:north,solarAzimuthDeg:north+360,surfaceAzimuthNorthDeg:north,surfaceAzimuthSouthDeg:south,azimuthDeg:south,surfaceAzimuthDeg:south});
+  assert.equal(response.status,200);const result=await response.json();
+  assert.equal(result.azimuth.surfaceAzimuthNorthDeg,north);
+  const explicit=await post({...base,sunAzimuthDeg:north,surfaceAzimuthConvention:'north_clockwise',azimuthDeg:north});
+  assert.equal((await explicit.json()).poaIrradiance,result.poaIrradiance);
+ }
+ for(const bad of [
+  {surfaceAzimuthNorthDeg:0,surfaceAzimuthSouthDeg:0},
+  {azimuthDeg:0,surfaceAzimuthDeg:90},
+  {surfaceAzimuthConvention:'north_clockwise',surfaceAzimuthNorthDeg:180,azimuthDeg:0},
+  {sunAzimuthDeg:180,solarAzimuthDeg:0},
+  {surfaceAzimuthNorthDeg:null}, {surfaceAzimuthSouthDeg:''},
+ ]) assert.equal((await post({...base,sunAzimuthDeg:180,...bad})).status,400,JSON.stringify(bad));
+ const legacy=await (await post({...base,sunAzimuthDeg:180})).json();
+ assert.equal(legacy.azimuth.legacyDefaultUsed,true);assert.match(legacy.deprecation,/v1/);
  console.log('PASS real HTTP POA: deterministic legacy south-zero default, both explicit conventions continuous around 180°, unknown convention rejected.');
 }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));rmSync(dir,{recursive:true,force:true});}

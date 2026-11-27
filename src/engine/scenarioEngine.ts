@@ -1,5 +1,5 @@
 // Scenario Comparison Engine: 3 Smart Engineering Alternatives
-import { calculateLcoe } from './solarPvEngine';
+import { assessSimpleLcoe, type SimpleLcoeInput, type SimpleLcoeAssessment } from './core/simpleLcoe';
 
 export interface ScenarioDetails {
   id: 'optimized_lifepo4' | 'budget_gel' | 'industrial_redundant';
@@ -20,7 +20,8 @@ export interface ScenarioDetails {
   totalSystemWeightKg: number;
   cableVoltageDropPct: number;
   reliabilityIndexPct: number;
-  lcoeUsdPerKwh: number;
+  lcoeUsdPerKwh: number | null;
+  lcoeAssessment: SimpleLcoeAssessment;
   advantagesFa: string[];
   advantagesEn: string[];
   disadvantagesFa: string[];
@@ -65,7 +66,7 @@ export function generateScenarios(
   const s3Tco25y = Math.round(s3CapexUsd + s3BatKwh * 160 + (isUnsizablePsh ? 0 : 2000));
   const s3Weight = Math.round(s3PvKwp * 40 + s3BatKwh * 11 + s3InvKw * 8 + (isUnsizablePsh ? 0 : 250));
 
-  // Dynamic LCOE Calculation (LC-07 / F-C / Z-02): Calculate real discounted 25-year LCOE based on scenario parameters
+  // Dynamic LCOE Calculation (LC-07 / F-C / Z-02): Calculate discounted 25-year screening LCOE (nominal illustrative scenario) based on scenario parameters
   const safeDiscountRatePct = typeof discountRatePct === 'number' && Number.isFinite(discountRatePct) ? discountRatePct : 18.0;
   const discountRate = Math.max(0.01, safeDiscountRatePct / 100.0);
   const safePsh = typeof peakSunHours === 'number' && Number.isFinite(peakSunHours) ? peakSunHours : 5.17;
@@ -77,9 +78,8 @@ export function generateScenarios(
   const s1AnnualGen = isUnsizablePsh ? 0 : s1PvKwp * effectivePsh * 365 * 0.78;
   const s1AnnualOpex = s1CapexUsd * 0.012;
   const s1BatRepPv = (s1BatKwh * 130) / Math.pow(1 + discountRate, 12);
-  const s1Lcoe = s1AnnualGen > 0
-    ? Number(calculateLcoe(s1CapexUsd + s1BatRepPv, s1AnnualOpex, s1AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
-    : 0.0;
+  const s1LcoeAssessment = assessScenarioLcoe({initialCapexUsd:s1CapexUsd,replacementPresentValueUsd:s1BatRepPv,opexAnnual:s1AnnualOpex,energyAnnual:s1AnnualGen,discountRate,lifetimeYears,degradationPct});
+  const s1Lcoe = s1LcoeAssessment.lcoeValue;
 
   // Scenario 2: Gel (battery replacement every 4 years)
   const s2AnnualGen = isUnsizablePsh ? 0 : s2PvKwp * effectivePsh * 365 * 0.78;
@@ -88,17 +88,15 @@ export function generateScenarios(
   for (let yr = 4; yr < 25; yr += 4) {
     s2BatRepPv += (s2BatKwh * 115) / Math.pow(1 + discountRate, yr);
   }
-  const s2Lcoe = s2AnnualGen > 0
-    ? Number(calculateLcoe(s2CapexUsd + s2BatRepPv, s2AnnualOpex, s2AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
-    : 0.0;
+  const s2LcoeAssessment = assessScenarioLcoe({initialCapexUsd:s2CapexUsd,replacementPresentValueUsd:s2BatRepPv,opexAnnual:s2AnnualOpex,energyAnnual:s2AnnualGen,discountRate,lifetimeYears,degradationPct});
+  const s2Lcoe = s2LcoeAssessment.lcoeValue;
 
   // Scenario 3: Industrial Redundant (battery replacement at yr 15)
   const s3AnnualGen = isUnsizablePsh ? 0 : s3PvKwp * effectivePsh * 365 * 0.80;
   const s3AnnualOpex = s3CapexUsd * 0.010;
   const s3BatRepPv = (s3BatKwh * 160) / Math.pow(1 + discountRate, 15);
-  const s3Lcoe = s3AnnualGen > 0
-    ? Number(calculateLcoe(s3CapexUsd + s3BatRepPv, s3AnnualOpex, s3AnnualGen, discountRate, lifetimeYears, degradationPct).toFixed(4))
-    : 0.0;
+  const s3LcoeAssessment = assessScenarioLcoe({initialCapexUsd:s3CapexUsd,replacementPresentValueUsd:s3BatRepPv,opexAnnual:s3AnnualOpex,energyAnnual:s3AnnualGen,discountRate,lifetimeYears,degradationPct});
+  const s3Lcoe = s3LcoeAssessment.lcoeValue;
 
   return [
     {
@@ -121,6 +119,7 @@ export function generateScenarios(
       cableVoltageDropPct: 1.2,
       reliabilityIndexPct: 98.5,
       lcoeUsdPerKwh: s1Lcoe,
+      lcoeAssessment: s1LcoeAssessment,
       advantagesFa: [
         'طول عمر بالای باتری (بیش از ۱۰ الی ۱۲ سال)',
         'وزن سبک و اشغال فضای کم در موتورخانه/تابلو',
@@ -160,6 +159,7 @@ export function generateScenarios(
       cableVoltageDropPct: 1.6,
       reliabilityIndexPct: 89.0,
       lcoeUsdPerKwh: s2Lcoe,
+      lcoeAssessment: s2LcoeAssessment,
       advantagesFa: [
         'ارزان‌ترین سرمایه‌گذاری اولیه در فاز ساخت',
         'دسترسی و فراوانی بالا در بازار سنتی ایران',
@@ -201,6 +201,7 @@ export function generateScenarios(
       cableVoltageDropPct: 0.8,
       reliabilityIndexPct: 99.9,
       lcoeUsdPerKwh: s3Lcoe,
+      lcoeAssessment: s3LcoeAssessment,
       advantagesFa: [
         'پایداری دائمی بدون یک ثانیه خاموشی برای مراکز داده و بیمارستان',
         'افزونگی کامل N+1 (در صورت سوختن یک اینورتر بقیه کل بار را اداره می‌کنند)',
@@ -221,4 +222,12 @@ export function generateScenarios(
       ]
     }
   ];
+}
+
+/** Scenario-only composition of an already discounted replacement reserve.
+ * Costs are USD, passed through at full precision; this is not a debt ledger.
+ */
+export function assessScenarioLcoe(input:Omit<SimpleLcoeInput,'capex'|'currency'|'rateBasis'|'energyBasis'> & {initialCapexUsd:number;replacementPresentValueUsd:number}):SimpleLcoeAssessment {
+  const {initialCapexUsd,replacementPresentValueUsd,...rest}=input;
+  return assessSimpleLcoe({...rest,capex:initialCapexUsd+replacementPresentValueUsd,energyBasis:'generation_proxy',currency:'USD',rateBasis:'nominal'});
 }

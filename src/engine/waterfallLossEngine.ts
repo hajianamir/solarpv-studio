@@ -1,3 +1,5 @@
+import {legacyClippingScreen} from './core/legacyClippingScreen';
+import {thermalStagePercentage} from './core/signedThermalStage';
 // Preliminary scalar annual loss budget with empirical defaults.
 // Not a PVsyst-grade or weather-driven 8760-hour simulation.
 
@@ -215,9 +217,7 @@ export function computeWaterfallLosses(
     ambientTempMaxC,
     installationEnvironment: installationEnv,
   });
-  const thermalLossPct = -1.0 * (Number.isFinite(annualThermalDerateOverridePct)
-    ? Math.max(0, Math.min(100, annualThermalDerateOverridePct!))
-    : thermalDerate.deratePct);
+  const thermalLossPct = thermalStagePercentage(annualThermalDerateOverridePct ?? thermalDerate.deratePct);
   addStage(
     'thermal',
     'تلفات حرارتی سلول ناشی از دمای کارکرد (NOCT)',
@@ -284,10 +284,9 @@ export function computeWaterfallLosses(
   );
 
   // 10. Inverter Clipping Loss (DC/AC Over-paneling)
-  // Continuous, monotone clipping loss clamped to physical bounds [-85.0, -0.2].
+  // Legacy ILR-only heuristic; local bounds, NOT validated physical limits.
   // Baseline: -0.2% at ILR <= 1.3, then grows with slope 6.5%/unit ILR above 1.3.
-  const rawClippingPct = -0.2 - 6.5 * Math.max(0, dcAcRatio - 1.3);
-  const clippingPct = Math.max(-85.0, Math.min(-0.2, rawClippingPct));
+  const {clippingPct} = legacyClippingScreen(dcAcRatio);
   addStage(
     'clipping',
     'تلفات برش توان اینورتر (Clipping Over-paneling)',

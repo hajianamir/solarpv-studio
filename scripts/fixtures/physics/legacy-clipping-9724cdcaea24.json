@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "independentOfImplementation": true,
+  "productionExport": "legacyClippingScreen",
+  "inputs": [
+    1.5
+  ],
+  "expected": {
+    "rawClippingPct": -1.5,
+    "clippingPct": -1.5
+  },
+  "cases": [],
+  "independentCalculation": "Independent Decimal characterization of an UNCHANGED inherited heuristic.\n\nSource: repository base0c4d7cadc7db6001459ea36fdf9a3d1403179a71,\nwaterfallLossEngine.ts clipping stage and annualYieldEngine.ts adapter.\nDecimal arithmetic checks extraction/precision only. The coefficients/bounds are\nlocal policy, not externally validated inverter physics. No production execution,\nimports or numeric outputs are used. Never cite this as model-quality evidence.\n",
+  "tolerances": {
+    "absolute": 1e-12,
+    "relative": 1e-12
+  },
+  "referenceSource": {
+    "title": "Historical clipping heuristic: independent Decimal extraction characterization only",
+    "url": "https://github.com/hajianamir/solarpv-studio/blob/0c4d7cadc7db6001459ea36fdf9a3d1403179a71/src/engine/waterfallLossEngine.ts",
+    "version": "base0c4d7cadc7db6001459ea36fdf9a3d1403179a71; unchanged policy",
+    "locator": "Clipping stage: baseline -.2 percentage points, breakpoint1.3, slope6.5 points/ILR, floor-85 points. Historical source attribution, NOT independent physical validation."
+  },
+  "formulaId": "src/engine/core/legacyClippingScreen.ts#legacyClippingScreen#9724cdcaea24"
+}

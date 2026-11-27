@@ -1,3 +1,5 @@
+import {validateWindScreenInput, validateWindScreenHeight} from '../../contracts/windScreenInput';
+import {calculateWindElevationFactor} from './windElevationFactor';
 /**
  * Structural & Geotechnical Engineering Contract
  * Phase 07 Remediation — Single Source of Truth for Structural Physics & Honesty
@@ -163,9 +165,8 @@ export function calculateUnifiedKz(
   exposure: ExposureCategory = 'C',
   heightM?: number
 ): number {
-  if (heightM === undefined && exposure === 'C') {
-    return 0.88; // Default baseline for low ground-mount PV (ASCE 7-22 nominal)
-  }
+  // Declared legacy screening reference height: omitted and explicit 3 m agree.
+  validateWindScreenHeight(exposure, heightM);
   const z = Math.max(0.5, heightM ?? 3.0);
   let alpha: number;
   let zg: number;
@@ -222,17 +223,15 @@ export function calculateUnifiedWindPressureQz(
   }
 
   const vMs = basicWindSpeedKmh / 3.6;
-  const kz = (structureHeightM === undefined && exposureCategory === 'C')
-    ? 0.88
-    : calculateUnifiedKz(exposureCategory, structureHeightM);
-  const kzt = Math.max(0.5, topographicFactorKzt);
-  const kd = Math.max(0.5, windDirectionalityKd);
+  validateWindScreenInput(input);
+  const kz = calculateUnifiedKz(exposureCategory, structureHeightM);
+  const kzt = topographicFactorKzt;
+  const kd = windDirectionalityKd;
 
-  // ASCE 7-22 §26.10.1 elevation factor Ke.
-  // ke = 1.0 at sea level (elevationM <= 0), exp(-0.0000362 * elevationM) above sea level.
-  const ke = elevationM > 0
-    ? Math.exp(-0.0000362 * elevationM)
-    : 1.0;
+  // Ground-elevation component's published exponent is per FOOT, not per metre.
+  // Kd remains included once in this explicitly legacy combined-pressure screen;
+  // this field is not presented as the ASCE 7-22 velocity-pressure definition.
+  const ke = calculateWindElevationFactor(elevationM);
 
   const qzN_M2 = 0.613 * kz * kzt * kd * ke * Math.pow(vMs, 2);
   const qzKnM2 = qzN_M2 / 1000.0;
