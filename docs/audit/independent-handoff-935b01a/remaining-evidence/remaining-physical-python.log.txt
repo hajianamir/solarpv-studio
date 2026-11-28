@@ -1,0 +1,12 @@
+...............
+----------------------------------------------------------------------
+Ran 15 tests in 1.870s
+
+OK
+SPM oracle max voltage error V, cells 10 0.025173111842079265
+SPM oracle max voltage error V, cells 30 0.008765608843807726
+SPM oracle max voltage error V, cells 60 0.004428009700304436
+PASS sensitive independent witness: services.power_dynamics.dc_coupled stored += (charge*cc*ec-discharge/(cd*ed))*dt
+PASS sensitive independent witness: services.power_dynamics.electrochemistry jn = current/(F*neg['area'])
+PASS sensitive independent witness: services.power_dynamics.control (applied-gg-effective_r*ii)/L
+PASS sensitive independent witness: services.power_dynamics.control 'normal_inverse': (.14, .02)

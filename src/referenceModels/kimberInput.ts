@@ -49,6 +49,7 @@ export function checkKimberInput(input: KimberRequest):
   }
   const interval = times[1] - times[0];
   if (interval <= 0 || interval > 24 || !times.slice(1).every((t, i) => Math.abs(t - times[i] - interval) < 1e-9)) return { ok: false, reason: 'Require regular increasing intervals up to 24 hours; gaps/DST interval changes unsupported' };
-  if (!Array.isArray(input.manualWashTimestamps) || !input.manualWashTimestamps.every(t => input.steps.some(s => s.timestamp === t))) return { ok: false, reason: 'Manual wash timestamps must exactly match samples' };
+  const timestamps = new Set(input.steps.map(s => s.timestamp));
+  if (!Array.isArray(input.manualWashTimestamps) || !input.manualWashTimestamps.every(t => timestamps.has(t))) return { ok: false, reason: 'Manual wash timestamps must exactly match samples' };
   return { ok: true, timeHours: times, stepDays: interval / 24, energyComplete };
 }

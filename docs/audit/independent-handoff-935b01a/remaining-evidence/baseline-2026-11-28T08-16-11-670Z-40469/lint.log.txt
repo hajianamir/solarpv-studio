@@ -1,0 +1,148 @@
+
+> solarpv-studio@1.0.3 lint
+> npm run lint:types && npm run lint:eslint
+
+
+> solarpv-studio@1.0.3 lint:types
+> npm run lint:types:client && npm run lint:types:node
+
+
+> solarpv-studio@1.0.3 lint:types:client
+> tsc --noEmit
+
+
+> solarpv-studio@1.0.3 lint:types:node
+> tsc --project tsconfig.node.json --noEmit
+
+
+> solarpv-studio@1.0.3 lint:eslint
+> eslint src/
+
+
+/home/user/solarpv-studio/src/components/CatalogTab.tsx
+   121:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   659:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   826:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1010:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/components/ClimateTab.tsx
+   59:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  264:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  264:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  578:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  578:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/components/LoadProfilingTab.tsx
+  102:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/components/OfficialReportModal.tsx
+  621:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  775:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  844:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/components/RFC3ReportsTab.tsx
+   43:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  278:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  305:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/components/SolarPumpingTab.tsx
+  190:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/batteryEngine.ts
+  198:88  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/catalogRepository.ts
+  189:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  346:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  707:95  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/core/benchmarks/externalValidation.ts
+  106:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  224:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/core/benchmarks/migrationTestVectors.ts
+   19:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  368:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/core/benchmarks/unitTestsCore.ts
+   849:26   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   935:17   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1697:36   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1710:48   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1728:78   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1730:58   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1733:26   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1760:55   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1807:56   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1826:31   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1827:68   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1835:53   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1857:79   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1859:59   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1907:59   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1969:67   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1992:87   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1993:87   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1999:25   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1999:65   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  2000:121  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  2000:162  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  2009:59   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  5054:10   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/core/projectMigration.ts
+  213:8    warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  215:4    warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  460:58   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  557:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  561:19   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  575:30   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  630:89   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  631:20   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  648:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  838:66   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  997:138  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/dataGateway/climateDataProvider.ts
+  319:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  334:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  605:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  899:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  986:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  988:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  991:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/dataGateway/soilDataProvider.ts
+  110:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/offlineTransferEngine.ts
+  44:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/user/solarpv-studio/src/engine/solarPvEngine.ts
+  214:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  233:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  246:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 93 problems (0 errors, 93 warnings)
+

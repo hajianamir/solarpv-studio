@@ -1202,7 +1202,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
     `Distinct types: ${Array.from(allTypes).join(', ')} (Boulder=${recBoulder.primaryRecommendation}, Phoenix=${recPhoenix.primaryRecommendation}, Munich=${recMunich.primaryRecommendation}, Singapore=${recSingapore.primaryRecommendation}, Tehran=${recTehran.primaryRecommendation})`
   );
 
-  // 13.9c P2-4 / ADR-006: Salt corrosion — ISO 9223 bands + Bushehr (Persian Gulf coast) => C5
+  // 13.9c P2-4 / ADR-006: Salt corrosion — internal distance bands, ISO unassessed + Bushehr (Persian Gulf coast) => C5
   const bushehr = await assessSaltCorrosion({
     latitude: 28.92,
     longitude: 50.83,
@@ -1219,7 +1219,7 @@ export async function runCoreUnitTests(): Promise<{ passed: number; failed: numb
 
   assert(
     'SaltCorrosionEngine',
-    'P2-4 ISO 9223 Salt Corrosion Classification (Bushehr = C5)',
+    'P2-4 internal shoreline band (Bushehr preset C5, not ISO classified)',
     bushehr.iso9223Category === 'C5' &&
       inland.iso9223Category === 'C1' &&
       bushehr.traceId.startsWith('TRC-COR-') &&

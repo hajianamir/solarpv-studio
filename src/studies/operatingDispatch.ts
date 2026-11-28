@@ -61,6 +61,7 @@ export function dispatchOperatingEnergy(raw: unknown, pv: AcInterval[]) {
   if (p.records.length !== pv.length)
     throw new Error("Dispatch and PV interval counts differ");
   let stored = b.capacityKwh * b.initialSocFraction;
+  let initialOriginStoredKwh = stored;
   const minimum = b.capacityKwh * b.minSocFraction;
   const samples = p.records.map((r, i) => {
     const s = pv[i];
@@ -97,6 +98,11 @@ export function dispatchOperatingEnergy(raw: unknown, pv: AcInterval[]) {
       b.maxDischargeKw * dt,
       Math.max(0, stored - minimum) * b.dischargeEfficiency,
     );
+    // Initial inventory is external, not newly generated PV. Explicit FIFO:
+    // remove initial-origin stored energy first, with discharge losses, then PV.
+    const initialOriginWithdrawalKwh = Math.min(initialOriginStoredKwh, dischargeKwh / b.dischargeEfficiency);
+    const initialOriginDischargeKwh = initialOriginWithdrawalKwh * b.dischargeEfficiency;
+    initialOriginStoredKwh -= initialOriginWithdrawalKwh;
     stored -= dischargeKwh / b.dischargeEfficiency;
     const grid = p.mode !== "offgrid" && r.gridAvailable;
     const exportKwh = grid
@@ -114,7 +120,17 @@ export function dispatchOperatingEnergy(raw: unknown, pv: AcInterval[]) {
       loadKwh,
       Math.max(0, directKwh + dischargeKwh - auxKwh),
     );
+    // Auxiliaries are supplied before local load by direct PV, then discharge.
+    // Initial-origin discharge covers remaining auxiliaries before local load.
+    const auxFromDischargeKwh = Math.max(0, auxKwh - directKwh);
+    const initialOriginSelfConsumedKwh = Math.min(selfConsumedKwh,
+      Math.max(0, initialOriginDischargeKwh - auxFromDischargeKwh));
+    const pvOriginSelfConsumedKwh = Math.max(0, selfConsumedKwh - initialOriginSelfConsumedKwh);
     return {
+      initialOriginDischargeKwh,
+      initialOriginSelfConsumedKwh,
+      pvOriginSelfConsumedKwh,
+      initialOriginEndStoredKwh: initialOriginStoredKwh,
       timestamp: r.timestamp,
       pvKwh,
       loadKwh,
@@ -138,9 +154,14 @@ export function dispatchOperatingEnergy(raw: unknown, pv: AcInterval[]) {
   return {
     schemaVersion: "operating-ledger-v1" as const,
     mode: p.mode,
-    algorithm: "ac-load-first-no-grid-charge-v1",
+    algorithm: "ac-load-first-no-grid-charge-v2-source-attribution",
     initialStoredKwh: b.capacityKwh * b.initialSocFraction,
     finalStoredKwh: stored,
+    attributionPolicy: 'initial-inventory-first-aux-before-load-v1' as const,
+    initialOriginFinalStoredKwh: initialOriginStoredKwh,
+    initialOriginDischargeKwh: sum('initialOriginDischargeKwh'),
+    initialOriginSelfConsumedKwh: sum('initialOriginSelfConsumedKwh'),
+    pvOriginSelfConsumedKwh: sum('pvOriginSelfConsumedKwh'),
     pvKwh: sum("pvKwh"),
     auxiliaryKwh: sum("auxKwh"),
     exportKwh: sum("exportKwh"),

@@ -387,8 +387,8 @@ export const ClimateTab: React.FC<ClimateTabProps> = ({
       {selectedCity.peakSunHours > 0 && selectedCity.peakSunHours < 1 && (
         <div role="note" className="p-3 bg-amber-500/10 border border-amber-500/35 rounded-lg text-xs text-amber-200">
           {isEn
-            ? 'Low-PSH model limitation: array sizing uses the supplied positive PSH value, while scenario comparison currently applies a 1.0 kWh/m²/day minimum. Scenario yields are therefore not directly comparable with the array sizing until that contract is revised.'
-            : 'محدودیت مدل PSH پایین: سایزینگ آرایه از مقدار مثبت واقعی استفاده می‌کند، اما مقایسه سناریوها فعلاً حداقل ۱٫۰ kWh/m²/day اعمال می‌کند. بنابراین تا زمان بازنگری قرارداد، تولید سناریوها مستقیماً با سایزینگ آرایه قابل‌مقایسه نیست.'}
+            ? 'Low PSH: array sizing and scenario generation use the supplied positive PSH without a 1.0 floor. The scenario proxy does not assess chronological load service or site-specific yield.'
+            : 'PSH پایین: سایزینگ آرایه و تقریب تولید سناریو از مقدار مثبت ورودی بدون کف ۱ استفاده می‌کنند؛ تأمین زمانی بار یا تولید ویژه سایت ارزیابی نشده است.'}
         </div>
       )}
 

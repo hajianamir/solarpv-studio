@@ -1,0 +1,22 @@
+
+> solarpv-studio@1.0.3 test:phase1:browser
+> tsx scripts/test-phase1-browser.ts && tsx scripts/test-pump-duty-lifecycle-browser.ts && tsx scripts/test-reference-diode-browser.ts && tsx scripts/test-audit-priority-browser.ts
+
+PASS: production browser, lightning UNASSESSED rendering, three modes, actual DC/annual financial boundary/HUD PR, SLD SVG and print-PDF readback, qualified DOCX/XLSX/JSON, rating evidence and custom Iranian policy/zero-interest/project-vs-equity NPV import/export. External providers blocked; not field validation.
+PASS pump lifecycle fa: actual local save/restore/cancel, null/zero/off/remount, downloaded portable JSON, replacement, rejection, legacy reset.
+PASS pump lifecycle en: actual local save/restore/cancel, null/zero/off/remount, downloaded portable JSON, replacement, rejection, legacy reset.
+PASS reference diode fa: explicit independent metrics, invalid/stale/dark/exhaustion, temporary reset, unchanged legacy/finance and no project settings.
+PASS reference diode en: explicit independent metrics, invalid/stale/dark/exhaustion, temporary reset, unchanged legacy/finance and no project settings.
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+locator.innerText: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('report-transposition-qualification')
+
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-audit-priority-browser.ts:32:78) {
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.3

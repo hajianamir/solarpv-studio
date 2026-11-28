@@ -1,0 +1,977 @@
+
+> solarpv-studio@1.0.3 test:phase3
+> tsx scripts/test-phase3-single-diode.ts && tsx scripts/test-bounded-diode.ts && npm run test:uq:convergence && npm run test:phase3:research && npm run test:uq:retirement
+
+PASS Phase3 U05 bounded reference replay: 48 pvlib cases/3888 points; coefficient/MPP/Isc limitation witnesses retained, bilingual disclosure, legacy bracketed roots repaired; old failure preserved as actual-base witness. Not full U05 validation.
+{
+  "iphRelative": {
+    "absoluteError": 0,
+    "caseId": "cec_module_params-G50-T-20-N1"
+  },
+  "i0Relative": {
+    "absoluteError": 2.090890332295781e-8,
+    "caseId": "cec_module_params-G50-T-20-N1"
+  },
+  "rsRelative": {
+    "absoluteError": 0,
+    "caseId": "cec_module_params-G50-T-20-N1"
+  },
+  "rshRelative": {
+    "absoluteError": 1.8079967831045805e-16,
+    "caseId": "cec_module_params-G50-T-20-N1"
+  },
+  "nNsVthRelative": {
+    "absoluteError": 3.1295927403105186e-16,
+    "caseId": "cec_module_params-G50-T25-N12"
+  },
+  "vocVolts": {
+    "absoluteError": 0.00494177190994094,
+    "caseId": "cec_module_params-G1400-T25-N12"
+  },
+  "sampledPmpWatts": {
+    "absoluteError": 0.04925369077727737,
+    "caseId": "cec_module_cs5p_220m-G1000-T-20-N12"
+  },
+  "referenceGridOnlyPmpLossWatts": {
+    "absoluteError": 1.1651372312189778,
+    "caseId": "cec_module_cs5p_220m-G1400-T-20-N12"
+  },
+  "referenceGridOnlyPmpLossRelative": {
+    "absoluteError": 0.00047632159777237856,
+    "caseId": "cec_module_cs5p_220m-G50-T-20-N12"
+  },
+  "truePmpWatts": {
+    "absoluteError": 1.143681669601392,
+    "caseId": "cec_module_cs5p_220m-G1400-T-20-N12"
+  },
+  "truePmpRelative": {
+    "absoluteError": 0.01923361377309934,
+    "caseId": "cec_module_params-G50-T85-N1"
+  },
+  "trueVmpVolts": {
+    "absoluteError": 4.16614025952083,
+    "caseId": "cec_module_cs5p_220m-G50-T-20-N12"
+  },
+  "implicitIscAmps": {
+    "absoluteError": 0.0248298709062027,
+    "caseId": "cec_module_params-G1400-T85-N1"
+  }
+}
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#0d7ee38dc92a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#0d7ee38dc92a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#45ff115d3181 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#45ff115d3181
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#a83365e36e47 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#a83365e36e47
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#c03d4c480648 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#c03d4c480648
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f49e22384f8d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f49e22384f8d
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f7e09cee0865 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState: src/engine/core/referenceDiodeSolver.ts#evaluateDiodeState#f7e09cee0865
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#01ffd38de704 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#01ffd38de704
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#02991e367c43 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#02991e367c43
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#1636f67ed8b5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#1636f67ed8b5
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2117353cb998 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2117353cb998
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2122d023a3b9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#2122d023a3b9
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a (current)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a (voltage)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a (power)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a (powerDerivative)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#34408fc2b16a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#4cd75e133a31 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#4cd75e133a31
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#54f974b0ecea (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#54f974b0ecea
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#5c853170cb96 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#5c853170cb96
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#7fc8029efeb1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#7fc8029efeb1
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#88c9a9d67a4e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#88c9a9d67a4e
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#95e2d293a644 (current)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#95e2d293a644 (voltage)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#95e2d293a644
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#99d0ec59ee8a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#99d0ec59ee8a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b44900a9203f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b44900a9203f
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b53fee123ddf (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#b53fee123ddf
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#bbc4d583732e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#bbc4d583732e
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c5b63588a5ef (current)
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c5b63588a5ef (voltage)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c5b63588a5ef
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c6150b040569 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#c6150b040569
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#cf232ff89506 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#cf232ff89506
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#e4b3277ac769 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#e4b3277ac769
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#ea8def01b5d3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#ea8def01b5d3
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#febae5497404 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#evaluateReferenceDiode#febae5497404
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#049c21ccc5dc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#049c21ccc5dc
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#07f4b9e5f19d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#07f4b9e5f19d
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#0e0a749e80a7 (current)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#0e0a749e80a7
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#147548ecca9a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#147548ecca9a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#255b0bc78fb4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#255b0bc78fb4
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#49fc83862dce (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#49fc83862dce
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#5bfcb2c90429 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#5bfcb2c90429
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#775e7cda92ef (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#775e7cda92ef
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7bd873a9d917 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7bd873a9d917
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7fc6513b8b1c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#7fc6513b8b1c
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#84545f05cb79 (voltage)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#84545f05cb79
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#8abbba0c7a59 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#8abbba0c7a59
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#9220febc412e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#9220febc412e
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a3c58fb796b9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a3c58fb796b9
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a8c27b96057b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#a8c27b96057b
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#acbc4c8bd049 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#acbc4c8bd049
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ca7fbbd2b1ce (current)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ca7fbbd2b1ce
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#d9e647cd7763 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#d9e647cd7763
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#e572136a1724 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#e572136a1724
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ead4361ee7a7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#ead4361ee7a7
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fadf8a0f81f5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fadf8a0f81f5
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fd11927b6f8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fd11927b6f8f
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fda434794892 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot: src/engine/core/referenceDiodeSolver.ts#solveBoundedDiodeRoot#fda434794892
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#3ca6626f8b00 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#3ca6626f8b00
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#4721d769a35a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#4721d769a35a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#778e911812d8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#778e911812d8
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#79c2a7590420 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#79c2a7590420
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#81e293c77d07 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#81e293c77d07
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#8fb0b034608c (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#8fb0b034608c
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#9a30b344fbd3 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#9a30b344fbd3
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#a97c5d0f0f3d (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#a97c5d0f0f3d
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b4632b6a721a (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b4632b6a721a
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b74f86e3fc5b (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#b74f86e3fc5b
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#de015636edb4 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#de015636edb4
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#e1990dc59557 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#e1990dc59557
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#ec4ca70c805e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#ec4ca70c805e
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#edfec1d83fe9 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#edfec1d83fe9
+Sensitivity witness: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#f78d88985ab0 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode: src/engine/core/referenceDiodeSolver.ts#translateReferenceDiode#f78d88985ab0
+PASS bounded reference diode:72 external cases,862 independent component/policy vectors,51 invalid contracts,66 executed mutation-sensitive expressions; dark/exhaustion/domain failure and legacy-witness repair through explicit kernel only.
+{
+  "schemaVersion": 1,
+  "scope": "Explicit reference De Soto translation and bounded continuous single-diode metrics only; no fitting/operational adoption",
+  "oracleSha256": "9f03dff4dde99c8cd63f92fd698a070f3ed7eafea8e1dc24af6902fe23c13c47",
+  "cases": 72,
+  "componentAndPolicyComparisons": 862,
+  "invalidCases": 51,
+  "executedSensitiveExpressions": 66,
+  "maxima": {
+    "vocVolts": 2.407432475592941e-8,
+    "iscAmps": 4.906297590423492e-12,
+    "vmpVolts": 7.713151717325673e-8,
+    "impAmps": 6.6082139760226255e-12,
+    "pmpWatts": 3.5288394428789616e-10
+  },
+  "legacyWitness": {
+    "legacyVoc": 45,
+    "boundedVoc": 45.00065763179139,
+    "boundedResidualAmps": 3.552097505021834e-11,
+    "legacyApiUnchanged": false,
+    "legacyRootRepairPolicy": "legacy_extraction_bounded_roots_v1"
+  },
+  "limitations": [
+    "No arbitrary datasheet fitting or beta/gamma constraint",
+    "No field/manufacturer/whole-model applicability approval",
+    "Only temporary explicit I-V metrics UI selection; no catalog/persistence/HTTP/annual-energy/financial adoption",
+    "Legacy roots repaired separately under ADR-035; extraction remains heuristic; reference API is explicit only"
+  ]
+}
+
+> solarpv-studio@1.0.3 test:uq:convergence
+> tsx scripts/test-financial-uq-convergence.ts
+
+PASS production UQ convergence: repeated seed/budget replay, direct result hashes, independently sorted envelopes, correlation scenarios and fail-closed design
+
+> solarpv-studio@1.0.3 test:phase3:research
+> tsx scripts/test-phase3-research.ts && npm run test:pump:duty
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Stale comparison: inspect differences before regenerating
+
+... Skipped lines
+'{\n' +
+  '  "schemaVersion": "phase3-research-comparison-v1",\n' +
+  '  "referenceSha256": "12fb67e35e1f803edfad6507814840f4c2ca7f286a948f52d4cc3ae59b4c6ebb",\n' +
+  '  "qualification": "Discrepancy characterization, not tolerance-waived model validation. No production changes or adoption.",\n' +
+  '  "counts": {\n' +
+  '    "thermal": 60,\n' +
+  '    "iam": 16,\n' +
+  '    "bifacial": 96,\n' +
+  '    "annual": 30,\n' +
+  '    "finance": 6,\n' +
+  '    "cdf": 20\n' +
+  '  },\n' +
+  '  "iamMaxAbsoluteError": 4.479358367559527e-7,\n' +
+  '  "thermal": [\n' +
+  '    {\n' +
+  '      "gWm2": 0,\n' +
+  '      "windMs": 0,\n' +
+  '      "ambientC": 25,\n' +
+  '      "mounting": "open_rack_glass_polymer",\n' +
+  '      "sapmParameters": {\n' +
+  '        "a": -3.56,\n' +
+  '        "b": -0.075,\n' +
+  '        "deltaT": 3\n' +
+  '      },\n' +
+  '      "sapmCellC": 25,\n' +
+  '      "faimanOpenRackC": 25,\n' +
+  '      "legacyScreenC": 25,\n' +
+  '      "screenMinusSapmC": 0,\n' +
+  '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+  '    },\n' +
+  '    {\n' +
+  '      "gWm2": 0,\n' +
+  '      "windMs": 0,\n' +
+  '      "ambientC": 25,\n' +
+  '      "mounting": "insulated_back_glass_polymer",\n' +
+  '      "sapmParameters": {\n' +
+  '        "a": -2.81,\n' +
+  '        "b": -0.0455,\n' +
+  '        "deltaT": 0\n' +
+  '      },\n' +
+  '      "sapmCellC": 25,\n' +
+  '      "faimanOpenRackC": 25,\n' +
+  '      "legacyScreenC": 39,\n' +
+  '      "screenMinusSapmC": 14,\n' +
+  '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+  '    },\n' +
+  '    {\n' +
+  '      "gWm2": 0,\n' +
+  '      "windMs": 0,\n' +
+  '      "ambientC": 25,\n' +
+...}
+
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-phase3-research.ts:86:76)
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: '{\n' +
+    '  "schemaVersion": "phase3-research-comparison-v1",\n' +
+    '  "referenceSha256": "12fb67e35e1f803edfad6507814840f4c2ca7f286a948f52d4cc3ae59b4c6ebb",\n' +
+    '  "qualification": "Discrepancy characterization, not tolerance-waived model validation. No production changes or adoption.",\n' +
+    '  "counts": {\n' +
+    '    "thermal": 60,\n' +
+    '    "iam": 16,\n' +
+    '    "bifacial": 96,\n' +
+    '    "annual": 30,\n' +
+    '    "finance": 6,\n' +
+    '    "cdf": 20\n' +
+    '  },\n' +
+    '  "iamMaxAbsoluteError": 4.479358367559527e-7,\n' +
+    '  "thermal": [\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 25,\n' +
+    '      "screenMinusSapmC": 0,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 39,\n' +
+    '      "screenMinusSapmC": 14,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 31.5,\n' +
+    '      "screenMinusSapmC": 6.5,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 25,\n' +
+    '      "screenMinusSapmC": 0,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 39,\n' +
+    '      "screenMinusSapmC": 14,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 31.5,\n' +
+    '      "screenMinusSapmC": 6.5,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 25,\n' +
+    '      "screenMinusSapmC": 0,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 39,\n' +
+    '      "screenMinusSapmC": 14,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 31.5,\n' +
+    '      "screenMinusSapmC": 6.5,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 10,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 25,\n' +
+    '      "screenMinusSapmC": 0,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 10,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 39,\n' +
+    '      "screenMinusSapmC": 14,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 10,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 31.5,\n' +
+    '      "screenMinusSapmC": 6.5,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.314388247141846,\n' +
+    '      "faimanOpenRackC": 25.4,\n' +
+    '      "legacyScreenC": 25.3125,\n' +
+    '      "screenMinusSapmC": -0.001888247141845767,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.602049923923737,\n' +
+    '      "faimanOpenRackC": 25.4,\n' +
+    '      "legacyScreenC": 39.3125,\n' +
+    '      "screenMinusSapmC": 13.710450076076263,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.517928338648986,\n' +
+    '      "faimanOpenRackC": 25.4,\n' +
+    '      "legacyScreenC": 31.8125,\n' +
+    '      "screenMinusSapmC": 6.294571661351014,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.293839343874243,\n' +
+    '      "faimanOpenRackC": 25.314070351758794,\n' +
+    '      "legacyScreenC": 25.3125,\n' +
+    '      "screenMinusSapmC": 0.018660656125756958,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.575270504036084,\n' +
+    '      "faimanOpenRackC": 25.314070351758794,\n' +
+    '      "legacyScreenC": 39.3125,\n' +
+    '      "screenMinusSapmC": 13.737229495963916,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.494559568404295,\n' +
+    '      "faimanOpenRackC": 25.314070351758794,\n' +
+    '      "legacyScreenC": 31.8125,\n' +
+    '      "screenMinusSapmC": 6.317940431595705,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.225456993274747,\n' +
+    '      "faimanOpenRackC": 25.16891891891892,\n' +
+    '      "legacyScreenC": 25.3125,\n' +
+    '      "screenMinusSapmC": 0.08704300672525278,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.479546263266116,\n' +
+    '      "faimanOpenRackC": 25.16891891891892,\n' +
+    '      "legacyScreenC": 39.3125,\n' +
+    '      "screenMinusSapmC": 13.832953736733884,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gW'... 90907 more characters,
+  expected: '{\n' +
+    '  "schemaVersion": "phase3-research-comparison-v1",\n' +
+    '  "referenceSha256": "12fb67e35e1f803edfad6507814840f4c2ca7f286a948f52d4cc3ae59b4c6ebb",\n' +
+    '  "qualification": "Discrepancy characterization, not tolerance-waived model validation. No production changes or adoption.",\n' +
+    '  "counts": {\n' +
+    '    "thermal": 60,\n' +
+    '    "iam": 16,\n' +
+    '    "bifacial": 96,\n' +
+    '    "annual": 30,\n' +
+    '    "finance": 6,\n' +
+    '    "cdf": 20\n' +
+    '  },\n' +
+    '  "iamMaxAbsoluteError": 4.479358367559527e-7,\n' +
+    '  "thermal": [\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 25,\n' +
+    '      "screenMinusSapmC": 0,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 39,\n' +
+    '      "screenMinusSapmC": 14,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 31.5,\n' +
+    '      "screenMinusSapmC": 6.5,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 25,\n' +
+    '      "screenMinusSapmC": 0,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 39,\n' +
+    '      "screenMinusSapmC": 14,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 31.5,\n' +
+    '      "screenMinusSapmC": 6.5,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 25,\n' +
+    '      "screenMinusSapmC": 0,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 39,\n' +
+    '      "screenMinusSapmC": 14,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 31.5,\n' +
+    '      "screenMinusSapmC": 6.5,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 10,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 25,\n' +
+    '      "screenMinusSapmC": 0,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 10,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 39,\n' +
+    '      "screenMinusSapmC": 14,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 0,\n' +
+    '      "windMs": 10,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25,\n' +
+    '      "faimanOpenRackC": 25,\n' +
+    '      "legacyScreenC": 31.5,\n' +
+    '      "screenMinusSapmC": 6.5,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.314388247141846,\n' +
+    '      "faimanOpenRackC": 25.4,\n' +
+    '      "legacyScreenC": 25.3125,\n' +
+    '      "screenMinusSapmC": -0.001888247141845767,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.602049923923737,\n' +
+    '      "faimanOpenRackC": 25.4,\n' +
+    '      "legacyScreenC": 39.3125,\n' +
+    '      "screenMinusSapmC": 13.710450076076263,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 0,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.517928338648986,\n' +
+    '      "faimanOpenRackC": 25.4,\n' +
+    '      "legacyScreenC": 31.8125,\n' +
+    '      "screenMinusSapmC": 6.294571661351014,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.293839343874243,\n' +
+    '      "faimanOpenRackC": 25.314070351758794,\n' +
+    '      "legacyScreenC": 25.3125,\n' +
+    '      "screenMinusSapmC": 0.018660656125756958,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.575270504036084,\n' +
+    '      "faimanOpenRackC": 25.314070351758794,\n' +
+    '      "legacyScreenC": 39.3125,\n' +
+    '      "screenMinusSapmC": 13.737229495963916,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 1,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "close_mount_glass_glass",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.98,\n' +
+    '        "b": -0.0471,\n' +
+    '        "deltaT": 1\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.494559568404295,\n' +
+    '      "faimanOpenRackC": 25.314070351758794,\n' +
+    '      "legacyScreenC": 31.8125,\n' +
+    '      "screenMinusSapmC": 6.317940431595705,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "open_rack_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -3.56,\n' +
+    '        "b": -0.075,\n' +
+    '        "deltaT": 3\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.225456993274747,\n' +
+    '      "faimanOpenRackC": 25.16891891891892,\n' +
+    '      "legacyScreenC": 25.3125,\n' +
+    '      "screenMinusSapmC": 0.08704300672525278,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gWm2": 10,\n' +
+    '      "windMs": 5,\n' +
+    '      "ambientC": 25,\n' +
+    '      "mounting": "insulated_back_glass_polymer",\n' +
+    '      "sapmParameters": {\n' +
+    '        "a": -2.81,\n' +
+    '        "b": -0.0455,\n' +
+    '        "deltaT": 0\n' +
+    '      },\n' +
+    '      "sapmCellC": 25.479546263266116,\n' +
+    '      "faimanOpenRackC": 25.16891891891892,\n' +
+    '      "legacyScreenC": 39.3125,\n' +
+    '      "screenMinusSapmC": 13.832953736733884,\n' +
+    '      "qualification": "Illustrative mapping of distinct mounting categories, not calibrated equivalence. Legacy has no wind input."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "gW'... 90907 more characters,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

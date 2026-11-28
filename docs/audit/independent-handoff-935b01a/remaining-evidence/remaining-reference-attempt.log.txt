@@ -1,0 +1,59 @@
+
+> solarpv-studio@1.0.3 verify:physics-reference-gate
+> python scripts/fixtures/physics/generate-grid-import-ledger.py --check && npm run test:physics-reference-gate && tsx scripts/verify-physics-reference-gate.ts
+
+
+> solarpv-studio@1.0.3 test:physics-reference-gate
+> tsx scripts/test-physics-reference-gate.ts
+
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (iamCoupled)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#4a498fab2fc9
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (angleIncidenceDeg)
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#4a498fab2fc9 (iamCoupled)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#4a498fab2fc9
+Sensitivity witness: src/engine/exampleEngine.ts#accumulate#60469748c2d8 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#accumulate: src/engine/exampleEngine.ts#accumulate#60469748c2d8
+Sensitivity witness: src/engine/exampleEngine.ts#guarded#570c37003eeb (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#guarded: src/engine/exampleEngine.ts#guarded#570c37003eeb
+Sensitivity witness: src/engine/exampleEngine.ts#increment#912133bd03f5 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#increment: src/engine/exampleEngine.ts#increment#912133bd03f5
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Sensitivity witness: src/engine/exampleEngine.ts#calculate#2559bb687b8f (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/exampleEngine.ts#calculate: src/engine/exampleEngine.ts#calculate#2559bb687b8f
+Physics reference gate tests passed (formula mutations fail closed; prose-only edits do not; CI wiring is present).
+Independent physics reference gate FAILED: every changed/new formula expression needs an independently sourced fixture and executable assertion.
+- src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#22704cab3105: expected exactly one independent reference fixture record, found 0
+- src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#55f3b3f5c80e: expected exactly one independent reference fixture record, found 0
+- src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#8b050308b880: expected exactly one independent reference fixture record, found 0
+- src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#a4a9a13c5b66: expected exactly one independent reference fixture record, found 0
+- src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#c81396ae7ee5: expected exactly one independent reference fixture record, found 0
+- src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#d111fb09b4e3: expected exactly one independent reference fixture record, found 0
+- src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#e828f903d8eb: expected exactly one independent reference fixture record, found 0
+- src/engine/optical/iamEngine.ts#calculateAshraeIam#8d3ee17e0190: expected exactly one independent reference fixture record, found 0
+- src/engine/optical/iamEngine.ts#calculateAshraeIam#b31cdc38c93f: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries.addRain#64984f69b86f: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries.addRain#86bf7743cb4e: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries.addRain#87ef22c0b52f: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries.addRain#fb264852d21a: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries#219f4f027fc0: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries#2af80ad22604: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries#2b649c2071f8: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries#62f0bfdfe9ce: expected exactly one independent reference fixture record, found 0
+- src/engine/reference/kimberSeries.ts#calculateKimberSeries#b9869cd15f4e: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.residual#1a3801e6bc41: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.residual#6a8f3abdde9f: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.residual#7cfd5f2ad3e3: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#1b3fcd4f8c11: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#3127dcea18e4: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#357cf9ede2d6: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#4df838756037: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#7676a96b24af: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#7aa200ba5f96: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#86f245a5363a: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#986b8ee6cd7c: expected exactly one independent reference fixture record, found 0
+- src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#a8b133b4cb9b: expected exactly one independent reference fixture record, found 0
+... 25 additional gate violation(s) omitted
+Do not substitute checked-in targets, labels, copied implementation outputs, or analytic self-comparisons for independent reference data.

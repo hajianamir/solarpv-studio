@@ -229,13 +229,13 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
       title: 'Scenario comparison',
       inputs: 'The App creates three predefined customer-mode alternatives from current PV demand, PSH and load/autonomy inputs, varying battery/economic assumptions. Check the low-PSH notice and each scenario’s displayed assumptions.',
       method: 'The scenario engine calculates each alternative independently and compares PV/battery capacities and modeled financial/yield outputs; it is a fixed set of variants, not a user-defined probabilistic distribution.',
-      limitations: 'Scenario outputs inherit their assumptions and known scenario-engine floors. LCOE is a pre-tax unlevered USD screen with flat nominal costs and a discounted replacement reserve; unavailable is null, not free electricity. Full precision is retained until display. They are not probabilities, forecasts, or a substitute for manually validating equipment constraints.',
+      limitations: 'Scenario outputs use supplied positive PSH without a 1.0 floor; they remain illustrative assumptions. Availability, cable drop, redundancy, fire and surge protection are not assessed. LCOE is a pre-tax unlevered USD screen with flat nominal costs and a discounted replacement reserve; unavailable is null, not free electricity. Full precision is retained until display. They are not probabilities, forecasts, or a substitute for manually validating equipment constraints.',
     },
     fa: {
       title: 'مقایسهٔ سناریوها',
       inputs: 'برنامه سه گزینهٔ ازپیش‌تعریف‌شدهٔ حالت مصرف‌کننده را از تقاضای PV، PSH و ورودی بار/خودمختاری می‌سازد و فرض باتری/اقتصادی را تغییر می‌دهد. هشدار PSH پایین و فرض‌های هر گزینه را بررسی کنید.',
       method: 'موتور سناریو هر گزینه را مستقل محاسبه و ظرفیت PV/باتری و خروجی‌های مالی/تولید مدل‌شده را مقایسه می‌کند؛ مجموعه‌ای ثابت از گزینه‌هاست، نه توزیع احتمالاتی دلخواه کاربر.',
-      limitations: 'سناریوها فرض‌ها و کف‌های شناخته‌شدهٔ موتور را به ارث می‌برند. LCOE غربالگری دلاری بدون مالیات و بدهی با هزینهٔ اسمی ثابت و ذخیرهٔ تنزیل‌شدهٔ تعویض است؛ مقدار ناموجود null است، نه برق رایگان. گرد کردن فقط برای نمایش است. احتمال، پیش‌بینی یا جایگزین اعتبارسنجی تجهیزات نیستند.',
+      limitations: 'سناریوها از PSH مثبت ورودی بدون کف۱ استفاده می‌کنند و همچنان فرضی‌اند؛ قابلیت تأمین، افت کابل، افزونگی، آتش و حفاظت اضافه‌ولتاژ ارزیابی نشده‌اند. LCOE غربالگری دلاری بدون مالیات و بدهی با هزینهٔ اسمی ثابت و ذخیرهٔ تنزیل‌شدهٔ تعویض است؛ مقدار ناموجود null است، نه برق رایگان. گرد کردن فقط برای نمایش است. احتمال، پیش‌بینی یا جایگزین اعتبارسنجی تجهیزات نیستند.',
     },
   },
   catalog: {
@@ -284,13 +284,13 @@ const COPY: Record<string, Record<HelpLanguage, HelpCopy>> = {
     en: {
       title: 'I–V curve model',
       inputs: 'Set irradiance, cell temperature and series-module count; the default legacy view uses a fixed illustrative module. Select explicit bounded reference metrics to paste a complete desoto_reference_bounded_v1 request. The partial-shading toggle modifies the displayed curve shape.',
-      method: 'Legacy single-diode screening with heuristic STC extraction and De Soto-style parameter translation. gamma_Pmp is unused; beta_Voc only seeds the solver. MPP is sampled on an80step grid; scalar Isc is approximate. The shading checkbox only alters plotted points, not bypass circuits or KPI outputs.',
+      method: 'Legacy single-diode screening with heuristic STC extraction and De Soto-style parameter translation. gamma_Pmp is unused; beta_Voc is not a fitted constraint. Roots are bracketed and residual-checked. MPP is sampled on an80step grid; scalar Isc is approximate. The shading checkbox only alters plotted points, not bypass circuits or KPI outputs.',
       limitations: 'This is not using the currently selected catalog module and is not a measured tracer curve. The explicit reference view uses user-attributed, unmatched parameters with bounded continuous metrics, not a curve fit. Drafts reset on leaving; no project persistence or energy/financial adoption. Do not compare with field measurements unless parameters and conditions are reconciled.',
     },
     fa: {
       title: 'مدل منحنی I–V',
       inputs: 'تابش، دمای سلول و تعداد ماژول سری را تنظیم کنید؛ نمای قدیمی پیش‌فرض از ماژول نمونه ثابت استفاده می‌کند. برای JSON کامل desoto_reference_bounded_v1 نمای شاخص‌های مرجع صریح را انتخاب کنید. کلید سایهٔ جزئی شکل منحنی نمایش‌داده‌شده را تغییر می‌دهد.',
-      method: 'غربالگری تک‌دیودی با استخراج ابتکاری STC و انتقال پارامتر به سبک De Soto؛ gamma_Pmp استفاده نمی‌شود و beta_Voc فقط حدس اولیه است. MPP روی شبکه ۸۰گامی و Isc تقریبی است. کلید سایه فقط رسم را تغییر می‌دهد، نه مدار بای‌پس یا شاخص‌ها.',
+      method: 'غربالگری تک‌دیودی با استخراج ابتکاری STC و انتقال پارامتر به سبک De Soto؛ gamma_Pmp استفاده نمی‌شود و beta_Voc قید برازش نیست. ریشه محصور با آزمون باقیمانده حل می‌شود. MPP روی شبکه ۸۰گامی و Isc تقریبی است. کلید سایه فقط رسم را تغییر می‌دهد، نه مدار بای‌پس یا شاخص‌ها.',
       limitations: 'این صفحه از ماژول کاتالوگ انتخاب‌شده استفاده نمی‌کند و منحنی tracer اندازه‌گیری‌شده نیست. نمای مرجع، شاخص پیوسته با حل محدود است، نه برازش؛ منشأ ورودی ادعای کاربر و بدون تطبیق است. ورودی موقت و بدون ذخیره در پروژه یا انتقال مالی/انرژی است. بدون تطبیق پارامتر و شرایط آزمون با اندازه‌گیری میدانی مقایسه نکنید.',
     },
   },

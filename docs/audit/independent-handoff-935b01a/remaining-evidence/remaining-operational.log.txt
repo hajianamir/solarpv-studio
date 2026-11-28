@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:operational:energy
+> tsx scripts/test-operational-energy.ts
+
+PASS operational: actual direct full-year + actual bounded integrated annual batches; no extrapolation/double loss; site/capacity/context/config/partial/overlap/nonenergy rejection; actual finance import cost and NPV

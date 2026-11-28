@@ -18,8 +18,12 @@ export interface ScenarioDetails {
   tco25yUsd: number;
   bessLifespanYears: number;
   totalSystemWeightKg: number;
-  cableVoltageDropPct: number;
-  reliabilityIndexPct: number;
+  cableVoltageDropPct: null;
+  electricalSafetyAssessment: 'not_assessed';
+  reliabilityIndexPct: null;
+  reliabilityAssessment: 'not_assessed';
+  firstYearGenerationProxyKwh: number;
+  energyModelPolicy: 'scenario_generation_supplied_psh_v1';
   lcoeUsdPerKwh: number | null;
   lcoeAssessment: SimpleLcoeAssessment;
   advantagesFa: string[];
@@ -39,7 +43,7 @@ export function generateScenarios(
   const isUnsizablePsh = typeof peakSunHours === 'number' && Number.isFinite(peakSunHours) && peakSunHours <= 0;
   const effectiveBaseKwp = isUnsizablePsh ? 0 : basePvCapacityKwp;
 
-  // Scenario 1: Standard Optimized LiFePO4
+  // Scenario 1: LiFePO4 screening preset
   const s1PvKwp = Math.round(effectiveBaseKwp * 10) / 10;
   const s1BatKwh = Math.round((baseDailyKwh * baseAutonomyDays / 0.85) * 10) / 10;
   const s1InvKw = Math.max(5.0, Math.ceil(s1PvKwp / 5.0) * 5.0);
@@ -57,7 +61,7 @@ export function generateScenarios(
   const s2Tco25y = Math.round(s2CapexUsd + s2BatKwh * 115 * 5);
   const s2Weight = Math.round(s2PvKwp * 35 + s2BatKwh * 32 + s2InvKw * 6 + (isUnsizablePsh ? 0 : 100)); // Lead is very heavy!
 
-  // Scenario 3: High-Reliability Industrial Redundant
+  // Scenario 3: Higher-capacity industrial screening preset
   // +25% PV capacity, N+1 parallel inverters, ruggedized LiFePO4
   const s3PvKwp = Math.round(effectiveBaseKwp * 1.25 * 10) / 10;
   const s3BatKwh = Math.round((baseDailyKwh * (baseAutonomyDays + 0.5) / 0.80) * 10) / 10;
@@ -70,7 +74,7 @@ export function generateScenarios(
   const safeDiscountRatePct = typeof discountRatePct === 'number' && Number.isFinite(discountRatePct) ? discountRatePct : 18.0;
   const discountRate = Math.max(0.01, safeDiscountRatePct / 100.0);
   const safePsh = typeof peakSunHours === 'number' && Number.isFinite(peakSunHours) ? peakSunHours : 5.17;
-  const effectivePsh = Math.max(1.0, safePsh);
+  const effectivePsh = safePsh; // Preserve supplied positive resource; no 1-PSH energy substitution.
   const lifetimeYears = 25;
   const degradationPct = 0.5;
 
@@ -101,10 +105,10 @@ export function generateScenarios(
   return [
     {
       id: 'optimized_lifepo4',
-      titleFa: 'سیستم بهینه پیشنهادی (Standard Optimized LiFePO4)',
-      titleEn: 'Standard Optimized LiFePO4',
-      descriptionFa: 'بهترین تعادل میان هزینه اولیه، بازدهی انرژی و طول عمر باتری لیتیومی با حداقل فضای اشغالی',
-      descriptionEn: 'Optimal balance between CAPEX, round-trip efficiency, and 12-year battery life with compact footprint.',
+      titleFa: 'پیش‌فرض فرضی لیتیوم آهن فسفات',
+      titleEn: 'LiFePO4 screening preset',
+      descriptionFa: 'سناریوی فرضی هزینه و ظرفیت باتری لیتیومی؛ انطباق تجهیزات و قابلیت تأمین ارزیابی نشده است',
+      descriptionEn: 'Illustrative lithium cost/capacity assumptions; equipment applicability and service availability are not assessed.',
       panelTypeFa: 'پنل‌های N-Type TOPCon راندمان بالا (Jinko / LONGi)',
       inverterTypeFa: 'اینورتر شارژر هیبرید هوشمند با راندمان ۹۷٪ (Deye / Growatt)',
       batteryChemistryFa: 'لیتیوم آهن فسفات (LiFePO4) با عمق دشارژ ۸۵٪ و ۵۵۰۰ سیکل',
@@ -116,20 +120,24 @@ export function generateScenarios(
       tco25yUsd: s1Tco25y,
       bessLifespanYears: 12,
       totalSystemWeightKg: s1Weight,
-      cableVoltageDropPct: 1.2,
-      reliabilityIndexPct: 98.5,
+      cableVoltageDropPct: null,
+      electricalSafetyAssessment: 'not_assessed',
+      reliabilityIndexPct: null,
+      reliabilityAssessment: 'not_assessed',
+      firstYearGenerationProxyKwh: s1AnnualGen,
+      energyModelPolicy: 'scenario_generation_supplied_psh_v1',
       lcoeUsdPerKwh: s1Lcoe,
       lcoeAssessment: s1LcoeAssessment,
       advantagesFa: [
         'طول عمر بالای باتری (بیش از ۱۰ الی ۱۲ سال)',
         'وزن سبک و اشغال فضای کم در موتورخانه/تابلو',
-        'حداقل هزینه مالکیت ۲۵ ساله (TCO)',
+        'TCO فرضی را با ارقام همین سناریوها مقایسه کنید؛ کمینه بودن تضمین نشده است',
         'پشتیبانی از پروتکل‌های مانیتورینگ هوشمند CAN/BMS'
       ],
       advantagesEn: [
         'Extended battery operational life (>12 years, 6000 cycles)',
         'Lightweight and compact footprint in electrical room',
-        'Lowest 25-year Total Cost of Ownership (TCO)',
+        'Compare the illustrative TCO figures; no lowest-cost ranking is guaranteed',
         'Smart BMS closed-loop communication over CAN/RS485'
       ],
       disadvantagesFa: [
@@ -143,8 +151,8 @@ export function generateScenarios(
       id: 'budget_gel',
       titleFa: 'سیستم اقتصادی کم‌هزینه (Budget Gel Deep-Cycle)',
       titleEn: 'Budget Gel Deep-Cycle',
-      descriptionFa: 'حداقل سرمایه‌گذاری اولیه در روز اول، مناسب پروژه‌های با بودجه اولیه محدود',
-      descriptionEn: 'Lowest initial Day-1 investment, ideal for projects with tight initial budget constraints.',
+      descriptionFa: 'سناریوی فرضی سرب‌اسید؛ هزینه‌ها برآورد بازار یا انتخاب تجهیزات نیستند',
+      descriptionEn: 'Illustrative lead-acid assumptions; costs are not market quotes or an equipment selection.',
       panelTypeFa: 'پنل‌های مونوکریستال PERC استاندارد',
       inverterTypeFa: 'اینورتر آف‌گرید تکفاز استاندارد',
       batteryChemistryFa: 'باتری‌های ژل عمیق دشارژ (Gel Deep Cycle) با عمق ۵۰٪',
@@ -156,17 +164,21 @@ export function generateScenarios(
       tco25yUsd: s2Tco25y,
       bessLifespanYears: 3.5,
       totalSystemWeightKg: s2Weight,
-      cableVoltageDropPct: 1.6,
-      reliabilityIndexPct: 89.0,
+      cableVoltageDropPct: null,
+      electricalSafetyAssessment: 'not_assessed',
+      reliabilityIndexPct: null,
+      reliabilityAssessment: 'not_assessed',
+      firstYearGenerationProxyKwh: s2AnnualGen,
+      energyModelPolicy: 'scenario_generation_supplied_psh_v1',
       lcoeUsdPerKwh: s2Lcoe,
       lcoeAssessment: s2LcoeAssessment,
       advantagesFa: [
-        'ارزان‌ترین سرمایه‌گذاری اولیه در فاز ساخت',
+        'مفروضات هزینه اولیه باید با پیشنهادهای واقعی تطبیق داده شوند',
         'دسترسی و فراوانی بالا در بازار سنتی ایران',
         'عدم نیاز به تنظیمات پیچیده پروتکل BMS'
       ],
       advantagesEn: [
-        'Lowest initial procurement cost for budget-constrained projects',
+        'Initial cost assumptions require matching supplier quotations',
         'Abundant local spare parts availability in conventional markets',
         'No digital BMS communication configuration required'
       ],
@@ -183,12 +195,12 @@ export function generateScenarios(
     },
     {
       id: 'industrial_redundant',
-      titleFa: 'سیستم فوق‌پایدار صنعتی (High-Reliability Industrial Redundant)',
-      titleEn: 'High-Reliability Industrial Redundant',
-      descriptionFa: 'پایداری ۱۰۰٪ با افزونگی N+1 اینورترها، باتری رک‌مانت پیشرفته و ادوات حفاظتی دابل',
-      descriptionEn: 'Mission-critical 99.9% uptime with N+1 parallel redundant inverters, server rack LiFePO4, and dual SPD protection.',
+      titleFa: 'پیش‌فرض صنعتی با ظرفیت افزوده (ارزیابی‌نشده)',
+      titleEn: 'Higher-capacity industrial screening preset',
+      descriptionFa: 'ظرفیت افزوده و بودجه فرضی؛ دسترس‌پذیری، افزونگی و حفاظت ارزیابی نشده‌اند',
+      descriptionEn: 'Added capacity and illustrative budget only; availability, redundancy and protection are not assessed.',
       panelTypeFa: 'پنل‌های بایفیشیال دوطرفه شیشه-شیشه (Trina / Jinko)',
-      inverterTypeFa: 'کلاستر اینورترهای سنکرون پارالل N+1 با سیستم بای‌پس اتوماتیک STS',
+      inverterTypeFa: 'بودجه فرضی ظرفیت اینورتر؛ سازگاری موازی و بای‌پس ارزیابی نشده است',
       batteryChemistryFa: 'رک باتری سروری LiFePO4 مجهز به اکتیو بالانسر و ایزولاسیون حرارتی',
       pvCapacityKwp: s3PvKwp,
       batteryGrossKwh: s3BatKwh,
@@ -198,21 +210,25 @@ export function generateScenarios(
       tco25yUsd: s3Tco25y,
       bessLifespanYears: 15,
       totalSystemWeightKg: s3Weight,
-      cableVoltageDropPct: 0.8,
-      reliabilityIndexPct: 99.9,
+      cableVoltageDropPct: null,
+      electricalSafetyAssessment: 'not_assessed',
+      reliabilityIndexPct: null,
+      reliabilityAssessment: 'not_assessed',
+      firstYearGenerationProxyKwh: s3AnnualGen,
+      energyModelPolicy: 'scenario_generation_supplied_psh_v1',
       lcoeUsdPerKwh: s3Lcoe,
       lcoeAssessment: s3LcoeAssessment,
       advantagesFa: [
-        'پایداری دائمی بدون یک ثانیه خاموشی برای مراکز داده و بیمارستان',
-        'افزونگی کامل N+1 (در صورت سوختن یک اینورتر بقیه کل بار را اداره می‌کنند)',
-        'تلفات کابل‌کشی زیر ۱٪ و بالاترین ضریب ایمنی ضدحریق',
-        'حفاظت کامل صاعقه با ارسترهای کلاس I+II'
+        'تأمین بار نیازمند برنامه زمانی بار، شبکه، دیزل و ذخیره‌ساز است',
+        'ظرفیت اینورتر بیشتر، اثبات افزونگی یا عملکرد حین خرابی نیست',
+        'افت ولتاژ کابل و ایمنی آتش بدون مدار و تجهیزات مشخص ارزیابی نشده‌اند',
+        'هماهنگی حفاظت اضافه‌ولتاژ و صاعقه ارزیابی نشده است'
       ],
       advantagesEn: [
-        'Continuous 99.9% power availability for telecom, hospitals, and datacenters',
-        'Full N+1 hot-standby redundancy across inverter clusters',
-        'Ultra-low cable voltage drop (<0.8%) and premium fire safety compliance',
-        'Comprehensive Class I+II surge arresters and lightning protection'
+        'Load service requires load, grid, generator and storage chronology',
+        'Additional inverter capacity does not establish failover or redundancy',
+        'Cable voltage drop and fire safety require assessed circuit and equipment data',
+        'Surge and lightning protection coordination remains unassessed'
       ],
       disadvantagesFa: [
         'هزینه اولیه بالاتر تجهیزات حفاظتی و افزونگی'

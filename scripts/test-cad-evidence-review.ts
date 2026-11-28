@@ -1,11 +1,11 @@
+import {historicalSource} from './historical-source';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {execFileSync} from 'node:child_process';
 import {changedFormulaUnits} from './verify-physics-reference-gate';
 const review=JSON.parse(readFileSync('docs/audit/CAD-EXPRESSION-EVIDENCE-REVIEW.json','utf8'));
 const source=readFileSync(review.sourceFile,'utf8');
-const before=execFileSync('git',['show',`${review.baseline}:${review.sourceFile}`],{encoding:'utf8'});
+const before=historicalSource(`${review.baseline}:${review.sourceFile}`);
 const units=changedFormulaUnits(review.sourceFile,before,source);
 const manifest=JSON.parse(readFileSync('scripts/physics-reference-evidence.json','utf8'));
 function validate(entries:typeof review.expressions){

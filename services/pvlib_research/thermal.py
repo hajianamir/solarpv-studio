@@ -3,6 +3,8 @@
 DTU v3: DOI 10.11583/DTU.13580759.v3. No missing-data or wind-height inference.
 """
 from __future__ import annotations
+import os
+import tempfile
 import csv
 import hashlib
 import io
@@ -190,29 +192,46 @@ def operational_blockers(data):
 
 
 def predict(rows, u0, u1, timeout=10, cancel=lambda: False):
-    """Direct isolated worker; cancellable/killable, never silent fallback."""
-    payload = json.dumps(dict(target='back_of_module', u0=u0, u1=u1, rows=rows))
-    p = subprocess.Popen([sys.executable, '-I', '-B', str(Path(__file__).with_name('thermal_worker.py'))], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    start, first = time.monotonic(), True
-    try:
-        while True:
-            if cancel():
-                raise RuntimeError('Cancelled during worker execution')
-            left = timeout-(time.monotonic()-start)
-            if left <= 0:
-                raise TimeoutError('Thermal worker timeout')
-            try:
-                out, err = p.communicate(input=payload if first else None, timeout=min(.05,left))
-                break
-            except subprocess.TimeoutExpired:
-                first = False
-        if p.returncode:
-            raise RuntimeError(err or out)
-        return json.loads(out)['moduleBackC']
-    finally:
-        if p.poll() is None:
-            p.kill()
-            p.communicate()
+    """Isolated worker with deterministic EOF and bounded disk-backed capture.
+
+    Unlike timed communicate(input=...), polling cannot strand partially sent
+    stdin. Deadline/cancellation and cleanup remain authoritative; no fallback.
+    """
+    payload = json.dumps(dict(target='back_of_module', u0=u0, u1=u1, rows=rows)).encode()
+    if len(payload) > 16 * 1024 * 1024:
+        raise ValueError('Thermal worker input budget exceeded')
+    deadline = time.monotonic() + timeout
+    with tempfile.TemporaryFile() as incoming, tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
+        incoming.write(payload)
+        incoming.seek(0)
+        p = subprocess.Popen([sys.executable, '-I', '-B', str(Path(__file__).with_name('thermal_worker.py'))], stdin=incoming, stdout=out, stderr=err)
+        try:
+            while True:
+                if cancel():
+                    raise RuntimeError('Cancelled during worker execution')
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    raise TimeoutError('Thermal worker timeout')
+                if os.fstat(out.fileno()).st_size > 4 * 1024 * 1024 or os.fstat(err.fileno()).st_size > 65536:
+                    raise RuntimeError('Thermal worker output budget exceeded')
+                try:
+                    p.wait(timeout=min(.05, left))
+                    break
+                except subprocess.TimeoutExpired:
+                    pass
+            if os.fstat(out.fileno()).st_size > 4 * 1024 * 1024 or os.fstat(err.fileno()).st_size > 65536:
+                raise RuntimeError('Thermal worker output budget exceeded')
+            if p.returncode:
+                raise RuntimeError('Thermal worker failed; no fallback')
+            out.seek(0)
+            result = json.loads(out.read(), parse_constant=lambda v: (_ for _ in ()).throw(ValueError('Nonfinite worker JSON')))['moduleBackC']
+            if not isinstance(result, list) or len(result) != len(rows) or not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in result):
+                raise ValueError('Invalid thermal worker output')
+            return result
+        finally:
+            if p.poll() is None:
+                p.kill()
+            p.wait()
 
 
 def metrics(observed, modeled):

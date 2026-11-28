@@ -1,12 +1,13 @@
+import {historicalSource} from './historical-source';
 import assert from 'node:assert/strict';
-import {readFileSync,writeFileSync} from 'node:fs';
-import {execFileSync} from 'node:child_process';
+import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {calculateSingleDiodeCurve} from '../src/engine/singleDiodeModel';
 import {IvCurveTracerTab} from '../src/components/IvCurveTracerTab';
-import {extractFormulaUnits} from './verify-physics-reference-gate';
+import {resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
 
 type Inputs=Parameters<typeof calculateSingleDiodeCurve>;
 interface Expected {iph:number;i0:number;rs:number;rsh:number;nNsVth:number;voc:number;isc:number;vmp:number;imp:number;pmp:number;voltages:number[];currents:number[];sampledVmp:number;sampledImp:number;sampledPmp:number}
@@ -55,20 +56,28 @@ assert.deepEqual(calculateSingleDiodeCurve(...common),calculateSingleDiodeCurve(
 const stressed=[...common] as Inputs;stressed[5]=-.8;
 const stable=calculateSingleDiodeCurve(...common),failedSeed=calculateSingleDiodeCurve(...stressed);
 assert.deepEqual(stable.extractedParameters,failedSeed.extractedParameters,'beta is not a fitted parameter constraint');
-assert.ok(Math.abs(failedSeed.voc-stable.voc)>.01,'Extreme seed witness must retain the unconverged Voc defect');
+assert.deepEqual(failedSeed,stable,'F08: output no longer depends on beta seed');
+assert.ok(failedSeed.solverDiagnostics);assert.ok(Math.abs(failedSeed.solverDiagnostics.openCircuitResidualA)<1e-9);assert.ok(failedSeed.solverDiagnostics.maxTraceResidualA<1e-9);
 const fp=failedSeed.extractedParameters;assert.ok(fp);
 const failedVocResidual=fp.iph-fp.i0*Math.expm1(failedSeed.voc/(fp.n*fp.vt))-failedSeed.voc/fp.rsh;
-assert.ok(Math.abs(failedVocResidual)>.005,'Returned endpoint is not an implicit diode root within current quantization');
+assert.ok(Math.abs(failedVocResidual)<.05,'Display-rounded endpoint may have quantization residual; authoritative unrounded residual is checked separately');
 const zero=[...common] as Inputs;zero[8]=0;const dark=calculateSingleDiodeCurve(...zero);assert.equal(dark.pmp,0);assert.equal(dark.voc,0);assert.equal(dark.points.length,2);
 assert.ok(maxima.implicitIscAmps.absoluteError>.005,'Fixture must expose approximate scalar Isc beyond display quantization');
 assert.ok(maxima.truePmpWatts.absoluteError>.05,'Fixture must expose MPP sampling discrepancy beyond power quantization');
 for(const lang of ['en','fa'] as const){const html=renderToStaticMarkup(React.createElement(IvCurveTracerTab,{lang}));assert.match(html,/data-testid="single-diode-qualification"/);assert.match(html,lang==='en'?/gamma_Pmp is not fitted/:/gamma_Pmp برازش نمی‌شود/);assert.match(html,lang==='en'?/Cosmetic shading illustration/:/نمایش ظاهری سایه/);}
 const engine='src/engine/singleDiodeModel.ts';
-const baseline=execFileSync('git',['show',`a5b2c5f8eac89b3be3a9148f786653e0ee11815a:${engine}`],{encoding:'utf8'});
-assert.deepEqual(extractFormulaUnits(engine,readFileSync(engine,'utf8')).map(x=>x.formulaId),extractFormulaUnits(engine,baseline).map(x=>x.formulaId),'First Phase3 slice must not change production equations');
-const report={schemaVersion:1,scope:'U05 externally supplied parameter translation and sampled curve; not datasheet fitting, physical validation or adoption approval',fixtureSha256:createHash('sha256').update(readFileSync(fixturePath)).digest('hex'),referenceVersion:fixture.reference.version,cases:48,comparedCurvePoints:points,passed:'Explicit reference-parameter translation and sampled-curve arithmetic within declared conversion/quantization budgets',unresolved:['Unused gamma_Pmp input','beta_Voc only influences Newton initialization, not a fitted temperature constraint','Legacy scalar Isc differs from implicit I(V=0)','80step sampled MPP is not exact optimized MPP','Legacy vt is aggregate Ns*kT/q, not per-cell kT/q','Extreme beta seed can return unconverged Voc; no convergence/error status is emitted','Summary-input extraction, invalid temperature/custom parameter domains and full convergence/error contracts not validated','No annual/financial/research adoption'],solverFailureWitness:{inputs:stressed,baselineVoc:stable.voc,failedSeedVoc:failedSeed.voc,implicitCurrentResidualAmps:failedVocResidual,evidenceClass:'Internal equation-residual/seed-invariance defect reproduction, not independent fitting evidence'},maxima};
-const reportPath='docs/audit/dual-independent-audit-review/phase3-single-diode-comparison.json';
+const baseline=historicalSource(`a5b2c5f8eac89b3be3a9148f786653e0ee11815a:${engine}`);
+const temp=resolve(`src/engine/.diode-audit-baseline-${process.pid}.ts`);
+writeFileSync(temp,baseline);
+let oldFailureVoc=0;
+try {
+ const old=await import(pathToFileURL(temp).href);
+ oldFailureVoc=old.calculateSingleDiodeCurve(...stressed).voc;
+ assert.ok(Math.abs(oldFailureVoc-failedSeed.voc)>100,'Actual base must reproduce the stressed unconverged root');
+} finally {unlinkSync(temp);}
+const report={schemaVersion:1,scope:'U05 externally supplied parameter translation and sampled curve; not datasheet fitting, physical validation or adoption approval',fixtureSha256:createHash('sha256').update(readFileSync(fixturePath)).digest('hex'),referenceVersion:fixture.reference.version,cases:48,comparedCurvePoints:points,passed:'Explicit reference-parameter translation and sampled-curve arithmetic within declared conversion/quantization budgets',unresolved:['Unused gamma_Pmp input','beta_Voc is retained for API compatibility, not a fitted temperature constraint','Legacy scalar Isc differs from implicit I(V=0)','80step sampled MPP is not exact optimized MPP','Legacy vt is aggregate Ns*kT/q, not per-cell kT/q','Summary-input extraction, invalid temperature/custom parameter domains and full convergence/error contracts not validated','No annual/financial/research adoption'],solverFailureWitness:{inputs:stressed,baselineVoc:stable.voc,historicalFailedSeedVoc:oldFailureVoc,repairedVoc:failedSeed.voc,unroundedResidualA:failedSeed.solverDiagnostics.openCircuitResidualA,implicitCurrentResidualAmps:failedVocResidual,evidenceClass:'Internal equation-residual/seed-invariance defect reproduction, not independent fitting evidence'},maxima};
+const reportPath='docs/audit/independent-handoff-935b01a/remaining-single-diode-comparison.json';
 if(process.argv.includes('--write'))writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');
 else assert.deepEqual(JSON.parse(readFileSync(reportPath,'utf8')),report,'Comparison receipt stale; investigate before explicitly regenerating');
-console.log(`PASS Phase3 U05 bounded reference replay: 48 pvlib cases/${points} points; coefficient/MPP/Isc limitation witnesses retained, bilingual disclosure, production formula AST unchanged. Not full U05 validation.`);
+console.log(`PASS Phase3 U05 bounded reference replay: 48 pvlib cases/${points} points; coefficient/MPP/Isc limitation witnesses retained, bilingual disclosure, legacy bracketed roots repaired; old failure preserved as actual-base witness. Not full U05 validation.`);
 console.log(JSON.stringify(maxima,null,2));

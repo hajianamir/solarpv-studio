@@ -33,9 +33,9 @@ Path('benchmarks/independent/solar-position-spa.json').write_text(json.dumps(fix
 registry = Path('scripts/physics-reference-evidence.json')
 manifest = json.loads(registry.read_text())
 solar_ids = {
-    '00621e7ddbb1': '2024-01-15T03:00:00Z',
+    'a03cdf45d4ef': '2024-01-15T03:00:00Z',
     '6e29caf63dd1': '2024-01-15T21:30:00Z',
-    'df1bf2813862': '2024-01-15T21:30:00Z',
+    '19ee5d6a8a97': '2024-01-15T21:30:00Z',
 }
 for suffix, instant in solar_ids.items():
     formula_id = f'src/engine/solarPvEngine.ts#calculateSolarPosition#{suffix}'

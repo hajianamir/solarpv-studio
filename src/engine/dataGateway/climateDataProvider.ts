@@ -865,7 +865,7 @@ export class ClimateDataProvider {
         dataStatus: psh === 0 ? 'unsizable' : 'mixed',
         ...(psh === 0 ? { qualityNotes: ['PVGIS returned a complete annual zero-irradiation series; primary-provider zero is preserved and secondary providers are not queried.'] } : {}),
         geographicRegion: 'PVGIS 5.2 SARAH-2 / ERA5',
-        governingStandards: ['PVGIS v5.2 (European Commission JRC)', 'IEC 61724-1 Class A'],
+        governingStandards: ['PVGIS v5.2 (European Commission JRC); modeled climate, not an IEC monitoring class'],
       },
       fieldProvenance,
       provenance,

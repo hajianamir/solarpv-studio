@@ -1,0 +1,1 @@
+PASS remaining audit: ASHRAE/MPPT raw boundaries/polar pvlib/claim metadata/shallow history/FIFO attribution; 36 quadratic Kimber comparisons,35040intervals in 44.2ms. Synthetic and independent-component evidence, not field validation.

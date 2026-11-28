@@ -1,5 +1,5 @@
+import {historicalSource} from './historical-source';
 import assert from 'node:assert/strict';
-import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync,unlinkSync,readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -22,7 +22,7 @@ const nodes=records.filter(r=>r.formulaId.startsWith('src/engine/core/scalarTran
 assert.equal(nodes.length,15);
 for(const r of nodes)await executeReferenceFixture(r);
 
-const source=execFileSync('git',['show',`${BASE}:src/engine/waterfallLossEngine.ts`],{encoding:'utf8'});
+const source=historicalSource(`${BASE}:src/engine/waterfallLossEngine.ts`);
 const temp=resolve('src/engine',`.transposition-baseline-${process.pid}.ts`);
 writeFileSync(temp,source,{flag:'wx'});
 let checked=0;

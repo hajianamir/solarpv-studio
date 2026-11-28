@@ -90,6 +90,9 @@ export const BessTab: React.FC<BessTabProps> = ({
 
   // Recalculate series & parallel with chosen unit
   const calculatedSeries = Math.max(1, Math.round(batterySizing.systemVoltageVdc / unitVoltageV));
+  const actualBankVoltageV = calculatedSeries * unitVoltageV;
+  // Nominal arithmetic only. A manufacturer voltage window/BMS topology is not supplied.
+  const isNominalVoltageMatched = Math.abs(actualBankVoltageV - batterySizing.systemVoltageVdc) < 1e-9;
   const calculatedParallel = Math.max(1, Math.ceil(batterySizing.totalCapacityAh / unitCapacityAh));
   const calculatedTotalUnits = calculatedSeries * calculatedParallel;
   const totalWeightKg = calculatedTotalUnits * unitWeightKg;
@@ -313,7 +316,7 @@ export const BessTab: React.FC<BessTabProps> = ({
             <select
               id="bess-unit-voltage"
               value={unitVoltageV}
-              onChange={(e) => setUnitVoltageV(parseInt(e.target.value) || 12)}
+              onChange={(e) => setUnitVoltageV(Number(e.target.value) || 12)}
               className="studio-input text-xs font-mono"
             >
               <option value="12">۱۲ ولت (استاندارد سیلد لید/ژل/لیتیوم)</option>
@@ -368,6 +371,11 @@ export const BessTab: React.FC<BessTabProps> = ({
             : 'Battery Sizing Matrix & Physical Quantity:'}
         </h3>
 
+        <p data-testid="battery-arrangement-status" className="text-xs text-amber-300 mb-3">
+          {lang === 'fa'
+            ? `آرایش فرضی، نه طراحی تأییدشده: ${actualBankVoltageV} V در برابر باس ${batterySizing.systemVoltageVdc} V. ${isNominalVoltageMatched ? 'تطابق عددی نامی فقط؛' : 'عدم تطابق نامی؛ اتصال توصیه نمی‌شود.'} محدوده ولتاژ سازنده، BMS و مجاز بودن سری/موازی ارزیابی نشده است.`
+            : `Illustrative arrangement, not an approved design: ${actualBankVoltageV} V versus ${batterySizing.systemVoltageVdc} V bus. ${isNominalVoltageMatched ? 'Nominal arithmetic match only;' : 'Nominal mismatch; connection is not recommended.'} Manufacturer voltage window, BMS and permitted series/parallel topology are unassessed.`}
+        </p>
         {/* Coverage Deficit Warning Banner */}
         {isNightCoverageDeficit && (
           <div className="p-3 bg-red-950/40 border border-red-800 rounded-lg text-xs text-red-200 mb-4 flex items-center gap-2.5">
@@ -457,7 +465,7 @@ export const BessTab: React.FC<BessTabProps> = ({
             <Boxes className="w-6 h-6 text-indigo-400" />
             <div>
               <span className="font-bold text-theme-strong block">
-                {lang === 'fa' ? 'پیشنهاد جانمایی و استراکچر رک باتری:' : 'Battery Rack Layout Recommendation:'}
+                {lang === 'fa' ? 'تعداد فرضی رک؛ توپولوژی ارزیابی نشده:' : 'Illustrative rack quantities — topology unassessed:'}
               </span>
               <span className="text-slate-400 text-[11px]">
                 {calculatedSeries === 1
@@ -467,7 +475,7 @@ export const BessTab: React.FC<BessTabProps> = ({
             </div>
           </div>
           <div className="font-mono text-sky-300 text-xs">
-            پیکربندی باس‌بار: {calculatedSeries}S {calculatedParallel}P ({batterySizing.systemVoltageVdc}V DC)
+            پیکربندی باس‌بار: {calculatedSeries}S {calculatedParallel}P ({actualBankVoltageV}V nominal; target {batterySizing.systemVoltageVdc}V DC)
           </div>
         </div>
 

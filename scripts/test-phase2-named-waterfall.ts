@@ -1,5 +1,5 @@
+import {historicalSource} from './historical-source';
 import assert from 'node:assert/strict';
-import {execFileSync} from 'node:child_process';
 import {readFileSync, readdirSync, writeFileSync, unlinkSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -84,7 +84,7 @@ for(const path of sources('src').filter(p=>!p.includes('/benchmarks/')&&!['src/e
 // Load the actual base-version consumers beside their relative dependencies.
 // Temporary source is removed after import even when the import fails.
 async function baseline(path:string) {
- const source=execFileSync('git',['show',`${BASE}:${path}`],{encoding:'utf8',maxBuffer:8*1024*1024});
+ const source=historicalSource(`${BASE}:${path}`);
  const oldUnits=extractFormulaUnits(path,source).map(f=>f.formulaId),newUnits=extractFormulaUnits(path,readFileSync(path,'utf8')).map(f=>f.formulaId);
  if(path.endsWith('annualYieldEngine.ts')) {
   assert.deepEqual(oldUnits.filter(id=>!newUnits.includes(id)),[`${path}#computeCanonicalAnnualYield#02820d20092d`]);

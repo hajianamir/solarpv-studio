@@ -1,5 +1,5 @@
+import {historicalSource} from './historical-source';
 import assert from 'node:assert/strict';
-import {execFileSync} from 'node:child_process';
 import {writeFileSync,unlinkSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -10,7 +10,7 @@ import {computeConfiguredWaterfall,buildWaterfallArgs} from '../src/engine/water
 import {computeCanonicalAnnualYield} from '../src/engine/core/annualYieldEngine';
 import {WaterfallLossTab} from '../src/components/WaterfallLossTab';
 const path=resolve(`src/engine/.physics-reference-thermal-origin-${process.pid}.ts`);
-const source=execFileSync('git',['show','c171538de7eade1a4090531820adb97306251105:src/engine/waterfallLossEngine.ts'],{encoding:'utf8'});
+const source=historicalSource('c171538de7eade1a4090531820adb97306251105:src/engine/waterfallLossEngine.ts');
 writeFileSync(path,source);
 let count=0;
 try{

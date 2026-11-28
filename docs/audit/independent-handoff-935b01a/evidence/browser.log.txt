@@ -1,0 +1,2 @@
+PASS audit priority fa: default report selected geometry/no noon-to-four-hour claim; ongrid/offgrid actual0.5PSH scenarios unassessed and energy preserved.
+PASS audit priority en: default report selected geometry/no noon-to-four-hour claim; ongrid/offgrid actual0.5PSH scenarios unassessed and energy preserved.

@@ -1,0 +1,1 @@
+Reference Kimber: boundary/missing-data contracts and 20 pvlib 0.13.1 fixtures PASS (not field validation).

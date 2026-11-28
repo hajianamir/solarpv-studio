@@ -98,8 +98,8 @@ const LegacyIvCurveTracer: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' }) =
             : 'منحنی غربالگری تک‌دیودی با ماژول نمونه ثابت و MPP نمونه‌برداری‌شده ۸۰گامی؛ نه منحنی اندازه‌گیری‌شده یا ماژول منتخب کاتالوگ'}
         </p>
         <p data-testid="single-diode-qualification" className="text-xs text-industrial-warning mt-2">{isEn
-          ? 'Reference-parameter arithmetic is tested separately from fitting. gamma_Pmp is not fitted; beta_Voc only seeds the solver. Scalar Isc is approximate; solver convergence is not certified. No annual-energy or financial adoption is enabled by this page.'
-          : 'آزمون حساب پارامترهای مرجع از برازش جداست. gamma_Pmp برازش نمی‌شود؛ beta_Voc فقط حدس اولیه حلگر است. Isc اسکالر تقریبی و همگرایی حلگر تأییدنشده است. این صفحه مجوز انتقال به انرژی سالانه یا مالی ایجاد نمی‌کند.'}</p>
+          ? 'Reference-parameter arithmetic is tested separately from fitting. gamma_Pmp is not fitted; beta_Voc is not a fitted constraint. Bracketed roots have residual checks; scalar Isc and sampled MPP remain approximate. No annual-energy or financial adoption is enabled by this page.'
+          : 'آزمون حساب پارامترهای مرجع از برازش جداست. gamma_Pmp برازش نمی‌شود؛ beta_Voc قید برازش نیست. ریشه محصور با آزمون باقیمانده حل می‌شود؛ Isc اسکالر و MPP نمونه‌ای تقریبی‌اند. این صفحه مجوز انتقال به انرژی سالانه یا مالی ایجاد نمی‌کند.'}</p>
       </div>
 
       {/* Interactive Controls */}
@@ -128,15 +128,16 @@ const LegacyIvCurveTracer: React.FC<IvCurveTracerTabProps> = ({ lang = 'fa' }) =
               <span className="text-slate-300 font-semibold flex items-center gap-1">
                 <Thermometer className="w-3.5 h-3.5 text-industrial-error" /> {isEn ? 'Cell Temperature (T):' : 'دمای سلول (Cell Temp T):'}
               </span>
-              <span className="font-mono text-industrial-accent font-bold">{cellTempC}°C</span>
+              <span data-testid="legacy-cell-temperature" className="font-mono text-industrial-accent font-bold">{cellTempC}°C</span>
             </div>
             <input
               type="range"
+              aria-label={isEn ? 'Cell temperature °C' : 'دمای سلول °C'}
               min="-15"
               max="75"
               step="5"
               value={cellTempC}
-              onChange={(e) => setCellTempC(parseInt(e.target.value) || 25)}
+              onChange={(e) => setCellTempC(Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : 25)}
               className="w-full accent-cyan-400"
             />
           </div>

@@ -1,0 +1,16 @@
+
+> solarpv-studio@1.0.3 lint
+> npm run lint:types && npm run lint:eslint
+
+
+> solarpv-studio@1.0.3 lint:types
+> npm run lint:types:client && npm run lint:types:node
+
+
+> solarpv-studio@1.0.3 lint:types:client
+> tsc --noEmit
+
+
+> solarpv-studio@1.0.3 lint:types:node
+> tsc --project tsconfig.node.json --noEmit
+

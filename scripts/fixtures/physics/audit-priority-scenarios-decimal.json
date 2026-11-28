@@ -1,0 +1,561 @@
+{
+  "schemaVersion": 1,
+  "evidenceClass": "independent-arithmetic-replay",
+  "independentCalculation": "Independent Decimal replay of scenario assumptions, not a physical/market oracle.\nNo TypeScript imports or output. Positive resource must not be replaced by1PSH.\nYear-zero CAPEX plus discounted battery reserve, end-year OPEX and geometric\nenergy degradation. All cost/efficiency constants are internal illustrative\nassumptions, NOT independently validated costs, reliability or plant yield.\n",
+  "tolerances": {
+    "absolute": 1e-10,
+    "relative": 1e-12
+  },
+  "cases": [
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 2847.0,
+        "lcoeUsdPerKwh": 3.3132463273643005
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 2704.65,
+        "lcoeUsdPerKwh": 3.1056300833540615
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 3650.0,
+        "lcoeUsdPerKwh": 4.259571525776811
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 14235.0,
+        "lcoeUsdPerKwh": 0.6626492654728601
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 13523.25,
+        "lcoeUsdPerKwh": 0.6211260166708124
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 18250.0,
+        "lcoeUsdPerKwh": 0.8519143051553622
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 28470.0,
+        "lcoeUsdPerKwh": 0.33132463273643004
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 27046.5,
+        "lcoeUsdPerKwh": 0.3105630083354062
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 36500.0,
+        "lcoeUsdPerKwh": 0.4259571525776811
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 142350.0,
+        "lcoeUsdPerKwh": 0.06626492654728601
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 135232.5,
+        "lcoeUsdPerKwh": 0.062112601667081234
+      }
+    },
+    {
+      "inputs": [
+        100.0,
+        10.0,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 182500.0,
+        "lcoeUsdPerKwh": 0.08519143051553621
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 28.47,
+        "lcoeUsdPerKwh": 17.36615814126107
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 28.47,
+        "lcoeUsdPerKwh": 14.371164869637019
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 37.96,
+        "lcoeUsdPerKwh": 28.102875447426573
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 142.35,
+        "lcoeUsdPerKwh": 3.473231628252214
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 142.35,
+        "lcoeUsdPerKwh": 2.8742329739274037
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 189.8,
+        "lcoeUsdPerKwh": 5.620575089485315
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 284.7,
+        "lcoeUsdPerKwh": 1.736615814126107
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 284.7,
+        "lcoeUsdPerKwh": 1.4371164869637019
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 379.6,
+        "lcoeUsdPerKwh": 2.8102875447426574
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 1423.5,
+        "lcoeUsdPerKwh": 0.3473231628252214
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 1423.5,
+        "lcoeUsdPerKwh": 0.28742329739274036
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        0.1,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 1898.0,
+        "lcoeUsdPerKwh": 0.5620575089485315
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 28.47,
+        "lcoeUsdPerKwh": 204.47896549534843
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 28.47,
+        "lcoeUsdPerKwh": 336.50418646773215
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        0.1
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 37.96,
+        "lcoeUsdPerKwh": 265.06158932547214
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 142.35,
+        "lcoeUsdPerKwh": 40.89579309906969
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 142.35,
+        "lcoeUsdPerKwh": 67.30083729354644
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        0.5
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 189.8,
+        "lcoeUsdPerKwh": 53.012317865094424
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 284.7,
+        "lcoeUsdPerKwh": 20.447896549534846
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 284.7,
+        "lcoeUsdPerKwh": 33.65041864677322
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        1.0
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 379.6,
+        "lcoeUsdPerKwh": 26.506158932547212
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "optimized_lifepo4",
+      "expected": {
+        "firstYearGenerationProxyKwh": 1423.5,
+        "lcoeUsdPerKwh": 4.089579309906969
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "budget_gel",
+      "expected": {
+        "firstYearGenerationProxyKwh": 1423.5,
+        "lcoeUsdPerKwh": 6.730083729354644
+      }
+    },
+    {
+      "inputs": [
+        1.0,
+        100.0,
+        1.0,
+        90000,
+        18,
+        5.0
+      ],
+      "id": "industrial_redundant",
+      "expected": {
+        "firstYearGenerationProxyKwh": 1898.0,
+        "lcoeUsdPerKwh": 5.301231786509443
+      }
+    }
+  ],
+  "rowGeometry": {
+    "latitudeDeg": 35.6892,
+    "declinationDeg": -23.45,
+    "tiltDeg": 31.0,
+    "slantM": 2.278,
+    "noonPitchM": 3.9160434759390856,
+    "pitchAt14TrueSolarM": 4.186839253488131,
+    "projectedGroundCoveragePct": 49.862242924439514,
+    "limitations": "Ideal single-module-slant level-ground south-facing geometry only; not assessed installation or4hour clearance."
+  }
+}

@@ -1,0 +1,13 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('report-projected-ground-coverage').filter({ hasText: /Unavailable|در دسترس نیست/ }) to be visible
+
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-audit-priority-browser.ts:37:109) {
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.3

@@ -63,11 +63,10 @@ for(const raw of [
  {...base,reference:{...base.reference,saturationCurrentA:1e-320}},
 ])assert.equal(publicEvaluate(raw).status,'unavailable','Overflow, negative translation or ratio singularity cannot become successful metrics');
 
-// The legacy failure remains reproducible. Solve exactly those at-condition
-// parameters with the seed-free bounded kernel, without claiming the legacy
-// extraction became independently validated or silently routing legacy calls.
+// F08 now repairs legacy roots too; explicit reference API remains separate.
+// Cross-check the unchanged legacy translated parameters with reference kernel.
 const bad=calculateSingleDiodeCurve(51.2,14.37,42.65,13.6,580,-.8,.045,-.3,1000,65,1);
-const lp=bad.extractedParameters;assert.ok(lp);assert.equal(bad.voc,188.23);
+const lp=bad.extractedParameters;assert.ok(lp);assert.equal(bad.voc,45);assert.ok(bad.solverDiagnostics);assert.ok(Math.abs(bad.solverDiagnostics.openCircuitResidualA)<1e-9);
 const p={iph:lp.iph,i0:lp.i0,rs:lp.rs,rsh:lp.rsh,a:lp.n*lp.vt};
 const root=solver.solveBoundedDiodeRoot(p,'voc',128);assert.notEqual(root,null);if(root===null)throw new Error('Seed-free root unavailable');
 const resolved=solver.evaluateDiodeState(p,root);
@@ -80,8 +79,8 @@ const units=extractFormulaUnits(owner,readFileSync(owner,'utf8'));
 const witnesses=records.filter(r=>r.formulaId.startsWith(owner+'#'));
 assert.equal(units.length,66);assert.deepEqual(witnesses.map(r=>r.formulaId).sort(),units.map(r=>r.formulaId).sort());
 for(const r of witnesses)await executeReferenceFixture(r);
-const report={schemaVersion:1,scope:'Explicit reference De Soto translation and bounded continuous single-diode metrics only; no fitting/operational adoption',oracleSha256:createHash('sha256').update(readFileSync(file)).digest('hex'),cases:72,componentAndPolicyComparisons:comparisons,invalidCases,executedSensitiveExpressions:witnesses.length,maxima,legacyWitness:{legacyVoc:bad.voc,boundedVoc:resolved.voltage,boundedResidualAmps:resolved.current,legacyApiUnchanged:true},limitations:['No arbitrary datasheet fitting or beta/gamma constraint','No field/manufacturer/whole-model applicability approval','Only temporary explicit I-V metrics UI selection; no catalog/persistence/HTTP/annual-energy/financial adoption','Legacy solver and its defect remain unchanged; new API is explicit only']};
-const out='docs/audit/dual-independent-audit-review/phase3-bounded-diode-comparison.json';
+const report={schemaVersion:1,scope:'Explicit reference De Soto translation and bounded continuous single-diode metrics only; no fitting/operational adoption',oracleSha256:createHash('sha256').update(readFileSync(file)).digest('hex'),cases:72,componentAndPolicyComparisons:comparisons,invalidCases,executedSensitiveExpressions:witnesses.length,maxima,legacyWitness:{legacyVoc:bad.voc,boundedVoc:resolved.voltage,boundedResidualAmps:resolved.current,legacyApiUnchanged:false,legacyRootRepairPolicy:bad.solverDiagnostics.policy},limitations:['No arbitrary datasheet fitting or beta/gamma constraint','No field/manufacturer/whole-model applicability approval','Only temporary explicit I-V metrics UI selection; no catalog/persistence/HTTP/annual-energy/financial adoption','Legacy roots repaired separately under ADR-035; extraction remains heuristic; reference API is explicit only']};
+const out='docs/audit/independent-handoff-935b01a/remaining-bounded-diode-comparison.json';
 if(process.argv.includes('--write'))writeFileSync(out,JSON.stringify(report,null,2)+'\n');else assert.deepEqual(JSON.parse(readFileSync(out,'utf8')),report,'Investigate reference/result drift before explicit receipt regeneration');
-console.log(`PASS bounded reference diode:72 external cases,${comparisons} independent component/policy vectors,${invalidCases} invalid contracts,66 executed mutation-sensitive expressions; dark/exhaustion/domain failure and legacy-witness repair through explicit kernel only.`);
+console.log(`PASS bounded reference diode:72 external cases,${comparisons} independent component/policy vectors,${invalidCases} invalid contracts,66 executed mutation-sensitive expressions; dark/exhaustion/domain failure and explicit-kernel cross-check of separately repaired legacy roots (ADR-035).`);
 console.log(JSON.stringify(report,null,2));

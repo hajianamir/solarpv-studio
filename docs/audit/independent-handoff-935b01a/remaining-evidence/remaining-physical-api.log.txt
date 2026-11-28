@@ -1,0 +1,8 @@
+
+> solarpv-studio@1.0.3 test:physical:api
+> tsx scripts/test-physical-models.ts
+
+PASS isolated actual dc_coupled: binding, physical residuals, tamper, nonfinite, cancellation
+PASS isolated actual electrochemical_spm: binding, physical residuals, tamper, nonfinite, cancellation
+PASS isolated actual dq_protection_control: binding, physical residuals, tamper, nonfinite, cancellation
+PASS Python/TS strict input matrix, explicit-offset continuity, direct-worker duplicate-key guard

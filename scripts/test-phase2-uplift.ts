@@ -1,3 +1,4 @@
+import {historicalSource} from './historical-source';
 import assert from 'node:assert/strict';
 import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -47,11 +48,10 @@ try {
  assert.match(text,/preliminary screening/);
 } finally {await rm(scratch,{recursive:true,force:true});}
 console.log(`PASS Phase 2 uplift forwarding: ${cases} synthetic consumer cases, ${legacyDisagreements} expose original defect; report/input readback. Not physical or conformity validation.`);
-const {execFileSync}=await import('node:child_process');
 const {readFileSync}=await import('node:fs');
 const {extractFormulaUnits}=await import('./verify-physics-reference-gate');
 for(const path of ['src/engine/geotech/foundationRecommendation.ts','src/engine/core/structuralContract.ts']) {
- const before=execFileSync('git',['show',`0c4d7cadc7db6001459ea36fdf9a3d1403179a71:${path}`],{encoding:'utf8'});
+ const before=historicalSource(`0c4d7cadc7db6001459ea36fdf9a3d1403179a71:${path}`);
  const previous=extractFormulaUnits(path,before).map(f=>f.formulaId).sort();
  const current=extractFormulaUnits(path,readFileSync(path,'utf8')).map(f=>f.formulaId).sort();
  if(path.endsWith('/structuralContract.ts')) {

@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:browser:download
+> tsx scripts/test-browser-download.ts
+
+PASS browser download adapter: DOM attachment, delivery, delayed cleanup and failure cleanup; no engineering formulas

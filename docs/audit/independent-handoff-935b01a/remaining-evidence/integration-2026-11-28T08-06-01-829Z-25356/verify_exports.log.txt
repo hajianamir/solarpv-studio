@@ -1,0 +1,14 @@
+
+> solarpv-studio@1.0.3 verify:exports
+> tsx scripts/verify-export-artifact-readback.ts
+
+[PASS] DOCX OOXML opens and contains project/document/revision/approval metadata
+[PASS] DOCX read-back retains the shared provenance value, unit, and source
+[PASS] DOCX read-back retains preparer, reviewer, and client sign-off names
+[PASS] XLSX read-back preserves the same provenance value, unit, and source as DOCX/JSON
+[PASS] XLSX round-trip preserves project, document ID, revision, and approval fields
+[PASS] XLSX round-trip preserves preparer, reviewer, and client sign-off names
+[PASS] JSON envelope read-back preserves format/schema, project fields, and revision metadata
+[PASS] JSON envelope read-back preserves engineer/company/client sign-off metadata
+[PASS] Re-import of the real serialized JSON restores site coordinates, PSH, and override scope
+Export artifact read-back verification: all checks PASS (DOCX, XLSX, JSON + re-import)
