@@ -1,0 +1,18 @@
+
+> solarpv-studio@1.0.3 verify:phase4:baseline
+> node scripts/phase4-verification.mjs baseline
+
+PASS npm run test:phase4 (167ms)
+PASS npm run lint (34733ms)
+PASS npm run build (18089ms)
+FAIL npm run test (2477ms)
+PASS npm run test:smoke (424ms)
+FAIL npm run test:coverage (4345ms)
+FAIL npm run test:phase1 (1413ms)
+FAIL npm run test:phase2 (2353ms)
+FAIL npm run test:phase3 (4974ms)
+FAIL npm run verify:phase1-evidence (1544ms)
+FAIL npm run verify:physics-reference-gate (4205ms)
+PASS npm run verify:help (383ms)
+PASS npm run verify:engine-claims (537ms)
+Receipt: .cache/phase4/baseline-2026-11-28T07-57-57-842Z-15907/receipt.json

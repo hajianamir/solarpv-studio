@@ -758,7 +758,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
-                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'تأثیر زهکش شوری (ISO 9223):' : 'Salinity Corrosion Derating (ISO 9223):'}</span>
+                <span className="text-slate-400 block text-[10px]">{lang === 'fa' ? 'فرض داخلی افت ساحلی (ISO ارزیابی نشده):' : 'Internal coastal derating assumption (ISO unassessed):'}</span>
                 <span className="font-mono font-bold text-industrial-warning text-base">-{salinityDeratePct.toFixed(1)}%</span>
                 <span className="text-[9px] text-industrial-warning/80 block mt-0.5">
                   {corrosion ? `${corrosion.iso9223Category} · ${corrosion.distanceToSeaKm} km to sea · ${corrosion.traceId}` : '—'}

@@ -1,0 +1,14 @@
+[
+  {
+    "path": "src/engine/solarPvEngine.physics-reference-2e9a3247-960b-448e-88f6-6d2f35c0d532.ts",
+    "sha256": "c6cfa8be08ee962e525ca81c726cba8edee49d769a300cb069c669e34c0aaab4",
+    "bytes": 36172,
+    "disposition": "Removed only this verified stale generated instrumentation module left by earlier abrupt failing concurrent benchmark process; not a product module."
+  },
+  {
+    "path": "src/engine/solarPvEngine.physics-reference-580be690-88ef-433e-bcc8-2d15843c0689.ts",
+    "sha256": "c6cfa8be08ee962e525ca81c726cba8edee49d769a300cb069c669e34c0aaab4",
+    "bytes": 36172,
+    "disposition": "Removed only this verified stale generated instrumentation module left by earlier abrupt failing concurrent benchmark process; not a product module."
+  }
+]

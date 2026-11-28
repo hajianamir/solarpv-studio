@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:pdf
+> tsx scripts/test-report-pdf.ts
+
+PASS real PDF: 5 A4 pages, embedded Unicode, Persian extraction, first/last record and full source identity readback; .cache/pdf-evidence/synthetic-report.pdf

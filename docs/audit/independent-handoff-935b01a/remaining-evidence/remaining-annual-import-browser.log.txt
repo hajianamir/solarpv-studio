@@ -1,0 +1,2 @@
+{"status":"PASS","lang":"en","intervals":35040,"jsonBytes":4119057,"endToEndImportMs":1407.5515409999998,"maxObservedLongTaskMs":587,"journey":"actual local file import, complete annual reference computed, waterfall replacement rendered; no adoption/field validation"}
+{"status":"PASS","lang":"fa","intervals":35040,"jsonBytes":4119057,"endToEndImportMs":1803.334218,"maxObservedLongTaskMs":654,"journey":"actual local file import, complete annual reference computed, waterfall replacement rendered; no adoption/field validation"}

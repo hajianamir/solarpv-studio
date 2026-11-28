@@ -1,0 +1,21 @@
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#a03cdf45d4ef (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#a03cdf45d4ef
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862: formula unit is not present in its production source
+    at assertFormulaHasDirectExportBinding (/home/user/solarpv-studio/scripts/verify-physics-reference-gate.ts:380:10)
+    at executeReferenceFixture (/home/user/solarpv-studio/scripts/verify-physics-reference-gate.ts:622:19)
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-priority-reference-registry.ts:7:35) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: undefined,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

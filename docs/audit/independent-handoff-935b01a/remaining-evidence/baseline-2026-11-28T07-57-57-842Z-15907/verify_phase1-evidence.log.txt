@@ -1,0 +1,591 @@
+
+> solarpv-studio@1.0.3 verify:phase1-evidence
+> tsx scripts/phase1-evidence-inventory.ts --check
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Evidence inventory stale: run npx tsx scripts/phase1-evidence-inventory.ts
++ actual - expected
+... Skipped lines
+
+  '{\n' +
+    '  "schemaVersion": 1,\n' +
+    '  "reviewDate": "2026-11-03",\n' +
+    '  "scope": "All current src/engine TypeScript, services Python, contracts and presentation boundary sources (tests/venvs excluded). Presence, interfaces and linked evidence, not validated implementation coverage.",\n' +
+    '  "baseline": "0c4d7cadc7db6001459ea36fdf9a3d1403179a71",\n' +
+...
+    '      "path": "src/engine/core/annualYieldEngine.ts",\n' +
++   '      "sourceSha256": "2cb8d661b57f52a3575684d2fcbe25fd1facad6f2651f66f0c0620460d2dc1d4",\n' +
+-   '      "sourceSha256": "a87a818dc710552d6a042e881ae647aecaab80bea92548d45b817ad27ab876c4",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "AnnualYieldKwh",\n' +
+    '          "line": 28\n' +
+    '        },\n' +
+...
+    '          "name": "UnifiedAnnualYieldInput",\n' +
++   '          "line": 213\n' +
+-   '          "line": 214\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "UnifiedAnnualYieldResult",\n' +
++   '          "line": 239\n' +
+-   '          "line": 240\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "FivePathConvergenceReport",\n' +
++   '          "line": 457\n' +
+-   '          "line": 458\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+
+    at <anonymous> (/home/user/solarpv-studio/scripts/phase1-evidence-inventory.ts:27:44)
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: '{\n' +
+    '  "schemaVersion": 1,\n' +
+    '  "reviewDate": "2026-11-03",\n' +
+    '  "scope": "All current src/engine TypeScript, services Python, contracts and presentation boundary sources (tests/venvs excluded). Presence, interfaces and linked evidence, not validated implementation coverage.",\n' +
+    '  "baseline": "0c4d7cadc7db6001459ea36fdf9a3d1403179a71",\n' +
+    '  "modules": [\n' +
+    '    {\n' +
+    '      "path": "src/engine/batteryEngine.ts",\n' +
+    '      "sourceSha256": "f485587d2924e5fbc93cada6fbad59d9abd8feef4840c7c1632f70b22f62b2a6",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "SystemMode",\n' +
+    '          "line": 3\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BatteryChemistry",\n' +
+    '          "line": 5\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BatteryChemistryProfile",\n' +
+    '          "line": 7\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BatteryBankSizingResult",\n' +
+    '          "line": 106\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/bifacial/bifacial2dViewFactor.ts",\n' +
+    '      "sourceSha256": "07ede2ac49b67c51b4083d151d3adf73b4180800ca8890e37728927360cac098",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "BifacialArrayGeometry",\n' +
+    '          "line": 20\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BifacialIrradianceInput",\n' +
+    '          "line": 45\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "ChordSliceViewFactors",\n' +
+    '          "line": 57\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BifacialViewFactorResult",\n' +
+    '          "line": 69\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/bifacialGain.ts",\n' +
+    '      "sourceSha256": "d55bed02049bcb87d0f0961d3df1c35ba3cac5fa2d9fdfb3c2c10e07874473de",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "BifacialGainInput",\n' +
+    '          "line": 10\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BifacialGainDiagnostics",\n' +
+    '          "line": 31\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/bipv/bipvThermalEngine.ts",\n' +
+    '      "sourceSha256": "0ccd0682a3561a9670acd4756ae787eba9fc46c349213f9217dbf1833ef37646",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "BipvVentilationMode",\n' +
+    '          "line": 52\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BipvThermalConfig",\n' +
+    '          "line": 54\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BipvThermalSliceResult",\n' +
+    '          "line": 95\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BipvThermalSimulationResult",\n' +
+    '          "line": 103\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/catalogAdapters.ts",\n' +
+    '      "sourceSha256": "3e3804c04d847c41de250e5400d753f4b582651e750cf29d654caea26a6ce500",\n' +
+    '      "inputsAndTypes": [],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/catalogRepository.ts",\n' +
+    '      "sourceSha256": "6053f954c19fa12bcfcc05de5b1088fa3cfad271cbbcc8152d962f70791ee53c",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "CatalogValidationResult",\n' +
+    '          "line": 23\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "CatalogEquipmentOrigin",\n' +
+    '          "line": 29\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "EnhancedCatalogModule",\n' +
+    '          "line": 31\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "EnhancedCatalogInverter",\n' +
+    '          "line": 37\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "EnhancedCatalogBattery",\n' +
+    '          "line": 42\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/climaticData.ts",\n' +
+    '      "sourceSha256": "60c046effc1c1777c7fb0b34050aa73abd9baad5085bf9b9b6076f476e6a6d12",\n' +
+    '      "inputsAndTypes": [],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/core/advancedInterfaces.ts",\n' +
+    '      "sourceSha256": "267a32e2029f774338a246a1e47d0647aa5d84c8301153f6e9052aeffc70980e",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "SoilingConfig",\n' +
+    '          "line": 17\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SoilingDailyStepResult",\n' +
+    '          "line": 40\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SoilingSimulationResult",\n' +
+    '          "line": 50\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SnowSheddingConfig",\n' +
+    '          "line": 63\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SnowSheddingStepResult",\n' +
+    '          "line": 94\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SnowSheddingSummaryResult",\n' +
+    '          "line": 104\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "TemperatureCoupledIamConfig",\n' +
+    '          "line": 118\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "TemperatureCoupledIamResult",\n' +
+    '          "line": 141\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BacktrackingTrackerConfig",\n' +
+    '          "line": 154\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "TrackerStepResult",\n' +
+    '          "line": 174\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/core/annualYieldEngine.ts",\n' +
+    '      "sourceSha256": "2cb8d661b57f52a3575684d2fcbe25fd1facad6f2651f66f0c0620460d2dc1d4",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "AnnualYieldKwh",\n' +
+    '          "line": 28\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "PerformanceRatioPct",\n' +
+    '          "line": 29\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SpecificYieldKwhPerKwp",\n' +
+    '          "line": 30\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "AnnualYieldStageLoss",\n' +
+    '          "line": 53\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "CanonicalAnnualYieldInput",\n' +
+    '          "line": 61\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "CanonicalAnnualYieldResult",\n' +
+    '          "line": 85\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "UnifiedAnnualYieldInput",\n' +
+    '          "line": 213\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "UnifiedAnnualYieldResult",\n' +
+    '          "line": 239\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "FivePathConvergenceReport",\n' +
+    '          "line": 457\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [\n' +
+    '        {\n' +
+    '          "formulaId": "src/engine/core/annualYieldEngine.ts#calculateStandardDeratingFactor#4e4825014850",\n' +
+    '          "fixtureFile": "scripts/fixtures/physics/pvwatts-v5-multiplicative-system-derate.json",\n' +
+    '          "productionExport": "calculateStandardDeratingFactor",\n' +
+    '          "referenceTitle": "PVWatts Version 5 Manual",\n' +
+    '          "referenceUrl": "https://pvwatts.n'... 414509 more characters,
+  expected: '{\n' +
+    '  "schemaVersion": 1,\n' +
+    '  "reviewDate": "2026-11-03",\n' +
+    '  "scope": "All current src/engine TypeScript, services Python, contracts and presentation boundary sources (tests/venvs excluded). Presence, interfaces and linked evidence, not validated implementation coverage.",\n' +
+    '  "baseline": "0c4d7cadc7db6001459ea36fdf9a3d1403179a71",\n' +
+    '  "modules": [\n' +
+    '    {\n' +
+    '      "path": "src/engine/batteryEngine.ts",\n' +
+    '      "sourceSha256": "f485587d2924e5fbc93cada6fbad59d9abd8feef4840c7c1632f70b22f62b2a6",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "SystemMode",\n' +
+    '          "line": 3\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BatteryChemistry",\n' +
+    '          "line": 5\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BatteryChemistryProfile",\n' +
+    '          "line": 7\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BatteryBankSizingResult",\n' +
+    '          "line": 106\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/bifacial/bifacial2dViewFactor.ts",\n' +
+    '      "sourceSha256": "07ede2ac49b67c51b4083d151d3adf73b4180800ca8890e37728927360cac098",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "BifacialArrayGeometry",\n' +
+    '          "line": 20\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BifacialIrradianceInput",\n' +
+    '          "line": 45\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "ChordSliceViewFactors",\n' +
+    '          "line": 57\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BifacialViewFactorResult",\n' +
+    '          "line": 69\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/bifacialGain.ts",\n' +
+    '      "sourceSha256": "d55bed02049bcb87d0f0961d3df1c35ba3cac5fa2d9fdfb3c2c10e07874473de",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "BifacialGainInput",\n' +
+    '          "line": 10\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BifacialGainDiagnostics",\n' +
+    '          "line": 31\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/bipv/bipvThermalEngine.ts",\n' +
+    '      "sourceSha256": "0ccd0682a3561a9670acd4756ae787eba9fc46c349213f9217dbf1833ef37646",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "BipvVentilationMode",\n' +
+    '          "line": 52\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BipvThermalConfig",\n' +
+    '          "line": 54\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BipvThermalSliceResult",\n' +
+    '          "line": 95\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BipvThermalSimulationResult",\n' +
+    '          "line": 103\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/catalogAdapters.ts",\n' +
+    '      "sourceSha256": "3e3804c04d847c41de250e5400d753f4b582651e750cf29d654caea26a6ce500",\n' +
+    '      "inputsAndTypes": [],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/catalogRepository.ts",\n' +
+    '      "sourceSha256": "6053f954c19fa12bcfcc05de5b1088fa3cfad271cbbcc8152d962f70791ee53c",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "CatalogValidationResult",\n' +
+    '          "line": 23\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "CatalogEquipmentOrigin",\n' +
+    '          "line": 29\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "EnhancedCatalogModule",\n' +
+    '          "line": 31\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "EnhancedCatalogInverter",\n' +
+    '          "line": 37\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "EnhancedCatalogBattery",\n' +
+    '          "line": 42\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/climaticData.ts",\n' +
+    '      "sourceSha256": "60c046effc1c1777c7fb0b34050aa73abd9baad5085bf9b9b6076f476e6a6d12",\n' +
+    '      "inputsAndTypes": [],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/core/advancedInterfaces.ts",\n' +
+    '      "sourceSha256": "267a32e2029f774338a246a1e47d0647aa5d84c8301153f6e9052aeffc70980e",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "SoilingConfig",\n' +
+    '          "line": 17\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SoilingDailyStepResult",\n' +
+    '          "line": 40\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SoilingSimulationResult",\n' +
+    '          "line": 50\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SnowSheddingConfig",\n' +
+    '          "line": 63\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SnowSheddingStepResult",\n' +
+    '          "line": 94\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SnowSheddingSummaryResult",\n' +
+    '          "line": 104\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "TemperatureCoupledIamConfig",\n' +
+    '          "line": 118\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "TemperatureCoupledIamResult",\n' +
+    '          "line": 141\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "BacktrackingTrackerConfig",\n' +
+    '          "line": 154\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "TrackerStepResult",\n' +
+    '          "line": 174\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [],\n' +
+    '      "applicability": "No formula-reference record linked in this registry; unknown evidence is not an accuracy or conformity approval.",\n' +
+    '      "unresolved": "Whole-model/project applicability, field validation and conformity not established by this inventory. See matrix/ADR-011 for high-risk blocked claims."\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "path": "src/engine/core/annualYieldEngine.ts",\n' +
+    '      "sourceSha256": "a87a818dc710552d6a042e881ae647aecaab80bea92548d45b817ad27ab876c4",\n' +
+    '      "inputsAndTypes": [\n' +
+    '        {\n' +
+    '          "name": "AnnualYieldKwh",\n' +
+    '          "line": 28\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "PerformanceRatioPct",\n' +
+    '          "line": 29\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "SpecificYieldKwhPerKwp",\n' +
+    '          "line": 30\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "AnnualYieldStageLoss",\n' +
+    '          "line": 53\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "CanonicalAnnualYieldInput",\n' +
+    '          "line": 61\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "CanonicalAnnualYieldResult",\n' +
+    '          "line": 85\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "UnifiedAnnualYieldInput",\n' +
+    '          "line": 214\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "UnifiedAnnualYieldResult",\n' +
+    '          "line": 240\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "name": "FivePathConvergenceReport",\n' +
+    '          "line": 458\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "wholeModelConformity": null,\n' +
+    '      "implementationClassification": "current_source_not_independently_validated_as_a_whole",\n' +
+    '      "independentlyValidatedWholeModelDomain": null,\n' +
+    '      "evidence": [\n' +
+    '        {\n' +
+    '          "formulaId": "src/engine/core/annualYieldEngine.ts#calculateStandardDeratingFactor#4e4825014850",\n' +
+    '          "fixtureFile": "scripts/fixtures/physics/pvwatts-v5-multiplicative-system-derate.json",\n' +
+    '          "productionExport": "calculateStandardDeratingFactor",\n' +
+    '          "referenceTitle": "PVWatts Version 5 Manual",\n' +
+    '          "referenceUrl": "https://pvwatts.n'... 414509 more characters,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

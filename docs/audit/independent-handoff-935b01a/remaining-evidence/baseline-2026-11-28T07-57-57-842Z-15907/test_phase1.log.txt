@@ -1,0 +1,52 @@
+
+> solarpv-studio@1.0.3 test:phase1
+> tsx scripts/test-phase1-boundaries.ts
+
+Phase 1 boundary unit regressions passed (synthetic arithmetic, not model validation).
+PASS explicit azimuth, rating-basis/readiness, persistence, per-channel overload and unsupported economic/bifacial contracts.
+PASS ratio/nameplate, invalid input, unknown 65/90A and screening PR denominator/gain regressions.
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  [
++   'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#30a4c9fbf635',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#317ddba0b12c',
++   'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#3438b2170efe',
++   'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#37c513f8e47d',
++   'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#6186c24e55d4',
++   'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#6dbb49371ffc',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#76120537b4e4',
++   'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#89446ffd6f96',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#a1a634c47c18',
++   'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#baced17bd66b'
+  ]
+
+    at <anonymous> (/home/user/solarpv-studio/scripts/test-phase1-boundaries.ts:88:10) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#30a4c9fbf635',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#317ddba0b12c',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#3438b2170efe',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#37c513f8e47d',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#6186c24e55d4',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#6dbb49371ffc',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#76120537b4e4',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#89446ffd6f96',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#a1a634c47c18',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#baced17bd66b'
+  ],
+  expected: [
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#317ddba0b12c',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#76120537b4e4',
+    'src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#a1a634c47c18'
+  ],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

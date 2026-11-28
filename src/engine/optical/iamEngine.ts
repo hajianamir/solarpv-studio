@@ -132,11 +132,11 @@ export function calculateAshraeIam(
   b0: number = 0.05
 ): number {
   const theta = Math.max(0.0, Math.min(90.0, incidenceDeg));
-  if (theta >= 85.0) return 0.0; // ASHRAE cutoff at high angles
+  if (theta >= 90.0) return 0.0; // Back-facing/grazing beam; no arbitrary 85° cutoff.
 
   const thetaRad = (theta * Math.PI) / 180.0;
   const cosTheta = Math.cos(thetaRad);
-  if (cosTheta <= 0.01) return 0.0;
+  if (cosTheta <= 0) return 0.0;
 
   const iam = 1.0 - b0 * (1.0 / cosTheta - 1.0);
   return Math.max(0.0, Math.min(1.0, Number(iam.toFixed(6))));

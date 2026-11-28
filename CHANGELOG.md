@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — remaining partial-audit repairs (F01–04/F07–12/F15–20)
+
+- Qualify scalar POA in both report languages, correct annual-yield route comments, label coastal bands as internal/ISO unassessed, and remove unsupported PVGIS monitoring Class A metadata. Retain unvalidated screening assumptions rather than invent weather/site evidence.
+- Remove the optional ASHRAE85° cutoff; bracket/residual-check legacy diode roots; compare raw MPPT voltages and use stable east/north solar direction near poles. Correct the80%MPPT-budget label. Legacy parameter fitting, scalar Isc and sampled MPP limitations remain.
+- Preserve0°C and51.2V controls; show actual nominal BESS voltage and explicitly unassessed voltage-window/BMS/topology compatibility.
+- Add actionable exact-history test prerequisites, repair original physical-browser advanced-editor navigation, and give thermal subprocesses deterministic EOF, bounded capture/deadlines/cancellation and guaranteed cleanup.
+- Attribute initial battery inventory through actual delivered energy/losses/auxiliaries; do not erase direct PV value when initial SOC is unused. Replace quadratic Kimber/window/wash scans with linear operations and preserve pinned component fixtures.
+- Add independent pvlib SPA/IAM, browser, HTTP, large-input subprocess, annual attribution and35040interval performance regressions. Historical failed attempts retained. See ADR-035 and remaining audit receipt: the required independent-expression gate is not waived by component/broad test success; full verification/release remain blocked while its evidence gaps are unresolved.
+
+## Unreleased — independent audit priority repairs (F05/F06/F13/F14/F21/F22)
+
+- Retire fixed scenario availability/cable percentages to null with unassessed statuses; remove unsupported uptime, redundancy, fire/SPD and fixed lowest-TCO claims. All presets remain illustrative rather than assessed installations.
+- Preserve supplied positive PSH below1in scenario generation/LCOE; expose first-year proxy energy and policy identity. Keep nonpositive handling and unrelated legacy assumptions explicit.
+- Correct bilingual row-report wording to winter-solstice-noon screening only, with no4hour/IEC clearance promise. Derive projected single-module ground coverage from selected dimensions instead of4.6m; missing dimensions are unavailable.
+- Add36independent Decimal accounting vectors,24actual-base compatibility cases, an ideal solar-hour-angle witness, bilingual SSR and ongrid/offgrid/report browser regressions. See ADR-034 and `docs/audit/independent-handoff-935b01a/`. The supplied audit remains incomplete; other findings/release gates remain open.
+
 ## Unreleased — explicit bounded-reference I–V metrics selection
 
 - Keep the legacy illustrative curve as default and add a separate opt-in reference-metrics view using the existing strict bounded solver. No nameplate fitting, catalog copying or legacy fallback.

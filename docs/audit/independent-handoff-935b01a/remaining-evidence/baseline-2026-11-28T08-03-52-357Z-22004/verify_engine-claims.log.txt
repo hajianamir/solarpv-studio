@@ -1,0 +1,12 @@
+
+> solarpv-studio@1.0.3 verify:engine-claims
+> tsx scripts/verify-engine-claims.ts
+
+Engineering claims contract passed (IEEE 519 and IEEE 80 compliance/safety remain unevaluated; only internal screens are reported).
+Snow/soiling/bifacial provenance contract passed (screening only; no independent field validation claimed).
+Targeted legacy snow/soiling provenance guards and negative regressions passed.
+Internal sensitivity/test labels and background-only dataset preamble guards passed.
+BIPV/snow-input wording and bounded bibliography guards passed (not model validation).
+Visible benchmark runner provenance guards and negative regressions passed.
+Phase 1 surviving-claim containment guards passed.
+PASS Phase 1 economic, bifacial, structural and artifact qualification presence guards (not exhaustive semantic claim verification).

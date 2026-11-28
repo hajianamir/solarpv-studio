@@ -262,11 +262,9 @@ export function adoptOperationalEnergy(
     if (envelope.plan.intervalMinutes !== interval)
       throw new Error("Dispatch/PV cadence mismatch");
     const { samples, ...ledger } = dispatchOperatingEnergy(envelope.plan, rows);
-    // Initial stored energy is not newly generated PV. Conservatively exclude it from valued self-consumption.
-    const valuedSelfKwh = Math.max(
-      0,
-      ledger.selfConsumedKwh - ledger.initialStoredKwh,
-    );
+    // Explicit initial-inventory-first attribution, after conversion losses and
+    // auxiliary allocation. Unused initial SOC must not erase direct PV value.
+    const valuedSelfKwh = ledger.pvOriginSelfConsumedKwh;
     const financeEnergyKwh =
       context.mode === "powerplant"
         ? ledger.exportKwh

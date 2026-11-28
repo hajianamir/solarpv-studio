@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 verify:physics-registry
+> tsx scripts/verify-physics-model-registry.ts
+
+Physics model registry contract passed (8 model entries).

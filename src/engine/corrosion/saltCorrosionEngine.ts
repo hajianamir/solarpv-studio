@@ -1,13 +1,10 @@
 /**
  * Salt Corrosion, Coastal Salinity & Site Drainage Engine
- * SolarPV Studio v3.0 - ISO 9223:2012 / ASTM G57 / INBC Part 6
- *
- * Implements:
- * 1. Geodesic distance calculation to nearest open sea / ocean coastline.
- * 2. ISO 9223 atmospheric corrosivity categorization (C1–C5) for solar PV equipment.
- * 3. Equipment derating models (yield/OPEX effects on modules, inverters, structural steel).
- * 4. Structural protective coating recommendations (HDG thickness per ISO 1461, fasteners grade, enclosure IP rating).
- * 5. Geotechnical site drainage and groundwater table (GWL) hydrology assessment.
+ * Internal shoreline-distance and drainage screening heuristics only.
+ * Distance alone cannot establish an ISO 9223 atmospheric corrosivity category:
+ * first-year metal loss or applicable pollutant/time-of-wetness evidence is absent.
+ * C1..C5 keys and coating suggestions are retained compatibility assumptions,
+ * not classified exposure, certified protective design or field durability.
  */
 
 import { ExternalDataGateway } from '../dataGateway/externalDataGateway';
@@ -16,6 +13,7 @@ import { COASTLINE_ANCHOR_NODES, estimateGeodesicDistanceToCoastKm } from './coa
 
 export { COASTLINE_ANCHOR_NODES, estimateGeodesicDistanceToCoastKm };
 
+/** @deprecated Legacy internal band key, not an ISO-classified atmosphere. */
 export type Iso9223Category = 'C1' | 'C2' | 'C3' | 'C4' | 'C5';
 
 export interface ProtectiveCoatingRecommendation {
@@ -64,7 +62,10 @@ export interface SaltCorrosionOutput {
   latitude: number;
   longitude: number;
   distanceToSeaKm: number;
+  /** @deprecated Internal distance band only, never an assessed ISO category. */
   iso9223Category: Iso9223Category;
+  classificationPolicy: 'internal_shoreline_distance_screen_v1';
+  iso9223Assessment: 'not_assessed';
   categoryLabel: string;
   categoryLabelFa: string;
   corrosionRisk: string;
@@ -83,8 +84,7 @@ export interface SaltCorrosionOutput {
 }
 
 /**
- * ISO 9223 shoreline proximity bands (engineering proxy for atmospheric corrosivity
- * categories; C5-M = very high marine, within ~1 km of shoreline).
+ * Internal distance bands, not ISO thresholds. Deprecated export name retained.
  */
 export const ISO9223_BANDS: Array<{ maxKm: number; category: Iso9223Category }> = [
   { maxKm: 1.0, category: 'C5' },
@@ -227,7 +227,7 @@ function resolveTraceId(): string {
 }
 
 /**
- * Pure ISO 9223 classification from shoreline distance.
+ * Internal distance-band selection only; no atmospheric classification.
  */
 export function classifyCorrosionCategory(distanceToSeaKm: number): Iso9223Category {
   for (const band of ISO9223_BANDS) {
@@ -427,8 +427,10 @@ export async function assessSaltCorrosion(input: SaltCorrosionInput): Promise<Sa
     longitude,
     distanceToSeaKm: distanceKm,
     iso9223Category: category,
-    categoryLabel: meta.label,
-    categoryLabelFa: meta.labelFa,
+    classificationPolicy: 'internal_shoreline_distance_screen_v1',
+    iso9223Assessment: 'not_assessed',
+    categoryLabel: `Internal distance band ${category} (ISO unassessed)`,
+    categoryLabelFa: `باند داخلی فاصله ${category} (ISO ارزیابی نشده)`,
     corrosionRisk: meta.risk,
     corrosionRiskFa: meta.riskFa,
     moduleDeratePct: meta.module,

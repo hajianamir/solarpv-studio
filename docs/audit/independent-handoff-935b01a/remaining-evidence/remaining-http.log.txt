@@ -1,0 +1,1 @@
+PASS real HTTP POA: deterministic legacy south-zero default, both explicit conventions continuous around 180°, unknown convention rejected.

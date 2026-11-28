@@ -24,8 +24,8 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
         </h1>
         <p className="text-slate-400 text-xs">
           {isFa
-            ? 'مقایسه بلادرنگ ۳ سناریوی مهندسی مختلف برای پروژه: سیستم بهینه پیشنهادی، سیستم اقتصادی کم‌هزینه و سیستم فوق‌پایدار صنعتی'
-            : 'Multi-scenario techno-economic trade-off analysis comparing optimized LiFePO4, economical lead-acid, and redundant industrial BESS.'}
+            ? 'مقایسه بلادرنگ ۳ سناریوی مهندسی مختلف برای پروژه: سیستم بهینه پیشنهادی، سیستم اقتصادی کم‌هزینه و پیش‌فرض صنعتی با ظرفیت افزوده'
+            : 'Multi-scenario techno-economic trade-off analysis comparing optimized LiFePO4, economical lead-acid, and an unassessed higher-capacity industrial preset.'}
         </p>
       </div>
 
@@ -35,6 +35,7 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
           : 'Scenario LCOE is a pre-tax, unlevered USD screening estimate under a flat nominal-cost assumption; a present-value battery replacement reserve is included in CAPEX. Energy is an illustrative generation proxy, not assessed delivered/served energy. Unavailable is distinct from genuinely zero cost. Rounding is display-only; assumption applicability and financial eligibility are not established.'}
       </div>
 
+      <p role="note" data-testid="scenario-assessment-limits" className="studio-card text-xs">{isFa?'تمام سناریوها پیش‌فرض فرضی‌اند؛ احتمال تأمین، افت ولتاژ، افزونگی، ایمنی آتش و حفاظت صاعقه ارزیابی نشده‌اند. طول عمر و هزینه‌ها مفروض‌اند، نه ضمانت یا رتبه‌بندی مهندسی.':'All scenarios are illustrative presets. Availability, cable drop, redundancy, fire safety and lightning protection are not assessed. Lifetime and cost values are assumptions, not warranties or an engineered ranking.'}</p>
       {/* Unsizable Banner if pvCapacityKwp === 0 */}
       {isUnsizable && (
         <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-lg text-amber-300 text-xs flex items-center gap-2">
@@ -50,8 +51,8 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
       {peakSunHours !== undefined && peakSunHours > 0 && peakSunHours < 1 && (
         <div role="note" className="p-3 bg-amber-500/10 border border-amber-500/35 rounded-lg text-xs text-amber-200">
           {isFa
-            ? 'محدودیت PSH پایین: engine سناریو برای PSH مثبت کمتر از ۱، کف ۱٫۰ اعمال می‌کند؛ این رفتار فعلی حفظ شده و خروجی با سایزینگ آرایه که از PSH واقعی استفاده می‌کند یکسان نیست.'
-            : 'Low-PSH limitation: the scenario engine currently floors positive PSH below 1.0 to 1.0. This behavior is preserved; scenario yield does not match array sizing, which uses actual PSH.'}
+            ? 'PSH پایین: تقریب تولید از مقدار مثبت ورودی بدون کف ۱ استفاده می‌کند؛ قابلیت تأمین بار و انطباق با سایت همچنان ارزیابی نشده‌اند.'
+            : 'Low PSH: the generation proxy uses the supplied positive value without a 1.0 floor; load service and site applicability remain unassessed.'}
         </div>
       )}
 
@@ -64,6 +65,8 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
           return (
             <div
               key={sc.id}
+              data-testid={`scenario-card-${sc.id}`}
+              data-pv-kwp={sc.pvCapacityKwp}
               className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
                 isOptimized
                   ? 'bg-industrial-surface/90 border-sky-400 ring-1 ring-sky-400/50'
@@ -79,7 +82,7 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
                   </span>
                   {isOptimized && (
                     <span className="text-[10px] bg-sky-950 text-industrial-accent border border-sky-700 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
-                      <Award className="w-3 h-3" /> {isFa ? 'گزینه پیشنهادی' : 'Recommended'}
+                      <Award className="w-3 h-3" /> {isFa ? 'پیش‌فرض لیتیوم' : 'Lithium preset'}
                     </span>
                   )}
                 </div>
@@ -113,12 +116,16 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-slate-400">{isFa ? 'ضریب اطمینان پایداری:' : 'Reliability Index:'}</span>
-                    <strong className="text-teal-400 font-mono">
-                      {sc.pvCapacityKwp > 0 ? `${sc.reliabilityIndexPct}%` : (isFa ? 'ارزیابی‌نشده' : 'Not assessed')}
+                    <span className="text-slate-400">{isFa ? 'قابلیت تأمین بار:' : 'Service availability:'}</span>
+                    <strong data-testid={`scenario-reliability-${sc.id}`} className="text-teal-400 font-mono">
+                      {isFa ? 'ارزیابی‌نشده' : 'Not assessed'}
                     </strong>
                   </div>
 
+                  <div className="flex justify-between">
+                    <span>{isFa?'تقریب تولید سال اول:':'First-year generation proxy:'}</span>
+                    <strong data-testid={`scenario-energy-${sc.id}`} data-raw-kwh={sc.firstYearGenerationProxyKwh}>{sc.firstYearGenerationProxyKwh.toFixed(1)} kWh</strong>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">{isFa ? 'بهای تمام‌شده انرژی (LCOE):' : 'LCOE:'}</span>
                     <strong data-testid={`scenario-lcoe-${sc.id}`} data-assessment={sc.lcoeAssessment.status} data-raw-lcoe={sc.lcoeUsdPerKwh ?? 'unavailable'} className="text-industrial-warning font-mono">
@@ -132,7 +139,7 @@ export const ScenarioComparisonTab: React.FC<ScenarioComparisonTabProps> = ({ sc
                 {/* Advantages */}
                 <div className="mb-2">
                   <span className="text-[11px] font-bold text-industrial-success block mb-1">
-                    {isFa ? 'نقاط قوت و مزایا:' : 'Strengths & Advantages:'}
+                    {isFa ? 'مفروضات و ملاحظات:' : 'Assumptions & considerations:'}
                   </span>
                   <ul className="space-y-1 text-[11px] text-slate-300">
                     {(isFa ? sc.advantagesFa : sc.advantagesEn).map((adv, i) => (

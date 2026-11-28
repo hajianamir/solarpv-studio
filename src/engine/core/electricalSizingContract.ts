@@ -159,7 +159,8 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
 
   // String voltage limits
   const singleVocCold = input.moduleVoc * (1.0 + (input.tempCoeffVocPct / 100.0) * (input.ambientTempMinC - 25.0));
-  const stringVocMaxColdV = Number((input.modulesPerString * singleVocCold).toFixed(2));
+  const rawVocColdV = input.modulesPerString * singleVocCold;
+  const stringVocMaxColdV = Number(rawVocColdV.toFixed(2));
 
   const vmpCoefficient = resolveVmpTemperatureCoefficient(input.tempCoeffVmpPct, input.tempCoeffPmpPct ?? -0.30, input.tempCoeffPmpPct === undefined ? undefined : input.tempCoeffIscPct);
   // The shared NOCT cell temperature is independent of the power coefficient;
@@ -173,16 +174,18 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
   const effectiveHotC = input.cellTempHotC ?? calculateThermalDerate(hotDesignInput).cellTempHotC;
   const vmpCoeffPct = vmpCoefficient.coefficientPct;
   const singleVmpHot = input.moduleVmp * (1.0 + (vmpCoeffPct / 100.0) * (effectiveHotC - 25.0));
-  const stringVmpMinHotV = Number((input.modulesPerString * singleVmpHot).toFixed(2));
+  const rawVmpHotV = input.modulesPerString * singleVmpHot;
+  const stringVmpMinHotV = Number(rawVmpHotV.toFixed(2));
   // With no cold-cell input, minimum ambient temperature is used as the explicit cold-Vmp proxy.
   const singleVmpCold = input.moduleVmp * (1.0 + (vmpCoeffPct / 100.0) * (input.ambientTempMinC - 25.0));
-  const stringVmpMaxColdV = Number((input.modulesPerString * singleVmpCold).toFixed(2));
+  const rawVmpColdV = input.modulesPerString * singleVmpCold;
+  const stringVmpMaxColdV = Number(rawVmpColdV.toFixed(2));
 
   const isVoltageFeasible =
-    stringVocMaxColdV <= input.inverterVdcMax &&
-    stringVmpMinHotV >= input.inverterVmpptMin &&
-    stringVmpMaxColdV <= input.inverterVmpptMax &&
-    stringVocMaxColdV >= stringVmpMinHotV;
+    rawVocColdV <= input.inverterVdcMax &&
+    rawVmpHotV >= input.inverterVmpptMin &&
+    rawVmpColdV <= input.inverterVmpptMax &&
+    rawVocColdV >= rawVmpHotV;
 
   // Evaluate the proposed or supplied physical channel assignment, not an aggregate
   // fleet quotient that can conceal an overloaded MPPT when the wiring is uneven.
@@ -223,7 +226,7 @@ export function evaluateMpptCompatibility(input: MpptCheckInput): MpptCheckResul
 
   if (!isVoltageFeasible) {
     blockingErrors.push(
-      `String voltage out of bounds: Voc_cold=${stringVocMaxColdV}V (max ${input.inverterVdcMax}V), Vmp_hot=${stringVmpMinHotV}V (min ${input.inverterVmpptMin}V), Vmp_cold=${stringVmpMaxColdV}V (max ${input.inverterVmpptMax}V)`
+      `String voltage out of bounds (display rounded; unrounded comparison governs): Voc_cold=${stringVocMaxColdV}V (max ${input.inverterVdcMax}V), Vmp_hot=${stringVmpMinHotV}V (min ${input.inverterVmpptMin}V), Vmp_cold=${stringVmpMaxColdV}V (max ${input.inverterVmpptMax}V)`
     );
   }
 

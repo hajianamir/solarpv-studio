@@ -1,0 +1,5 @@
+Explicit energy offset / UTC normalization / fallback PASS (process TZ=default).
+Reference timestamp subprocess PASS: UTC
+Reference timestamp subprocess PASS: America/New_York
+Reference timestamp subprocess PASS: Asia/Tehran
+Reference integration PASS: 33 independent fixtures; replacement/sign/no-double-count, annual/missing/site/geometry fallback, canonical yield and serialization (not field validation).

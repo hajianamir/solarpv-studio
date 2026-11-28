@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:ui
+> tsx scripts/test-ui-refresh-browser.ts
+
+PASS UI refresh: 81 layout checks, dark/light fa/en, 320–1536px, local fonts, density persistence/project isolation, mobile keyboard, reduced motion and print.

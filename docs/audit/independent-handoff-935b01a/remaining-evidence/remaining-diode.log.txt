@@ -1,0 +1,55 @@
+PASS Phase3 U05 bounded reference replay: 48 pvlib cases/3888 points; coefficient/MPP/Isc limitation witnesses retained, bilingual disclosure, legacy bracketed roots repaired; old failure preserved as actual-base witness. Not full U05 validation.
+{
+  "iphRelative": {
+    "absoluteError": 0,
+    "caseId": "cec_module_params-G50-T-20-N1"
+  },
+  "i0Relative": {
+    "absoluteError": 2.090890332295781e-8,
+    "caseId": "cec_module_params-G50-T-20-N1"
+  },
+  "rsRelative": {
+    "absoluteError": 0,
+    "caseId": "cec_module_params-G50-T-20-N1"
+  },
+  "rshRelative": {
+    "absoluteError": 1.8079967831045805e-16,
+    "caseId": "cec_module_params-G50-T-20-N1"
+  },
+  "nNsVthRelative": {
+    "absoluteError": 3.1295927403105186e-16,
+    "caseId": "cec_module_params-G50-T25-N12"
+  },
+  "vocVolts": {
+    "absoluteError": 0.00494177190994094,
+    "caseId": "cec_module_params-G1400-T25-N12"
+  },
+  "sampledPmpWatts": {
+    "absoluteError": 0.04925369077727737,
+    "caseId": "cec_module_cs5p_220m-G1000-T-20-N12"
+  },
+  "referenceGridOnlyPmpLossWatts": {
+    "absoluteError": 1.1651372312189778,
+    "caseId": "cec_module_cs5p_220m-G1400-T-20-N12"
+  },
+  "referenceGridOnlyPmpLossRelative": {
+    "absoluteError": 0.00047632159777237856,
+    "caseId": "cec_module_cs5p_220m-G50-T-20-N12"
+  },
+  "truePmpWatts": {
+    "absoluteError": 1.143681669601392,
+    "caseId": "cec_module_cs5p_220m-G1400-T-20-N12"
+  },
+  "truePmpRelative": {
+    "absoluteError": 0.01923361377309934,
+    "caseId": "cec_module_params-G50-T85-N1"
+  },
+  "trueVmpVolts": {
+    "absoluteError": 4.16614025952083,
+    "caseId": "cec_module_cs5p_220m-G50-T-20-N12"
+  },
+  "implicitIscAmps": {
+    "absoluteError": 0.0248298709062027,
+    "caseId": "cec_module_params-G1400-T85-N1"
+  }
+}

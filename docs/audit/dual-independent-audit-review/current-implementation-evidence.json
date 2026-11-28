@@ -216,7 +216,7 @@
     },
     {
       "path": "src/engine/core/annualYieldEngine.ts",
-      "sourceSha256": "bdb018bbc4839e7572c6b12a5c82ad4599ca5645976a4d6cc8b902366850e5f3",
+      "sourceSha256": "a87a818dc710552d6a042e881ae647aecaab80bea92548d45b817ad27ab876c4",
       "inputsAndTypes": [
         {
           "name": "AnnualYieldKwh",
@@ -244,15 +244,15 @@
         },
         {
           "name": "UnifiedAnnualYieldInput",
-          "line": 213
+          "line": 214
         },
         {
           "name": "UnifiedAnnualYieldResult",
-          "line": 239
+          "line": 240
         },
         {
           "name": "FivePathConvergenceReport",
-          "line": 455
+          "line": 458
         }
       ],
       "wholeModelConformity": null,
@@ -489,7 +489,7 @@
     },
     {
       "path": "src/engine/core/benchmarks/unitTestsCore.ts",
-      "sourceSha256": "2b1706e6f26fca2cf9773d8c07bb52834697051ad86565de23f383fa929675fb",
+      "sourceSha256": "4b52e79e94e82fdc796df5500ff0ace89be7baf21e3b795809258373cc9687b6",
       "inputsAndTypes": [
         {
           "name": "UnitTestResult",
@@ -592,7 +592,7 @@
     },
     {
       "path": "src/engine/core/electricalSizingContract.ts",
-      "sourceSha256": "2c616b555417b49662f9e71ef58349b5643b0e3154eabdcb9b3093bac0eebdae",
+      "sourceSha256": "53dffacd5cd99f5662d477e3ca154517d95787d386a3d43dd983579cf32649c2",
       "inputsAndTypes": [
         {
           "name": "InverterRightSizingResult",
@@ -608,35 +608,35 @@
         },
         {
           "name": "FleetDistributionInput",
-          "line": 268
+          "line": 271
         },
         {
           "name": "FleetDistributionResult",
-          "line": 277
+          "line": 280
         },
         {
           "name": "UsableStorageInput",
-          "line": 333
+          "line": 336
         },
         {
           "name": "UsableStorageResult",
-          "line": 348
+          "line": 351
         },
         {
           "name": "SingleDiodeCalibrationInput",
-          "line": 413
+          "line": 416
         },
         {
           "name": "SingleDiodeCalibrationResult",
-          "line": 428
+          "line": 431
         },
         {
           "name": "ElectricalSystemSizingInput",
-          "line": 500
+          "line": 503
         },
         {
           "name": "ElectricalSystemSizingResult",
-          "line": 517
+          "line": 520
         }
       ],
       "wholeModelConformity": null,
@@ -2778,27 +2778,27 @@
     },
     {
       "path": "src/engine/corrosion/saltCorrosionEngine.ts",
-      "sourceSha256": "24bea2c06799763b081ed7bfa7fba58069d308d303c5c148cf083c526b972949",
+      "sourceSha256": "5e889438460560a06bc4f2cceedcf5f2b91d4b774cd453effa2342c050fa6fbe",
       "inputsAndTypes": [
         {
           "name": "Iso9223Category",
-          "line": 19
+          "line": 17
         },
         {
           "name": "ProtectiveCoatingRecommendation",
-          "line": 21
+          "line": 19
         },
         {
           "name": "SiteDrainageAssessment",
-          "line": 32
+          "line": 30
         },
         {
           "name": "SaltCorrosionInput",
-          "line": 45
+          "line": 43
         },
         {
           "name": "SaltCorrosionOutput",
-          "line": 62
+          "line": 60
         }
       ],
       "wholeModelConformity": null,
@@ -2826,7 +2826,7 @@
     },
     {
       "path": "src/engine/dataGateway/climateDataProvider.ts",
-      "sourceSha256": "07eeac8ba85a06d1fbb0f6afc5b6423702e70a941ec879017e95a249d283cff4",
+      "sourceSha256": "e021b56e49d008933dded0e3b2dfc70a4ccd6213b8b8d5abe716a0fe60c93695",
       "inputsAndTypes": [
         {
           "name": "GeocodingErrorCode",
@@ -3308,7 +3308,7 @@
     },
     {
       "path": "src/engine/inverterClustering.ts",
-      "sourceSha256": "943575313e0f26fcbc7651385a5f25396486a382dda44ed8040389afb472dbdb",
+      "sourceSha256": "7d93251127d53801df2aa4d134e6a6cf52d3a13dce24e5992fcd779b20400dbb",
       "inputsAndTypes": [
         {
           "name": "AcPhase",
@@ -3651,7 +3651,7 @@
     },
     {
       "path": "src/engine/optical/iamEngine.ts",
-      "sourceSha256": "37a6cf3939da2e0add6b531de99a895c1518aae5ded691e9e2d096b1f4cc98be",
+      "sourceSha256": "d46ad4fe9c5a672a0063af04928a84407c4b150db763cdb2755ec7e42963798a",
       "inputsAndTypes": [
         {
           "name": "DiffuseEquivalentAngles",
@@ -3968,7 +3968,7 @@
     },
     {
       "path": "src/engine/provenance/provenanceBuilder.ts",
-      "sourceSha256": "5dbf25baf75699dcf5145c5d5ca130310a358552601b189e5eec467f370b6e00",
+      "sourceSha256": "654d8b7530db6a86f992790992d45fe58f8af78018c6302c164d627e0631a973",
       "inputsAndTypes": [
         {
           "name": "ProvenanceRow",
@@ -4344,7 +4344,7 @@
     },
     {
       "path": "src/engine/reference/kimberSeries.ts",
-      "sourceSha256": "eb1fe3591a5f3e3055aee54463d63cdf444b3570db4cb68cd17bf1e89bfa1b73",
+      "sourceSha256": "d62465b0ebd7781cb59abb47a16ac1a44e5f8ffc8eba7269bda6a27ec87546d9",
       "inputsAndTypes": [],
       "wholeModelConformity": null,
       "implementationClassification": "current_source_not_independently_validated_as_a_whole",
@@ -4791,7 +4791,7 @@
     },
     {
       "path": "src/engine/scenarioEngine.ts",
-      "sourceSha256": "2b16c1352f561b7135c85024f753207bd97b55ff80fc516327faf374830fc2c8",
+      "sourceSha256": "8e8caf4394a5ff47d0e9f0df390ea34fa3a6b6a21ee0d5e49e55932125ad12af",
       "inputsAndTypes": [
         {
           "name": "ScenarioDetails",
@@ -4914,7 +4914,7 @@
     },
     {
       "path": "src/engine/singleDiodeModel.ts",
-      "sourceSha256": "c960d090ee6f83d5f8e7958503135af322bffe5146fa1be60172e23c10cdf95f",
+      "sourceSha256": "ffef67b79d4369fcff1b5125b1edcbc614059f8ef4fc94f0adf03f3845b3f14d",
       "inputsAndTypes": [
         {
           "name": "DiodeParameters",
@@ -5018,7 +5018,7 @@
     },
     {
       "path": "src/engine/solarPvEngine.ts",
-      "sourceSha256": "219c082cbb0496683e2458204148ba99d70774eaf54e52611ec291058d90c781",
+      "sourceSha256": "c02b74500dcd0898fd08a3a50208c746d9ec3da095e3cd6bc45f0a6925330dd4",
       "inputsAndTypes": [
         {
           "name": "Vec3",
@@ -5116,14 +5116,14 @@
           "fixtureSha256": "83b334e568e7544bf527482989f97738e966db004addd7be26138ee5622bed52"
         },
         {
-          "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1",
-          "fixtureFile": "scripts/fixtures/physics/solar-spa-00621e7ddbb1.json",
+          "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#a03cdf45d4ef",
+          "fixtureFile": "scripts/fixtures/physics/solar-spa-a03cdf45d4ef.json",
           "productionExport": "calculateSolarPosition",
           "referenceTitle": "pvlib-python NREL SPA solar position",
           "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.solarposition.get_solarposition.html",
           "referenceVersion": "pvlib 0.13.1",
           "referenceLocator": "get_solarposition, geometric zenith and north-clockwise azimuth, altitude=0, UTC",
-          "fixtureSha256": "63c560ebe932fbd461353918eb9775f1a1f006c8e1475e7e7e8b582f9afea8e5"
+          "fixtureSha256": "9ffa9535c99f948ae200db85f4f57fff80a865173ad961bf6f8c544224766e4d"
         },
         {
           "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1",
@@ -5136,14 +5136,14 @@
           "fixtureSha256": "c142de3acaffcde5c56769b3150024e22bccc515f0d9d6859803d2a2fd83b5e4"
         },
         {
-          "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862",
-          "fixtureFile": "scripts/fixtures/physics/solar-spa-df1bf2813862.json",
+          "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#19ee5d6a8a97",
+          "fixtureFile": "scripts/fixtures/physics/solar-spa-19ee5d6a8a97.json",
           "productionExport": "calculateSolarPosition",
           "referenceTitle": "pvlib-python NREL SPA solar position",
           "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.solarposition.get_solarposition.html",
           "referenceVersion": "pvlib 0.13.1",
           "referenceLocator": "get_solarposition, geometric zenith and north-clockwise azimuth, altitude=0, UTC",
-          "fixtureSha256": "6da6756c52067c1c8925f271a622bf298480399fd3de3f3bc99b5611d174bb11"
+          "fixtureSha256": "eebb7641bddda848f92dc6ca5974b37339d4fb408c11a616f4beb925d33632fd"
         },
         {
           "formulaId": "src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e",
@@ -6432,72 +6432,72 @@
     },
     {
       "path": "services/pvlib_research/thermal.py",
-      "sourceSha256": "fb407c4258407ebf05379483174682eb11847c125952996f1a2c2b63bee2af48",
+      "sourceSha256": "86648b9c063516b40d8074d067ac683dba92bffbe3d766b1c9f39992ff5ec073",
       "inputsAndTypes": [
         {
           "name": "number",
           "signature": "(v, lo, hi):",
-          "line": 25
+          "line": 27
         },
         {
           "name": "stamp",
           "signature": "(v):",
-          "line": 31
+          "line": 33
         },
         {
           "name": "local_end",
           "signature": "(day, hour):",
-          "line": 40
+          "line": 42
         },
         {
           "name": "digest",
           "signature": "(obj):",
-          "line": 51
+          "line": 53
         },
         {
           "name": "yes",
           "signature": "(v):",
-          "line": 55
+          "line": 57
         },
         {
           "name": "assemble",
           "signature": "(meteo, validation, receipt):",
-          "line": 61
+          "line": 63
         },
         {
           "name": "dataset",
           "signature": "(records, receipt):",
-          "line": 107
+          "line": 109
         },
         {
           "name": "parse_xlsx",
           "signature": "(path):",
-          "line": 116
+          "line": 118
         },
         {
           "name": "parse_excerpt",
           "signature": "(path):",
-          "line": 157
+          "line": 159
         },
         {
           "name": "operational_blockers",
           "signature": "(data):",
-          "line": 180
+          "line": 182
         },
         {
           "name": "predict",
           "signature": "(rows, u0, u1, timeout=10, cancel=lambda: False):",
-          "line": 192
+          "line": 194
         },
         {
           "name": "metrics",
           "signature": "(observed, modeled):",
-          "line": 218
+          "line": 237
         },
         {
           "name": "fit_research",
           "signature": "(data, plan, runner=predict, cancel=lambda: False):",
-          "line": 225
+          "line": 244
         }
       ],
       "wholeModelConformity": null,

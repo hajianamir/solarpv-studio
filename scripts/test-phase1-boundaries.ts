@@ -1,3 +1,4 @@
+import {historicalSource} from './historical-source';
 import assert from 'node:assert/strict';
 import {buildDesignSummary} from '../src/presentation/designSummary';
 const input = {actualDcKwp: 1234.5, installedAcKw: 1000, requestedAcKw: 1100,
@@ -77,22 +78,22 @@ console.log('PASS ratio/nameplate, invalid input, unknown 65/90A and screening P
 // Metadata belongs in contracts; no physical equation is moved/exempted to pass
 // the reference gate. Check BOTH additions and removals of engine formula ASTs.
 const {extractFormulaUnits}=await import('./verify-physics-reference-gate');
-const {execFileSync}=await import('node:child_process');
 const {readFileSync}=await import('node:fs');
 for(const path of ['src/engine/pvEngineAdvanced.ts','src/engine/core/electricalSizingContract.ts','src/engine/catalogRepository.ts','src/engine/core/projectMigration.ts']) {
- const before=execFileSync('git',['show',`0c4d7cadc7db6001459ea36fdf9a3d1403179a71:${path}`],{encoding:'utf8',maxBuffer:8*1024*1024});
+ const before=historicalSource(`0c4d7cadc7db6001459ea36fdf9a3d1403179a71:${path}`);
  const previous=extractFormulaUnits(path,before).map(f=>f.formulaId).sort();
  const current=extractFormulaUnits(path,readFileSync(path,'utf8')).map(f=>f.formulaId).sort();
  if(path==='src/engine/core/electricalSizingContract.ts') {
-  // ADR-015 hot owner and ADR-019 unrounded current comparisons; exact removals only.
-  assert.deepEqual(previous.filter(id=>!current.includes(id)),['317ddba0b12c','76120537b4e4','a1a634c47c18'].map(id=>`${path}#evaluateMpptCompatibility#${id}`));
-  assert.deepEqual(current.filter(id=>!previous.includes(id)),[`${path}#evaluateMpptCompatibility#3f70ee8d8180`]);
+  // ADR-015 hot owner, ADR-019 raw currents, ADR-035 raw voltage decisions.
+  // Exact AST change allowlist only; independent-reference gate remains separate.
+  assert.deepEqual(previous.filter(id=>!current.includes(id)),['30a4c9fbf635','317ddba0b12c','3438b2170efe','37c513f8e47d','6186c24e55d4','6dbb49371ffc','76120537b4e4','89446ffd6f96','a1a634c47c18','baced17bd66b'].map(id=>`${path}#evaluateMpptCompatibility#${id}`));
+  assert.deepEqual(current.filter(id=>!previous.includes(id)),['22704cab3105','3f70ee8d8180','55f3b3f5c80e','8b050308b880','a4a9a13c5b66','c81396ae7ee5','d111fb09b4e3','e828f903d8eb'].map(id=>`${path}#evaluateMpptCompatibility#${id}`));
  } else if(path==='src/engine/pvEngineAdvanced.ts') {
   assert.deepEqual(previous.filter(id=>!current.includes(id)),['c4d9aa7fa817','c95d9d84e124'].map(id=>`${path}#designPvArray#${id}`));
   assert.deepEqual(current.filter(id=>!previous.includes(id)),[]);
  } else assert.deepEqual(current,previous,`${path}: no unreviewed numerical changes`);
 }
-console.log('PASS numerical AST parity outside explicitly fixture-gated ADR-015 hot ownership and ADR-019 unrounded current comparison replacements.');
+console.log('PASS numerical AST parity outside explicitly fixture-gated ADR-015 hot ownership and ADR-019 raw currents and ADR-035 raw voltage replacements; independent reference gate required separately.');
 const {CatalogRepository}=await import('../src/engine/catalogRepository');
 const {CATALOG_INVERTERS}=await import('../src/engine/equipmentCatalogData');
 const repo=CatalogRepository.getInstance();

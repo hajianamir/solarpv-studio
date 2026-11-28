@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:physical:browser
+> tsx scripts/test-physical-browser.ts
+
+PASS real browser (chromium): six research operations including DC/SPM/dq, three DC operating modes, actual JWT/API, physical archive disk readback/import, cancel/stale/site invalidation

@@ -634,7 +634,7 @@ export const PvArrayEngineeringTab: React.FC<PvArrayEngineeringTabProps> = ({
                   {inverterClustering.inverterDcBusNominalV} V DC
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
-                  {isEn ? 'Operating midpoint of inverter MPPT window' : 'نقطه میانی پنجره MPPT اینورتر'}
+                  {isEn ? 'Budgeting heuristic: 80% of MPPT upper limit, not window midpoint' : 'فرض بودجه‌بندی: ۸۰٪ حد بالای MPPT، نه نقطه میانی پنجره'}
                 </span>
               </div>
 

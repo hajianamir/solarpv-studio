@@ -120,7 +120,7 @@ export function evaluateInverterClustering(
   const requestedUnitRatingKw = preferredUnitKw;
   const effectiveUnitKw = isUnitRightSized ? engineeringClass.maxSingleUnitKw : preferredUnitKw;
 
-  // Inverter DC bus nominal = 80 % of the MPPT ceiling (operating midpoint).
+  // Inverter DC bus nominal = 80 % of the MPPT ceiling (internal budgeting heuristic, NOT window midpoint).
   // Fall back to class-inferred values when the caller does not supply VmpptMax or unit is right-sized.
   let inverterDcBusNominalV: number;
   if (!isUnitRightSized && typeof inverterVmpptMaxV === 'number' && inverterVmpptMaxV > 0) {

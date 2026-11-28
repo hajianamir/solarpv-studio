@@ -1,0 +1,9 @@
+
+> solarpv-studio@1.0.3 test:phase1
+> tsx scripts/test-phase1-boundaries.ts
+
+Phase 1 boundary unit regressions passed (synthetic arithmetic, not model validation).
+PASS explicit azimuth, rating-basis/readiness, persistence, per-channel overload and unsupported economic/bifacial contracts.
+PASS ratio/nameplate, invalid input, unknown 65/90A and screening PR denominator/gain regressions.
+PASS numerical AST parity outside explicitly fixture-gated ADR-015 hot ownership and ADR-019 raw currents and ADR-035 raw voltage replacements; independent reference gate required separately.
+PASS catalog evidence preserves unknowns and rejects malformed rating metadata.

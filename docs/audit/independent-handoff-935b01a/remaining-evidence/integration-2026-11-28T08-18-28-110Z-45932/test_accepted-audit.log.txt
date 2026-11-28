@@ -1,0 +1,5 @@
+
+> solarpv-studio@1.0.3 test:accepted-audit
+> tsx scripts/test-accepted-vmp-audit.ts
+
+PASS accepted Vmp audit: synthetic hot/cold/STC windows, bias counterexample, three-engine validation, catalog adapter/selection guard, schema roundtrip, HTTP aliases/conflicts/legacy/infeasibility, guidance provenance. Not field or standards validation.

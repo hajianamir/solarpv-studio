@@ -1,0 +1,9 @@
+
+> solarpv-studio@1.0.3 test:operating:dispatch
+> tsx scripts/test-operating-dispatch.ts
+
+PASS all-mode dispatch: independent hand witness, two conservation equations every interval, 15/30/60 min, limits/outages/SOC/efficiencies, strict invalid inputs, actual-worker annual adoption/archive/bundle/finance for three modes
+PASS independent Python Decimal witness and parameter sensitivity for charge/discharge efficiency and both PCS limits
+PASS integrated annual batches connected to on-grid and off-grid, preserving modeled auxiliary loads
+PASS explicit no-battery, full-battery, export cap and outage hand witnesses
+PASS F19 full-year ongrid/offgrid adoption and financial denominator with unused initial SOC

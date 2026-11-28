@@ -125,6 +125,8 @@ async function main() {
   const liveCached = await climate.fetchClimateResource(35.1, 51.2, { policy: 'prefer_remote' });
   check('Remote climate cache hit reports hit and reuses provider data', () => {
     assert.equal(liveFirst.metadata.sourceProvider, 'PVGIS');
+    assert.doesNotMatch(JSON.stringify(liveFirst.metadata),/IEC 61724-1 Class A/);
+    assert.match(JSON.stringify(liveFirst.metadata),/not an IEC monitoring class/);
     assert.equal(liveCached.metadata.cacheStatus, 'hit');
     assert.equal(pvgisCalls, remoteCallCount);
   });
@@ -223,11 +225,12 @@ async function main() {
   });
   const lowPsh = generateScenarios(100, 10, 1, 90000, 18, 0.5);
   const onePsh = generateScenarios(100, 10, 1, 90000, 18, 1.0);
-  check('Existing positive PSH<1 scenario floor is preserved and explicitly observable', () => {
-    assert.deepEqual(
-      lowPsh.map(({ pvCapacityKwp, lcoeUsdPerKwh }) => ({ pvCapacityKwp, lcoeUsdPerKwh })),
-      onePsh.map(({ pvCapacityKwp, lcoeUsdPerKwh }) => ({ pvCapacityKwp, lcoeUsdPerKwh })),
-    );
+  check('Supplied positive PSH<1 is preserved in scenario energy and LCOE', () => {
+    for(let i=0;i<lowPsh.length;i++) {
+      assert.equal(lowPsh[i].pvCapacityKwp,onePsh[i].pvCapacityKwp);
+      assert.equal(lowPsh[i].firstYearGenerationProxyKwh*2,onePsh[i].firstYearGenerationProxyKwh);
+      assert.equal(lowPsh[i].lcoeUsdPerKwh,2*onePsh[i].lcoeUsdPerKwh!);
+    }
   });
 
   // Caller abort must reject (not return fallback/cache) and must not count as breaker failure.

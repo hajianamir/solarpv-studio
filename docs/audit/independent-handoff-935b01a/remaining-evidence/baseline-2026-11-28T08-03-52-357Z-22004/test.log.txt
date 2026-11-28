@@ -1,0 +1,49 @@
+
+> solarpv-studio@1.0.3 test
+> tsx scripts/run-all-benchmarks.ts
+
+{"status":"PASS","cases":58,"auditTables":748,"auditStations":7,"stationRoadOverlapM2":0,"pitchCases":[{"requested":3,"effective":4.6,"gcr":0.999,"tables":1144},{"requested":4,"effective":4.6,"gcr":0.999,"tables":1144},{"requested":4.6,"effective":4.6,"gcr":0.999,"tables":1144}],"scope":"Analytical rectangle constraints, DXF readback and geometric route connectivity; not civil/turning-radius or field validation"}
+{"status":"PASS","trackerCases":1260,"maxShadeError":2.6645352591003757e-15,"rearCases":128,"layouts":27,"fuelTankLiters":2,"annualShadingFraction":0.05651224353318144}
+PASS structural claims: 8 foundation paths retain non-certification independently of diagnostic FoS; report has explicit certification boundary. Not numerical or standards validation.
+{
+  "status": "PASS",
+  "solarRows": 887,
+  "maxZenithErrorDeg": 0.005863801425533666,
+  "maxAzimuthErrorDeg": 0.022482629845285373,
+  "stringInfeasible": {
+    "minModules": 1,
+    "maxModules": 0,
+    "status": "infeasible",
+    "hasWarning": true,
+    "warnings": [
+      "Vmp temperature coefficient is approximated from Pmp/Voc; not guaranteed conservative for hot or cold MPPT limits. Verify manufacturer Vmp data; this is screening, not conformity assessment.",
+      "Minimum required modules exceeds maximum allowed string voltage."
+    ],
+    "effectiveCellTempMaxC": 25
+  },
+  "quickFinancialParity": true,
+  "automaticStorageKwh": 4.8
+}
+Reference Kimber: boundary/missing-data contracts and 20 pvlib 0.13.1 fixtures PASS (not field validation).
+Reference snow: boundary/missing contracts, 12 pinned pvlib fixtures, and hourly/sub-hourly snow/soiling comparisons PASS (not field validation).
+Explicit energy offset / UTC normalization / fallback PASS (process TZ=default).
+Reference timestamp subprocess PASS: UTC
+Reference timestamp subprocess PASS: America/New_York
+Reference timestamp subprocess PASS: Asia/Tehran
+Reference integration PASS: 33 independent fixtures; replacement/sign/no-double-count, annual/missing/site/geometry fallback, canonical yield and serialization (not field validation).
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1: perturbing the exact formula AST result did not change the production output; tested expression result; choose an input that exercises an output-sensitive path
+    at executeReferenceFixture (/home/user/solarpv-studio/scripts/verify-physics-reference-gate.ts:645:10)
+    at async <anonymous> (/home/user/solarpv-studio/scripts/test-priority-reference-registry.ts:7:29) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

@@ -145,8 +145,9 @@ export function calculateStandardDeratingFactor(params: {
 }
 
 /**
- * Computes canonical annual yield tightly coupled to the 16-stage waterfall loss engine.
- * Eliminates transposition/bifacial/shading divergence between annualYieldEngine and waterfall.
+ * Exported compatibility helper delegating to the configured waterfall.
+ * The live App/roof paths call computeConfiguredWaterfall directly; this name
+ * does not establish ownership of every annual-yield route.
  */
 export function computeCanonicalAnnualYield(
   input: CanonicalAnnualYieldInput
@@ -249,7 +250,9 @@ export interface UnifiedAnnualYieldResult {
 }
 
 /**
- * @deprecated Legacy compatibility screen; production uses computeCanonicalAnnualYield.
+ * @deprecated Legacy constant-transposition compatibility screen; retained exported API.
+ * The live App and 3D roof paths call computeConfiguredWaterfall directly, not
+ * computeCanonicalAnnualYield. Neither exported helper is the production route owner.
  * Its constant 1.168/1.25 transposition is NOT legacy_latitude_tilt_screen_v1.
  * Kept unchanged for compatibility; do not silently substitute the canonical policy.
  */

@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {preview} from 'vite';
+import {chromium} from 'playwright-core';
+const server=await preview({preview:{host:'127.0.0.1',port:0,strictPort:true}});
+let browser;
+try {
+ process.env.AWS_EXECUTION_ENV??='AWS_Lambda_nodejs20.x';
+ browser=await chromium.launch({headless:true,executablePath:await(await import('@sparticuz/chromium')).default.executablePath(),args:['--no-sandbox','--disable-dev-shm-usage']});
+ const address=server.httpServer.address();assert.ok(address&&typeof address==='object');
+ for(const lang of ['en','fa']){
+  const context=await browser.newContext({serviceWorkers:'block'});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('https://**/*',r=>r.abort());await page.goto(`http://127.0.0.1:${address.port}`);if(lang==='en')await page.getByRole('button',{name:'EN',exact:true}).click();await page.getByTestId('workflow-tab-climate').locator(':visible').first().click();
+  await page.getByRole('button',{name:/Edit Climate Parameters|ویرایش پارامترهای اقلیمی/}).click();await page.locator('#climate-latitude-input').fill('35');await page.locator('#climate-longitude-input').fill('51');await page.getByRole('button',{name:/Apply Custom Parameters|اعمال پارامترهای سفارشی/}).click();
+  const steps=Array.from({length:35040},(_,i)=>({timestamp:new Date(Date.UTC(2025,0,1)+(i+1)*900000).toISOString(),rainfallMm:i%333===0?4:0}));
+  const input={schemaVersion:1,year:2025,site:{latitude:35,longitude:51},energyQuality:'assumed',energySource:'Synthetic35040interval browser import timing only',energy:steps.map(s=>({timestamp:s.timestamp,cleanDcEnergyWh:1})),soiling:{timezone:'UTC',weatherQuality:'assumed',parameterQuality:'assumed',parameters:{cleaningThresholdMm:3,lossRatePerDay:.0015,gracePeriodDays:14,maxLossFraction:.3,initialLossFraction:0,rainAccumulationHours:24},steps,manualWashTimestamps:steps.filter((_,i)=>i%50===0).map(s=>s.timestamp)}};
+  await page.evaluate(()=>{globalThis.__auditTasks=[];globalThis.__auditObserver=new PerformanceObserver(list=>globalThis.__auditTasks.push(...list.getEntries().map(e=>e.duration)));globalThis.__auditObserver.observe({type:'longtask',buffered:false});});
+  const start=performance.now();await page.getByLabel('Import reference annual JSON',{exact:true}).setInputFiles({name:'synthetic-quarter-hour-annual.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(input))});await page.getByRole('region',{name:'Reference loss status'}).filter({hasText:'computed'}).waitFor({timeout:10000});const elapsed=performance.now()-start;
+  await page.getByTestId('workflow-tab-waterfall_loss').locator(':visible').first().click();await page.getByRole('region',{name:'Reference loss status'}).filter({hasText:'computed'}).waitFor();await page.waitForTimeout(100);
+  const tasks=await page.evaluate(()=>{globalThis.__auditObserver.disconnect();return globalThis.__auditTasks;});assert.ok(elapsed<5000,`end-to-end5s budget ${elapsed}`);assert.ok(Math.max(0,...tasks)<2000,`largest browser task2s budget ${tasks}`);assert.deepEqual(errors,[]);
+  console.log(JSON.stringify({status:'PASS',lang,intervals:35040,jsonBytes:JSON.stringify(input).length,endToEndImportMs:elapsed,maxObservedLongTaskMs:Math.max(0,...tasks),journey:'actual local file import, complete annual reference computed, waterfall replacement rendered; no adoption/field validation'}));await context.close();
+ }
+} finally {await browser?.close();await new Promise((resolve,reject)=>server.httpServer.close(e=>e?reject(e):resolve()));}

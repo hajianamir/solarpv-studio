@@ -1,3 +1,4 @@
+import {SCALAR_TRANSPOSITION_DISCLOSURE} from '../engine/core/scalarTransposition';
 import {ECONOMIC_DISCLOSURE, ECONOMIC_ASSUMPTIONS, BIFACIAL_READINESS} from '../presentation/phase1Evidence';
 import {ReferenceLossStatus} from './ReferenceLossStatus';
 import React, { useState, useRef, useMemo } from 'react';
@@ -1348,9 +1349,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
-                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Ground Cover Ratio (GCR)' : 'ضریب پوشش زمین (GCR)'}</span>
-                  <span className="font-mono font-bold text-theme-strong print:text-black text-sm">
-                    {((Math.cos((effectiveCity.optimalTiltAnnualDeg * Math.PI) / 180) * 4.6 / arrayDesign.interRowSpacingM) * 100).toFixed(1)}%
+                  <span className="text-slate-400 block text-[10px]">{isEn ? 'Projected ground coverage (single-module slant)' : 'پوشش افقی زمین (طول شیب یک ماژول)'}</span>
+                  <span data-testid="report-projected-ground-coverage" data-slant-m={module.lengthM} data-tilt-deg={effectiveCity.optimalTiltAnnualDeg} data-pitch-m={arrayDesign.interRowSpacingM} className="font-mono font-bold text-theme-strong print:text-black text-sm">
+                    {typeof module.lengthM==='number'&&Number.isFinite(module.lengthM)&&module.lengthM>0&&Number.isFinite(arrayDesign.interRowSpacingM)&&arrayDesign.interRowSpacingM>0
+                      ? `${((Math.cos((effectiveCity.optimalTiltAnnualDeg * Math.PI) / 180) * module.lengthM / arrayDesign.interRowSpacingM) * 100).toFixed(1)}%`
+                      : (isEn?'Unavailable: module dimensions missing':'در دسترس نیست: ابعاد ماژول موجود نیست')}
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-800/50 print:bg-slate-50 rounded">
@@ -1413,10 +1416,11 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({
                 <span className="font-bold text-theme-strong print:text-black block">
                   {isEn ? 'Sun Path Geometric Screening & Critical Solar Window:' : 'بررسی هندسی مسیر خورشید و پنجره غربالگری تابش:'}
                 </span>
-                <p className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
+                <p data-testid="report-transposition-qualification">{SCALAR_TRANSPOSITION_DISCLOSURE[isEn ? 'en' : 'fa']}</p>
+                <p data-testid="report-row-clearance-basis" className="text-[11px] leading-relaxed text-slate-300 print:text-slate-700">
                   {isEn
-                    ? `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeEn} The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m provides nominal inter-row clearance during the screening 4-hour window (10:00 to 14:00 true solar time) using an internal screening heuristic (not a standards conformity assessment). Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (screening proxy: +${bifacialGainPct.toFixed(1)}%)` : ''}, which should be verified with detailed 3D/view-factor modeling.`
-                    : `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeFa} فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر جهت تامین فاصله هندسی نامی در بازه ۴ ساعته غربالگری (۱۰ الی ۱۴ ظهر آفتابی) بر اساس رهنمودهای هندسی IEC 62548 در نظر گرفته شده است. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (تخمین غربالگری: +${bifacialGainPct.toFixed(1)}٪)` : ''} که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
+                    ? `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeEn} The design pitch distance of ${arrayDesign.interRowSpacingM.toFixed(2)}m is a winter-solstice-noon screen using a single-module slant on level ground. It does not establish clearance at 10:00 or 14:00 or a four-hour shade-free window, and is not a standards conformity assessment. Actual beam and diffuse losses depend on 3D near-shading topography and terrain slope. Where bifacial modules are specified, ground clearance (nominal 0.9m) influences rear view-factor and ground-reflected albedo capture${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (screening proxy: +${bifacialGainPct.toFixed(1)}%)` : ''}, which should be verified with detailed 3D/view-factor modeling.`
+                    : `${calculateSolsticeSolarGeometry(effectiveCity.latitude).narrativeFa} فاصله بین‌ردیفی ${arrayDesign.interRowSpacingM.toFixed(2)} متر فقط غربالگری ظهر انقلاب زمستانی با طول شیب یک ماژول و زمین تراز است؛ فاصله بدون سایه در ساعت ۱۰ یا ۱۴ یا پنجره چهارساعته را ثابت نمی‌کند و ارزیابی انطباق با استاندارد نیست. تلفات واقعی سایه پرتو مستقیم و پخشی وابسته به عوارض سه‌بعدی و شیب زمین است. در صورت استفاده از ماژول‌های دوطرفه، ارتفاع آزاد از سطح زمین (نامی ۰.۹ متر) بر فاکتور دید پشت پنل و جذب آلبدو اثرگذار است${bifacialGainPct !== undefined && bifacialGainPct > 0 ? ` (تخمین غربالگری: +${bifacialGainPct.toFixed(1)}٪)` : ''} که باید در مدل‌سازی تفصیلی سه‌بعدی تدقیق گردد.`}
                 </p>
               </div>
             </div>

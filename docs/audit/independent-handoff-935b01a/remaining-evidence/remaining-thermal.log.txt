@@ -1,0 +1,8 @@
+test_large_delayed_read_and_eof (__main__.Transport.test_large_delayed_read_and_eof) ... ok
+test_real_pinned_worker (__main__.Transport.test_real_pinned_worker) ... ok
+test_timeout_cancel_and_size_limits (__main__.Transport.test_timeout_cancel_and_size_limits) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.071s
+
+OK

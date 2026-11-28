@@ -24,18 +24,28 @@ export function calculateKimberSeries(input: KimberRequest) {
   let first = true;
   let weightedLoss = 0;
   let totalEnergy = 0;
+  const washes = new Set(input.manualWashTimestamps);
+  let left = 0, accumulatedRain = 0;
+  // Compensated rolling sum limits cancellation drift at strict rain thresholds.
+  let rainCorrection = 0;
+  const addRain = (value: number) => {
+    const adjusted = value - rainCorrection;
+    const next = accumulatedRain + adjusted;
+    rainCorrection = (next - accumulatedRain) - adjusted;
+    accumulatedRain = next;
+  };
   for (const [index, step] of input.steps.entries()) {
     const now = checked.timeHours[index];
-    let accumulatedRain = 0;
-    for (const [previousIndex, previous] of input.steps.entries()) {
-      const time = checked.timeHours[previousIndex];
-      if (time > now - p.rainAccumulationHours && time <= now) accumulatedRain += previous.rainfallMm!;
+    addRain(step.rainfallMm!);
+    while (checked.timeHours[left] <= now - p.rainAccumulationHours) {
+      addRain(-input.steps[left].rainfallMm!);
+      left++;
     }
     if (!first) rawLoss += p.lossRatePerDay * checked.stepDays;
     first = false;
     if (accumulatedRain > p.cleaningThresholdMm) lastRainTime = now;
     const inGrace = lastRainTime !== null && now - lastRainTime < p.gracePeriodDays * 24;
-    if (inGrace || input.manualWashTimestamps.includes(step.timestamp)) rawLoss = 0;
+    if (inGrace || washes.has(step.timestamp)) rawLoss = 0;
     const lossFraction = Math.min(rawLoss, p.maxLossFraction);
     samples.push({ timestamp: step.timestamp, lossFraction });
     if (checked.energyComplete) {

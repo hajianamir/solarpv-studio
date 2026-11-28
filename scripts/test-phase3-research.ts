@@ -77,11 +77,11 @@ const pump = reference.pumpDuty.map((r:{dailyVolumeM3:number;psh:number;diameter
     qualification:'Rounding/policy characterization, not water delivery, manufacturer motor selection or startup validation.'};
 });
 const report={schemaVersion:'phase3-research-comparison-v1',referenceSha256:hash(readFileSync(path)),
-  qualification:'Discrepancy characterization, not tolerance-waived model validation. No production changes or adoption.',
+  qualification:'Discrepancy characterization, not tolerance-waived model validation. No reference-driven coefficient tuning or automatic adoption; ADR-035 ASHRAE cutoff repair is separate.',
   counts:{thermal:thermal.length,iam:reference.iam.length,bifacial:bifacial.length,annual:reference.annual.length,finance:reference.finance.length,cdf:reference.studentTCdfWitness.length},
   iamMaxAbsoluteError:maxIamError,thermal,bifacial,pump,financialMultiRootResult:roots,
   sourceHashes:Object.fromEntries(['src/engine/core/thermalDerate.ts','src/engine/optical/iamEngine.ts','src/engine/bifacial/bifacial2dViewFactor.ts','src/engine/bifacialGain.ts','src/engine/core/financialContract.ts','src/engine/solarPumpEngine.ts'].map(p=>[p,hash(readFileSync(p))]))};
-const target='docs/audit/dual-independent-audit-review/phase3-research-comparison.json';
+const target='docs/audit/independent-handoff-935b01a/remaining-research-comparison.json';
 const text=JSON.stringify(report,null,2)+'\n';
 if(process.argv.includes('--write'))writeFileSync(target,text);else assert.equal(readFileSync(target,'utf8'),text,'Stale comparison: inspect differences before regenerating');
 console.log('PASS Phase3 source-hashed research replay: M&R quantization, annual ledger/clipping, De Soto fit failure/residual, exact multi-root witness; thermal/bifacial discrepancies characterized, NOT accepted as accurate');

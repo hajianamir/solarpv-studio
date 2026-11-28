@@ -1,0 +1,48 @@
+Collecting certifi==2026.10.18
+  Downloading certifi-2026.10.18-py3-none-any.whl (134 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 134.1/134.1 kB 664.9 kB/s eta 0:00:00
+Collecting charset-normalizer==3.4.4
+  Downloading charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (151 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 151.6/151.6 kB 508.7 kB/s eta 0:00:00
+Collecting h5py==3.14.0
+  Downloading h5py-3.14.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (4.5 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 7.0 MB/s eta 0:00:00
+Collecting idna==3.15
+  Downloading idna-3.15-py3-none-any.whl (72 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 72.3/72.3 kB 36.8 MB/s eta 0:00:00
+Collecting numpy==2.2.6
+  Downloading numpy-2.2.6-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (16.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.8/16.8 MB 150.4 MB/s eta 0:00:00
+Collecting pandas==2.3.3
+  Downloading pandas-2.3.3-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (12.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.8/12.8 MB 164.0 MB/s eta 0:00:00
+Collecting pvlib==0.13.1
+  Downloading pvlib-0.13.1-py3-none-any.whl (19.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 19.3/19.3 MB 120.2 MB/s eta 0:00:00
+Collecting python-dateutil==2.9.0.post0
+  Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 229.9/229.9 kB 62.8 MB/s eta 0:00:00
+Collecting pytz==2025.2
+  Downloading pytz-2025.2-py2.py3-none-any.whl (509 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 509.2/509.2 kB 91.2 MB/s eta 0:00:00
+Collecting requests==2.33.0
+  Downloading requests-2.33.0-py3-none-any.whl (65 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 65.0/65.0 kB 29.6 MB/s eta 0:00:00
+Collecting scipy==1.15.3
+  Downloading scipy-1.15.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (37.7 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 37.7/37.7 MB 61.3 MB/s eta 0:00:00
+Collecting six==1.17.0
+  Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Collecting tzdata==2025.2
+  Downloading tzdata-2025.2-py2.py3-none-any.whl (347 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 347.8/347.8 kB 102.2 MB/s eta 0:00:00
+Collecting urllib3==2.8.0
+  Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 135.7/135.7 kB 62.3 MB/s eta 0:00:00
+Collecting openpyxl==3.1.5
+  Downloading openpyxl-3.1.5-py2.py3-none-any.whl (250 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 250.9/250.9 kB 93.5 MB/s eta 0:00:00
+Collecting et_xmlfile==2.0.0
+  Downloading et_xmlfile-2.0.0-py3-none-any.whl (18 kB)
+Installing collected packages: pytz, urllib3, tzdata, six, numpy, idna, et_xmlfile, charset-normalizer, certifi, scipy, requests, python-dateutil, openpyxl, h5py, pandas, pvlib
+Successfully installed certifi-2026.10.18 charset-normalizer-3.4.4 et_xmlfile-2.0.0 h5py-3.14.0 idna-3.15 numpy-2.2.6 openpyxl-3.1.5 pandas-2.3.3 pvlib-0.13.1 python-dateutil-2.9.0.post0 pytz-2025.2 requests-2.33.0 scipy-1.15.3 six-1.17.0 tzdata-2025.2 urllib3-2.8.0

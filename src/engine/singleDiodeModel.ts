@@ -4,8 +4,8 @@ export type {ReferenceDiodeRequest,ReferenceDiodeInput,ReferenceDiodeResult} fro
 
 // Legacy single-diode screening solver with De Soto-style parameter translation.
 // Summary-input extraction is a heuristic, not a complete De Soto/CEC fit.
-// tempCoeffPmpPct is retained but unused; tempCoeffVocPct seeds the Voc solver
-// rather than constraining a fitted beta_Voc relation. See ADR-024.
+// tempCoeffPmpPct and tempCoeffVocPct are retained but unused by the bounded solver
+// rather than constraining fitted beta_Voc/gamma_Pmp relations. See ADR-024/035.
 // Solves: I = I_ph - I_0 * [exp((V + I*R_s)/(n*V_t)) - 1] - (V + I*R_s)/R_sh
 // Incorporates bandgap energy temperature dependence Eg(T) and irradiance-scaled Rsh(G)
 
@@ -37,6 +37,7 @@ export interface IvCurveResult {
   efficiencyPct: number;
   irradianceWm2: number;
   cellTempC: number;
+  solverDiagnostics?: { policy: 'legacy_extraction_bounded_roots_v1'; unroundedVocV: number; openCircuitResidualA: number; maxTraceResidualA: number };
   extractedParameters?: DiodeParameters;
 }
 
@@ -173,22 +174,31 @@ export function calculateSingleDiodeCurve(
   // Scaled open-circuit and short-circuit estimates for curve bounds
   const isc = stcIsc * gRatio * (1.0 + (tempCoeffIscPct / 100.0) * deltaT);
 
-  // Exact Newton-Raphson root for Voc: I(Voc) = 0
-  let voc = Math.max(
-    0.1,
-    (stcVoc * nSeries + (tempCoeffVocPct / 100.0) * stcVoc * nSeries * deltaT) *
-      (1.0 + 0.05 * Math.log(gRatio))
-  );
-  for (let it = 0; it < 30; it++) {
-    const expVoc = Math.exp(Math.min(60.0, voc / aActual));
-    const fVoc = iph - i0 * (expVoc - 1.0) - voc / rsh;
-    const dfVoc = -i0 * expVoc * (1.0 / aActual) - 1.0 / rsh;
-    if (Math.abs(dfVoc) < 1e-12) break;
-    const dVoc = fVoc / dfVoc;
-    voc -= dVoc;
-    if (Math.abs(dVoc) < 1e-6) break;
+  // The diode residual is monotone decreasing in V and in I for positive
+  // translated parameters. Bracket every root; never return a Newton iterate
+  // on exhaustion. This repairs solving, not the legacy extraction heuristic.
+  if (![iph, i0, rs, rsh, aActual].every(Number.isFinite) || iph <= 0 || i0 <= 0 || rs < 0 || rsh <= 0 || aActual <= 0) {
+    throw new RangeError('Legacy diode translated parameters outside generating domain');
   }
-  voc = Math.max(0.1, voc);
+  const residual = (v: number, i: number) => iph - i0 * Math.expm1((v + i * rs) / aActual) - (v + i * rs) / rsh - i;
+  const toleranceA = 1e-10 + 1e-12 * iph;
+  const root = (f: (x: number) => number, lower: number, upper: number): number => {
+    const flo = f(lower), fhi = f(upper);
+    if (!Number.isFinite(flo) || Number.isNaN(fhi) || flo < -toleranceA || fhi > toleranceA) throw new RangeError('Legacy diode root not bracketed');
+    if (Math.abs(flo) <= toleranceA) return lower;
+    if (Math.abs(fhi) <= toleranceA) return upper;
+    for (let iteration = 0; iteration < 128; iteration++) {
+      const mid = lower + (upper - lower) / 2, value = f(mid);
+      if (!Number.isFinite(value)) throw new RangeError('Legacy diode root nonfinite');
+      if (Math.abs(value) <= toleranceA) return mid;
+      if (value > 0) lower = mid; else upper = mid;
+    }
+    throw new RangeError('Legacy diode root did not converge');
+  };
+  const idealVoc = aActual * (Math.log(iph + i0) - Math.log(i0));
+  if (!Number.isFinite(idealVoc) || idealVoc <= 0) throw new RangeError('Legacy diode invalid Voc bracket');
+  const voc = root(v => residual(v, 0), 0, idealVoc);
+  let maxTraceResidualA = 0;
 
   // Trace 80 points along the I-V curve using Newton-Raphson
   const points: IvPoint[] = [];
@@ -199,23 +209,9 @@ export function calculateSingleDiodeCurve(
 
   for (let step = 0; step <= numSteps; step++) {
     const v = (voc * step) / numSteps;
-    let i = step === numSteps ? 0.0 : iph * (1.0 - Math.pow(step / numSteps, 3.5)); // Initial guess
-
-    if (step < numSteps) {
-      // Newton-Raphson iteration for transcendental diode equation:
-      // f(I) = I_ph - I_0 * [exp((V + I*Rs) / a) - 1] - (V + I*Rs)/Rsh - I = 0
-      for (let iter = 0; iter < 25; iter++) {
-        const expTerm = Math.exp(Math.min(60.0, (v + i * rs) / aActual));
-        const f = iph - i0 * (expTerm - 1.0) - (v + i * rs) / rsh - i;
-        const df = -i0 * expTerm * (rs / aActual) - rs / rsh - 1.0;
-
-        const deltaI = f / df;
-        i -= deltaI;
-        if (Math.abs(deltaI) < 1e-6) break;
-      }
-    }
-
-    const currentClamped = step === numSteps ? 0.0 : Math.max(0.0, i);
+    // Evaluate the endpoint residual too; forcing I=0 is not a root check.
+    const currentClamped = step === numSteps ? 0 : root(i => residual(v, i), 0, iph);
+    maxTraceResidualA = Math.max(maxTraceResidualA, Math.abs(residual(v, currentClamped)));
     const power = v * currentClamped;
 
     if (power > maxP) {
@@ -250,6 +246,7 @@ export function calculateSingleDiodeCurve(
     efficiencyPct: Math.round(efficiencyPct * 100) / 100,
     irradianceWm2,
     cellTempC,
+    solverDiagnostics: { policy: 'legacy_extraction_bounded_roots_v1', unroundedVocV: voc, openCircuitResidualA: residual(voc, 0), maxTraceResidualA },
     extractedParameters: {
       iph,
       i0,

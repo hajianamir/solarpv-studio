@@ -1,0 +1,1 @@
+PASS audit priority: 36 independent Decimal scenario vectors; F05/F06/F13/F14 counterexamples, null/JSON/bilingual bounds. No reliability/market/field validation.

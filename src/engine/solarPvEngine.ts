@@ -576,8 +576,9 @@ export function calculateSolarPosition(
 
   const secondsInDay = ((normalizedTs % 86400) + 86400) % 86400;
   const timeOffset = eqOfTime + 4.0 * longitudeDeg;
-  // Wrap before the morning/afternoon branch, including across the UTC date boundary.
-  const trueSolarTime = ((secondsInDay / 60.0 + timeOffset) % 1440 + 1440) % 1440;
+  // ENU direction is periodic; no acos morning/afternoon branch or redundant
+  // double-remainder normalization is needed across the UTC date boundary.
+  const trueSolarTime = (secondsInDay / 60.0 + timeOffset) % 1440;
 
   const hourAngle = trueSolarTime / 4.0 - 180.0;
 
@@ -590,20 +591,14 @@ export function calculateSolarPosition(
   const zenithRad = Math.acos(clampedCosZenith);
   const zenithDeg = toDeg(zenithRad);
 
-  const sinZenith = Math.sin(zenithRad);
-  let azimuthRad = 0;
-  if (Math.abs(sinZenith) > 1e-6 && Math.abs(Math.cos(latRad)) > 1e-6) {
-    const val = (Math.sin(latRad) * cosZenith - Math.sin(declRad)) / (Math.cos(latRad) * sinZenith);
-    const clampedVal = Math.min(1.0, Math.max(-1.0, val));
-    if (haRad > 0.0) {
-      // Afternoon: sun is west of solar noon meridian.
-      azimuthRad = Math.acos(clampedVal);
-    } else {
-      // Morning: sun is east of solar noon meridian.
-      azimuthRad = Math.PI * 2.0 - Math.acos(clampedVal);
-    }
-  }
-  const azimuthDeg = (toDeg(azimuthRad) + 180.0) % 360.0;
+  // Local east/north solar-vector components avoid division by cos(latitude)
+  // and remain directional near the poles. At exact zenith/nadir azimuth is
+  // undefined: use 180° as the explicit compatibility convention only there.
+  const east = -Math.cos(declRad) * Math.sin(haRad);
+  const north = Math.cos(latRad) * Math.sin(declRad)
+    - Math.sin(latRad) * Math.cos(declRad) * Math.cos(haRad);
+  const azimuthDeg = Math.hypot(east, north) < 1e-12
+    ? 180 : (toDeg(Math.atan2(east, north)) + 360) % 360;
   const elevationDeg = Number((90.0 - zenithDeg).toFixed(6));
   const azimuthSouthDeg = Number(northToSouthAzimuth(azimuthDeg).toFixed(6));
 

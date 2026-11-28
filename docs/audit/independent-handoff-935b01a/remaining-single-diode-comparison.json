@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "scope": "U05 externally supplied parameter translation and sampled curve; not datasheet fitting, physical validation or adoption approval",
+  "fixtureSha256": "d7f85e597d80ddc50f21b4882ed8a376a5d5e4edb2baf276dec109e6f984623b",
+  "referenceVersion": "0.13.1",
+  "cases": 48,
+  "comparedCurvePoints": 3888,
+  "passed": "Explicit reference-parameter translation and sampled-curve arithmetic within declared conversion/quantization budgets",
+  "unresolved": [
+    "Unused gamma_Pmp input",
+    "beta_Voc is retained for API compatibility, not a fitted temperature constraint",
+    "Legacy scalar Isc differs from implicit I(V=0)",
+    "80step sampled MPP is not exact optimized MPP",
+    "Legacy vt is aggregate Ns*kT/q, not per-cell kT/q",
+    "Summary-input extraction, invalid temperature/custom parameter domains and full convergence/error contracts not validated",
+    "No annual/financial/research adoption"
+  ],
+  "solverFailureWitness": {
+    "inputs": [
+      51.2,
+      14.37,
+      42.65,
+      13.6,
+      580,
+      -0.8,
+      0.045,
+      -0.3,
+      1000,
+      65,
+      1
+    ],
+    "baselineVoc": 45,
+    "historicalFailedSeedVoc": 188.23,
+    "repairedVoc": 45,
+    "unroundedResidualA": 3.552097505021834e-11,
+    "implicitCurrentResidualAmps": 0.004348422046591013,
+    "evidenceClass": "Internal equation-residual/seed-invariance defect reproduction, not independent fitting evidence"
+  },
+  "maxima": {
+    "iphRelative": {
+      "absoluteError": 0,
+      "caseId": "cec_module_params-G50-T-20-N1"
+    },
+    "i0Relative": {
+      "absoluteError": 2.090890332295781e-8,
+      "caseId": "cec_module_params-G50-T-20-N1"
+    },
+    "rsRelative": {
+      "absoluteError": 0,
+      "caseId": "cec_module_params-G50-T-20-N1"
+    },
+    "rshRelative": {
+      "absoluteError": 1.8079967831045805e-16,
+      "caseId": "cec_module_params-G50-T-20-N1"
+    },
+    "nNsVthRelative": {
+      "absoluteError": 3.1295927403105186e-16,
+      "caseId": "cec_module_params-G50-T25-N12"
+    },
+    "vocVolts": {
+      "absoluteError": 0.00494177190994094,
+      "caseId": "cec_module_params-G1400-T25-N12"
+    },
+    "sampledPmpWatts": {
+      "absoluteError": 0.04925369077727737,
+      "caseId": "cec_module_cs5p_220m-G1000-T-20-N12"
+    },
+    "referenceGridOnlyPmpLossWatts": {
+      "absoluteError": 1.1651372312189778,
+      "caseId": "cec_module_cs5p_220m-G1400-T-20-N12"
+    },
+    "referenceGridOnlyPmpLossRelative": {
+      "absoluteError": 0.00047632159777237856,
+      "caseId": "cec_module_cs5p_220m-G50-T-20-N12"
+    },
+    "truePmpWatts": {
+      "absoluteError": 1.143681669601392,
+      "caseId": "cec_module_cs5p_220m-G1400-T-20-N12"
+    },
+    "truePmpRelative": {
+      "absoluteError": 0.01923361377309934,
+      "caseId": "cec_module_params-G50-T85-N1"
+    },
+    "trueVmpVolts": {
+      "absoluteError": 4.16614025952083,
+      "caseId": "cec_module_cs5p_220m-G50-T-20-N12"
+    },
+    "implicitIscAmps": {
+      "absoluteError": 0.0248298709062027,
+      "caseId": "cec_module_params-G1400-T85-N1"
+    }
+  }
+}

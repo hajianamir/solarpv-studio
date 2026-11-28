@@ -1,0 +1,21 @@
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#a03cdf45d4ef (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#a03cdf45d4ef
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#6e29caf63dd1
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateSolarPosition#19ee5d6a8a97 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateSolarPosition: src/engine/solarPvEngine.ts#calculateSolarPosition#19ee5d6a8a97
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#15f3c0813c2e
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#304a58d8f5cb
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#330fd1d268bc (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#330fd1d268bc
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#39f160937538 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#39f160937538
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#662449347fa2 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#662449347fa2
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#7ab524546462 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#7ab524546462
+Sensitivity witness: src/engine/solarPvEngine.ts#calculateStringSizing#a3b536e1aff7 (expression result)
+Independent fixture executed and sensitivity-checked at src/engine/solarPvEngine.ts#calculateStringSizing: src/engine/solarPvEngine.ts#calculateStringSizing#a3b536e1aff7
+PASS 10 priority registry witnesses: independently generated outputs and exact-node mutation sensitivity. Not full physics-gate or standards certification.

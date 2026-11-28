@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {mkdtempSync,rmSync,mkdirSync} from 'node:fs';
 import {resolve,join} from 'node:path';
 mkdirSync('.cache',{recursive:true});const dir=mkdtempSync(resolve('.cache/poa-contract-'));
@@ -7,6 +8,13 @@ const {app}=await import('../server');const server=app.listen(0,'127.0.0.1');awa
 const address=server.address();assert.ok(address&&typeof address==='object');const port=address.port;
 async function post(body:Record<string,unknown>){return fetch(`http://127.0.0.1:${port}/api/v1/solar/poa`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});}
 try{
+ // F17: actual HTTP path against independent SPA, not only direct engine calls.
+ const vectors=JSON.parse(readFileSync('scripts/fixtures/physics/audit-remaining-pvlib.json','utf8')).solar;
+ for(const c of vectors.filter((c:{input:number[]})=>Math.abs(c.input[0])>89.99)){
+  const [latitudeDeg,longitudeDeg,utcTs]=c.input;
+  const response=await fetch(`http://127.0.0.1:${port}/api/v1/solar/position`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({latitudeDeg,longitudeDeg,utcTs})});assert.equal(response.status,200);
+  const result=await response.json(),delta=((result.azimuthDeg-c.azimuthDeg+540)%360)-180;assert.ok(Math.abs(delta)<.1);assert.ok(Math.abs(result.zenithDeg-c.zenithDeg)<.1);
+ }
  const base={ghi:500,dni:1000,dhi:0,tiltDeg:60,sunZenithDeg:60,azimuthDeg:180};
  const results:Record<string,number[]>={};
  for(const convention of [undefined,'south_zero','north_clockwise']){

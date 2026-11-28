@@ -300,8 +300,8 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
             setCorrosion({
               ...res,
               iso9223Category: manualCorrosionCategory,
-              categoryLabel: meta.label,
-              categoryLabelFa: meta.labelFa,
+              categoryLabel: `Internal override band ${manualCorrosionCategory} (ISO unassessed)`,
+              categoryLabelFa: `باند فرضی ${manualCorrosionCategory} (ISO ارزیابی نشده)`,
               corrosionRisk: meta.risk,
               corrosionRiskFa: meta.riskFa,
               moduleDeratePct: meta.module,
@@ -933,13 +933,13 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
                     : 'تحلیل خوردگی اتمسفری، شوری ساحلی و شرایط زهکشی ساختگاه'}
                 </h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-900/40 text-sky-300 border border-sky-500/40">
-                  ISO 9223:2012 & ASTM G57
+                  Internal coastal/drainage screen · ISO unassessed
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {isEn
-                  ? 'Geodesic shoreline proximity, ISO 9223 corrosivity band, HDG galvanizing specs, and subterranean drainage hydrology.'
-                  : 'محاسبه فاصله ژئودزیک تا خط ساحلی دریا، رده‌بندی خوردگی ISO 9223، مشخصات پوشش گالوانیزه گرم و هیدرولوژی زهکشی ساختگاه.'}
+                  ? 'Internal shoreline-distance bands and illustrative coating/drainage assumptions. ISO atmospheric category and coating suitability are not assessed.'
+                  : 'باند داخلی فاصله ساحلی و فرض پوشش/زهکش؛ رده جوی ISO و مناسب بودن پوشش ارزیابی نشده است.'}
               </p>
             </div>
           </div>
@@ -1023,7 +1023,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <div>
             <label htmlFor="struct-corrosion-category" className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
               <ShieldAlert className="w-3.5 h-3.5 text-industrial-warning" />
-              <span>{isEn ? 'ISO 9223 Category Mode:' : 'رده خوردگی ISO 9223:'}</span>
+              <span>{isEn ? 'Internal band override (not ISO):' : 'باند داخلی، نه رده ISO:'}</span>
             </label>
             <select
               id="struct-corrosion-category"
@@ -1104,7 +1104,7 @@ export const StructuralFoundationTab: React.FC<StructuralFoundationTabProps> = (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="p-2.5 bg-industrial-surface/80 rounded-lg border border-industrial-border">
-                <span className="text-slate-400 block text-[10px]">{isEn ? 'ISO 9223 Category:' : 'رده خوردگی ISO 9223:'}</span>
+                <span className="text-slate-400 block text-[10px]">{isEn ? 'Internal distance band:' : 'باند داخلی، نه رده ISO:'}</span>
                 <span className={`font-mono font-bold text-sm ${corrosion.iso9223Category === 'C5' ? 'text-industrial-error' : corrosion.iso9223Category === 'C4' ? 'text-industrial-warning' : 'text-industrial-success'}`}>
                   {isEn ? corrosion.categoryLabel : corrosion.categoryLabelFa}
                 </span>

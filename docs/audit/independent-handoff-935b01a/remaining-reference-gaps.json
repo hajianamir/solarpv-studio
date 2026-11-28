@@ -1,0 +1,470 @@
+{
+  "qualification": "Fail-closed expression evidence gaps; not waived by passing component or broad regressions",
+  "base": "935b01a",
+  "missing": [
+    {
+      "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#22704cab3105",
+      "sourceFile": "src/engine/core/electricalSizingContract.ts",
+      "functionName": "evaluateMpptCompatibility",
+      "ownerPath": "evaluateMpptCompatibility",
+      "expression": "rawVmpHotV>=input.inverterVmpptMin",
+      "nodeStart": 6935,
+      "nodeEnd": 6971
+    },
+    {
+      "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#55f3b3f5c80e",
+      "sourceFile": "src/engine/core/electricalSizingContract.ts",
+      "functionName": "evaluateMpptCompatibility",
+      "ownerPath": "evaluateMpptCompatibility",
+      "expression": "literal:rawVmpColdV.toFixed(2)",
+      "nodeStart": 6854,
+      "nodeEnd": 6855
+    },
+    {
+      "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#8b050308b880",
+      "sourceFile": "src/engine/core/electricalSizingContract.ts",
+      "functionName": "evaluateMpptCompatibility",
+      "ownerPath": "evaluateMpptCompatibility",
+      "expression": "rawVocColdV<=input.inverterVdcMax",
+      "nodeStart": 6892,
+      "nodeEnd": 6927
+    },
+    {
+      "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#a4a9a13c5b66",
+      "sourceFile": "src/engine/core/electricalSizingContract.ts",
+      "functionName": "evaluateMpptCompatibility",
+      "ownerPath": "evaluateMpptCompatibility",
+      "expression": "literal:rawVmpHotV.toFixed(2)",
+      "nodeStart": 6528,
+      "nodeEnd": 6529
+    },
+    {
+      "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#c81396ae7ee5",
+      "sourceFile": "src/engine/core/electricalSizingContract.ts",
+      "functionName": "evaluateMpptCompatibility",
+      "ownerPath": "evaluateMpptCompatibility",
+      "expression": "rawVmpColdV<=input.inverterVmpptMax",
+      "nodeStart": 6979,
+      "nodeEnd": 7016
+    },
+    {
+      "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#d111fb09b4e3",
+      "sourceFile": "src/engine/core/electricalSizingContract.ts",
+      "functionName": "evaluateMpptCompatibility",
+      "ownerPath": "evaluateMpptCompatibility",
+      "expression": "literal:rawVocColdV.toFixed(2)",
+      "nodeStart": 5551,
+      "nodeEnd": 5552
+    },
+    {
+      "formulaId": "src/engine/core/electricalSizingContract.ts#evaluateMpptCompatibility#e828f903d8eb",
+      "sourceFile": "src/engine/core/electricalSizingContract.ts",
+      "functionName": "evaluateMpptCompatibility",
+      "ownerPath": "evaluateMpptCompatibility",
+      "expression": "rawVocColdV>=rawVmpHotV",
+      "nodeStart": 7024,
+      "nodeEnd": 7049
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateAshraeIam#8d3ee17e0190",
+      "sourceFile": "src/engine/optical/iamEngine.ts",
+      "functionName": "calculateAshraeIam",
+      "ownerPath": "calculateAshraeIam",
+      "expression": "theta>=90.0",
+      "nodeStart": 5372,
+      "nodeEnd": 5385
+    },
+    {
+      "formulaId": "src/engine/optical/iamEngine.ts#calculateAshraeIam#b31cdc38c93f",
+      "sourceFile": "src/engine/optical/iamEngine.ts",
+      "functionName": "calculateAshraeIam",
+      "ownerPath": "calculateAshraeIam",
+      "expression": "cosTheta<=0",
+      "nodeStart": 5545,
+      "nodeEnd": 5558
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries.addRain#64984f69b86f",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "addRain",
+      "ownerPath": "calculateKimberSeries.addRain",
+      "expression": "accumulatedRain+adjusted",
+      "nodeStart": 1994,
+      "nodeEnd": 2020
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries.addRain#86bf7743cb4e",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "addRain",
+      "ownerPath": "calculateKimberSeries.addRain",
+      "expression": "value-rainCorrection",
+      "nodeStart": 1953,
+      "nodeEnd": 1975
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries.addRain#87ef22c0b52f",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "addRain",
+      "ownerPath": "calculateKimberSeries.addRain",
+      "expression": "next-accumulatedRain",
+      "nodeStart": 2044,
+      "nodeEnd": 2066
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries.addRain#fb264852d21a",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "addRain",
+      "ownerPath": "calculateKimberSeries.addRain",
+      "expression": "(next-accumulatedRain)-adjusted",
+      "nodeStart": 2043,
+      "nodeEnd": 2078
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#219f4f027fc0",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "calculateKimberSeries",
+      "ownerPath": "calculateKimberSeries",
+      "expression": "left++",
+      "nodeStart": 2365,
+      "nodeEnd": 2371
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#2af80ad22604",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "calculateKimberSeries",
+      "ownerPath": "calculateKimberSeries",
+      "expression": "checked.timeHours[left]<=now-p.rainAccumulationHours",
+      "nodeStart": 2252,
+      "nodeEnd": 2308
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#2b649c2071f8",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "calculateKimberSeries",
+      "ownerPath": "calculateKimberSeries",
+      "expression": "literal:left=0",
+      "nodeStart": 1761,
+      "nodeEnd": 1762
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#62f0bfdfe9ce",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "calculateKimberSeries",
+      "ownerPath": "calculateKimberSeries",
+      "expression": "literal:rainCorrection=0",
+      "nodeStart": 1890,
+      "nodeEnd": 1891
+    },
+    {
+      "formulaId": "src/engine/reference/kimberSeries.ts#calculateKimberSeries#b9869cd15f4e",
+      "sourceFile": "src/engine/reference/kimberSeries.ts",
+      "functionName": "calculateKimberSeries",
+      "ownerPath": "calculateKimberSeries",
+      "expression": "-input.steps[left].rainfallMm!",
+      "nodeStart": 2326,
+      "nodeEnd": 2356
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.residual#1a3801e6bc41",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "residual",
+      "ownerPath": "calculateSingleDiodeCurve.residual",
+      "expression": "v+i*rs",
+      "nodeStart": 7609,
+      "nodeEnd": 7619
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.residual#6a8f3abdde9f",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "residual",
+      "ownerPath": "calculateSingleDiodeCurve.residual",
+      "expression": "iph-i0*Math.expm1((v+i*rs)/aActual)-(v+i*rs)/rsh-i",
+      "nodeStart": 7586,
+      "nodeEnd": 7656
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.residual#7cfd5f2ad3e3",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "residual",
+      "ownerPath": "calculateSingleDiodeCurve.residual",
+      "expression": "v+i*rs",
+      "nodeStart": 7635,
+      "nodeEnd": 7645
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#1b3fcd4f8c11",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "value>0",
+      "nodeStart": 8353,
+      "nodeEnd": 8362
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#3127dcea18e4",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "Math.abs(flo)<=toleranceA",
+      "nodeStart": 7985,
+      "nodeEnd": 8012
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#357cf9ede2d6",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "literal:iteration=0",
+      "nodeStart": 8104,
+      "nodeEnd": 8105
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#4df838756037",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "Math.abs(value)<=toleranceA",
+      "nodeStart": 8300,
+      "nodeEnd": 8329
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#7676a96b24af",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "iteration<128",
+      "nodeStart": 8107,
+      "nodeEnd": 8122
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#7aa200ba5f96",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "lower+(upper-lower)/2",
+      "nodeStart": 8157,
+      "nodeEnd": 8184
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#86f245a5363a",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "flo<-toleranceA",
+      "nodeStart": 7881,
+      "nodeEnd": 7898
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#986b8ee6cd7c",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "iteration++",
+      "nodeStart": 8124,
+      "nodeEnd": 8135
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#a8b133b4cb9b",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "Math.abs(fhi)<=toleranceA",
+      "nodeStart": 8036,
+      "nodeEnd": 8063
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#b639e2135eb8",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "fhi>toleranceA",
+      "nodeStart": 7902,
+      "nodeEnd": 7918
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve.root#b8bcb6c25b88",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "root",
+      "ownerPath": "calculateSingleDiodeCurve.root",
+      "expression": "upper-lower",
+      "nodeStart": 8166,
+      "nodeEnd": 8179
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#34fc17be34b2",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "Math.max(maxTraceResidualA,Math.abs(residual(v,currentClamped)))",
+      "nodeStart": 9175,
+      "nodeEnd": 9241
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#3b7b23ee13e3",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "1e-10+1e-12*iph",
+      "nodeStart": 7679,
+      "nodeEnd": 7698
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#3d698d1d3287",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "iph<=0",
+      "nodeStart": 7386,
+      "nodeEnd": 7394
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#3e5afceab547",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "rsh<=0",
+      "nodeStart": 7419,
+      "nodeEnd": 7427
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#49ecf2d218b7",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "step===numSteps?0:root(i=>residual(v,i),0,iph)",
+      "nodeStart": 9092,
+      "nodeEnd": 9149
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#5f885e4cc1f5",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "i0<=0",
+      "nodeStart": 7398,
+      "nodeEnd": 7405
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#6cf49ff94439",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "literal:maxTraceResidualA=0",
+      "nodeStart": 8725,
+      "nodeEnd": 8726
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#7ebd4e0b66bb",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "rs<0",
+      "nodeStart": 7409,
+      "nodeEnd": 7415
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#96bbd2923f49",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "idealVoc<=0",
+      "nodeStart": 8572,
+      "nodeEnd": 8585
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#a8dda14e97c8",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "literal:residual(voc,0)",
+      "nodeStart": 10466,
+      "nodeEnd": 10467
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#c0f37c50f44a",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "literal:root(v=>residual(v,0),0,idealVoc)",
+      "nodeStart": 8685,
+      "nodeEnd": 8686
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#e5d41af0931b",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "aActual*(Math.log(iph+i0)-Math.log(i0))",
+      "nodeStart": 8489,
+      "nodeEnd": 8534
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#e9e50fddadfa",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "aActual<=0",
+      "nodeStart": 7431,
+      "nodeEnd": 7443
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#f1645ee15741",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "literal:residual(v,0)",
+      "nodeStart": 8681,
+      "nodeEnd": 8682
+    },
+    {
+      "formulaId": "src/engine/singleDiodeModel.ts#calculateSingleDiodeCurve#f6adbcd452e0",
+      "sourceFile": "src/engine/singleDiodeModel.ts",
+      "functionName": "calculateSingleDiodeCurve",
+      "ownerPath": "calculateSingleDiodeCurve",
+      "expression": "Math.log(iph+i0)-Math.log(i0)",
+      "nodeStart": 8500,
+      "nodeEnd": 8533
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#08b4db78a379",
+      "sourceFile": "src/engine/solarPvEngine.ts",
+      "functionName": "calculateSolarPosition",
+      "ownerPath": "calculateSolarPosition",
+      "expression": "toDeg(Math.atan2(east,north))+360",
+      "nodeStart": 21577,
+      "nodeEnd": 21613
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#2690417760bb",
+      "sourceFile": "src/engine/solarPvEngine.ts",
+      "functionName": "calculateSolarPosition",
+      "ownerPath": "calculateSolarPosition",
+      "expression": "Math.hypot(east,north)<1e-12?180:(toDeg(Math.atan2(east,north))+360)%360",
+      "nodeStart": 21532,
+      "nodeEnd": 21620
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#79f3739fa401",
+      "sourceFile": "src/engine/solarPvEngine.ts",
+      "functionName": "calculateSolarPosition",
+      "ownerPath": "calculateSolarPosition",
+      "expression": "-Math.cos(declRad)*Math.sin(haRad)",
+      "nodeStart": 21358,
+      "nodeEnd": 21394
+    },
+    {
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#f18beab16bfa",
+      "sourceFile": "src/engine/solarPvEngine.ts",
+      "functionName": "calculateSolarPosition",
+      "ownerPath": "calculateSolarPosition",
+      "expression": "Math.cos(latRad)*Math.sin(declRad)-Math.sin(latRad)*Math.cos(declRad)*Math.cos(haRad)",
+      "nodeStart": 21412,
+      "nodeEnd": 21509
+    }
+  ],
+  "stale": [
+    "src/engine/reference/kimberSeries.ts#calculateKimberSeries#7c8d85e86f82",
+    "src/engine/reference/kimberSeries.ts#calculateKimberSeries#9a54916d694f",
+    "src/engine/reference/kimberSeries.ts#calculateKimberSeries#d4365bfb021c"
+  ]
+}

@@ -749,8 +749,8 @@
       "referenceLocator": "coverage_nrel / dc_loss_nrel; soiling.kimber; independent Python weighted energy sums and sequential retained-fraction aggregation, not field validation"
     },
     {
-      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#00621e7ddbb1",
-      "fixtureFile": "scripts/fixtures/physics/solar-spa-00621e7ddbb1.json",
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#a03cdf45d4ef",
+      "fixtureFile": "scripts/fixtures/physics/solar-spa-a03cdf45d4ef.json",
       "productionExport": "calculateSolarPosition",
       "referenceTitle": "pvlib-python NREL SPA solar position",
       "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.solarposition.get_solarposition.html",
@@ -767,8 +767,8 @@
       "referenceLocator": "get_solarposition, geometric zenith and north-clockwise azimuth, altitude=0, UTC"
     },
     {
-      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#df1bf2813862",
-      "fixtureFile": "scripts/fixtures/physics/solar-spa-df1bf2813862.json",
+      "formulaId": "src/engine/solarPvEngine.ts#calculateSolarPosition#19ee5d6a8a97",
+      "fixtureFile": "scripts/fixtures/physics/solar-spa-19ee5d6a8a97.json",
       "productionExport": "calculateSolarPosition",
       "referenceTitle": "pvlib-python NREL SPA solar position",
       "referenceUrl": "https://pvlib-python.readthedocs.io/en/v0.13.1/reference/generated/pvlib.solarposition.get_solarposition.html",

@@ -368,3 +368,14 @@ close(dispatchOperatingEnergy(full, pv).samples[0].chargeKwh, 0);
 console.log(
   "PASS explicit no-battery, full-battery, export cap and outage hand witnesses",
 );
+
+// F19: full-year adoption, no discharge: initial inventory cannot erase direct PV value.
+for(const mode of ['ongrid','offgrid'] as const){
+ const records=evidence.samples.map((s:{timestamp:string})=>({timestamp:s.timestamp,loadW:500,gridAvailable:mode==='ongrid',exportLimitW:100000}));
+ const p:OperatingPlan={schemaVersion:'operating-dispatch-v1',mode,source:'Synthetic F19 initial-inventory attribution witness',intervalMinutes:60,battery:{capacityKwh:10,initialSocFraction:1,minSocFraction:0,maxChargeKw:0,maxDischargeKw:0,chargeEfficiency:.8,dischargeEfficiency:.5},records};
+ const context={latitude:r.site.latitude,longitude:r.site.longitude,dcCapacityKwp:r.system.arrayPdc0W/1000,inverterCapacityKw:r.system.inverterPdc0W*r.system.inverterEtaNom/1000,mode,configurationSha256:'a'.repeat(64),batteryCapacityKwh:10};
+ const receipt=adoptOperationalEnergy({schemaVersion:'operating-study-v1',pvResults:evidence,plan:p},context,'Synthetic explicit F19 acceptance only');
+ assert.ok(receipt.dispatch);close(receipt.dispatch.initialOriginDischargeKwh,0);close(receipt.valuedSelfConsumedKwh!,receipt.dispatch.selfConsumedKwh);assert.ok(receipt.valuedSelfConsumedKwh!>10);
+ close(receipt.financeEnergyKwh!,receipt.valuedSelfConsumedKwh!+(mode==='ongrid'?receipt.exportKwh:0));
+}
+console.log('PASS F19 full-year ongrid/offgrid adoption and financial denominator with unused initial SOC');

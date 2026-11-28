@@ -424,11 +424,11 @@ async function main() {
 
   await page.getByRole('button', { name: /Edit Climate Parameters|ویرایش پارامترهای اقلیمی/ }).click();
 
-  // Preserve existing PSH<1 behavior while making its caveat visible to the user.
+  // Positive PSH below one is no longer substituted in scenario generation.
   await page.locator('#climate-psh-input').fill('0.5');
   await page.getByRole('button', { name: /Apply Custom Parameters|اعمال پارامترهای سفارشی/ }).click();
-  await page.getByText(/محدودیت مدل PSH پایین/).waitFor({ timeout: 10000 });
-  console.log('[PASS] Browser shows the existing positive-PSH-below-1 scenario floor limitation');
+  await page.getByText(/PSH پایین:.*بدون کف ۱/).waitFor({ timeout: 10000 });
+  console.log('[PASS] Browser shows actual low-PSH resource preservation and remaining screening limits');
 
   // Exercise the application's real report modal buttons and re-import its downloaded JSON.
   await page.keyboard.press('Control+e');

@@ -1,5 +1,5 @@
+import {historicalSource} from './historical-source';
 import {getContextualHelp} from '../src/helpContent';
-import {execFileSync} from 'node:child_process';
 import ts from 'typescript';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -42,7 +42,7 @@ if(result.status==='available') {
 // PSH and legacy rounded TDH/nameplate never serve as hidden duty defaults.
 const legacyInput={wellDepthM:30,tankHeightM:0,pipeLengthM:100,pipeDiameterMm:63,dailyWaterRequirementM3:100,irrigationType:'flooding_storage' as const,peakSunHours:5,pumpEfficiencyOverride:.6};
 const legacyBefore=calculateSolarPump(legacyInput);assessPumpDutyEnergy(base);assert.deepEqual(calculateSolarPump(legacyInput),legacyBefore);
-const oldSource=execFileSync('git',['show','16d3ff4056b528c2d9a5215a5e44703e58b49db7:src/engine/solarPumpEngine.ts'],{encoding:'utf8'});
+const oldSource=historicalSource('16d3ff4056b528c2d9a5215a5e44703e58b49db7:src/engine/solarPumpEngine.ts');
 const oldJs=ts.transpileModule(oldSource,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
 const oldModule=await import(`data:text/javascript;base64,${Buffer.from(oldJs).toString('base64')}`) as typeof import('../src/engine/solarPumpEngine');
 for(const peakSunHours of [.5,2,5,8])for(const dailyWaterRequirementM3 of [0,10,120,300])for(const irrigationType of ['drip','sprinkler','flooding_storage'] as const) {
